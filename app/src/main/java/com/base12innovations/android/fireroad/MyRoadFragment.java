@@ -1,8 +1,10 @@
 package com.base12innovations.android.fireroad;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -15,6 +17,7 @@ import android.widget.GridView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +34,25 @@ import java.util.List;
 public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClickListener {
     private static final String ARG_TEST_PARAM = "param1";
 
+    private MyRoadCoursesAdapter gridAdapter;
+
     private int testParam;
+
+    private Course currentlySelectedCourse;
+    private int currentlySelectedSemester;
+
+    private RoadDocument _document;
+
+    public void setDocument(RoadDocument document) {
+        _document = document;
+        if (gridAdapter != null) {
+            gridAdapter.setDocument(document);
+        }
+    }
+
+    public RoadDocument getDocument() {
+        return _document;
+    }
 
     private OnFragmentInteractionListener mListener;
 
@@ -68,22 +89,27 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         // Inflate the layout for this fragment
         View layout = inflater.inflate(R.layout.fragment_my_road, container, false);
 
+        // Set up model
+        RoadDocument document = new RoadDocument(new File(getActivity().getFilesDir(), "First Steps.road"));
+        if (document.file.exists()) {
+            document.read();
+        }
+        /*if (document.getAllCourses().size() == 0) {
+            document.addCourse(new Course("8.02", "Physics"), 0);
+            document.addCourse(new Course("18.03", "Differential Equations"), 1);
+            document.addCourse(new Course("16.00", "Unified"), 1);
+            document.addCourse(new Course("6.036", "Introduction to Machine Learning"), 3);
+        }*/
+
         // Set up grid view
         GridView grid = layout.findViewById(R.id.gridView);
-        List<List<Course>> courses = new ArrayList<>();
-        for (int i = 0; i < 12; i++) {
-            courses.add(Arrays.asList(
-                    new Course("6.003", "Signals & Systems"),
-                    new Course("18.03", "Differential Equations"),
-                    new Course("2.007", "I don't know the title"),
-                    new Course("21M.284", "Film Music")
-            ));
-        }
-        MyRoadCoursesAdapter adapter = new MyRoadCoursesAdapter(getActivity(), courses, 3);
-        grid.setAdapter(adapter);
+        gridAdapter = new MyRoadCoursesAdapter(getActivity(), document, 3);
+        grid.setAdapter(gridAdapter);
         grid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                currentlySelectedCourse = gridAdapter.courseForGridPosition(i);
+                currentlySelectedSemester = gridAdapter.semesterForGridPosition(i);
                 PopupMenu menu = new PopupMenu(getActivity(), view);
                 MenuInflater mInflater = menu.getMenuInflater();
                 mInflater.inflate(R.menu.menu_course_cell, menu.getMenu());
@@ -91,6 +117,8 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 menu.show();
             }
         });
+
+        setDocument(document);
         return layout;
     }
 
@@ -133,12 +161,27 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         void onFragmentInteraction(Uri uri);
     }
 
+    public void showCourseDetails(Course course) {
+        Intent intent = new Intent(getActivity(), CourseDetailsActivity.class);
+        intent.putExtra(CourseDetailsActivity.COURSE_EXTRA, currentlySelectedCourse);
+        startActivity(intent);
+    }
+
     @Override
     public boolean onMenuItemClick(MenuItem menuItem) {
         switch (menuItem.getItemId()) {
             case R.id.viewCourse:
+                showCourseDetails(currentlySelectedCourse);
                 return true;
             case R.id.deleteCourse:
+                final Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        getDocument().removeCourse(currentlySelectedCourse, currentlySelectedSemester);
+                        gridAdapter.notifyDataSetChanged();
+                    }
+                }, 400);
                 return true;
             case R.id.courseWarnings:
                 return false;

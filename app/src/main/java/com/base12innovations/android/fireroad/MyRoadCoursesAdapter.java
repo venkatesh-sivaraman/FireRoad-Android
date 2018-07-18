@@ -21,23 +21,15 @@ import java.util.Locale;
 
 public class MyRoadCoursesAdapter extends BaseAdapter {
 
-    private String[] semesterNames = new String[] {
-            "1st Year Fall",
-            "1st Year IAP",
-            "1st Year Spring",
-            "2nd Year Fall",
-            "2nd Year IAP",
-            "2nd Year Spring",
-            "3rd Year Fall",
-            "3rd Year IAP",
-            "3rd Year Spring",
-            "4th Year Fall",
-            "4th Year IAP",
-            "4th Year Spring"
-    };
-    private List<List<Course>> courses;
-    private final Context context;
+    private RoadDocument document;
 
+    public void setDocument(RoadDocument document) {
+        this.document = document;
+        notifyDataSetChanged();
+    }
+
+    private final Context context;
+    private int numColumns;
     private static int SECTION_SPACING = -100;
     private static int SECTION_END_SPACE = -200;
 
@@ -65,8 +57,8 @@ public class MyRoadCoursesAdapter extends BaseAdapter {
 
     private void computeCellTypes(int numColumns) {
         cellTypes = new ArrayList<>();
-        for (int i = 0; i < courses.size(); i++) {
-            List<Course> semesterCourses = courses.get(i);
+        for (int i = 0; i < RoadDocument.semesterNames.length; i++) {
+            List<Course> semesterCourses = document.coursesForSemester(i);
 
             while (cellTypes.size() % numColumns != 0) {
                 cellTypes.add(SECTION_END_SPACE);
@@ -84,10 +76,24 @@ public class MyRoadCoursesAdapter extends BaseAdapter {
         }
     }
 
-    public MyRoadCoursesAdapter(Context context, List<List<Course>> courses, int numColumns) {
-        this.courses = courses;
+    public MyRoadCoursesAdapter(Context context, RoadDocument document, int numColumns) {
+        this.document = document;
         this.context = context;
+        this.numColumns = numColumns;
         computeCellTypes(numColumns);
+    }
+
+    @Override
+    public void notifyDataSetChanged() {
+        Log.d("Changed with", this.document.getAllCourses().toString());
+        computeCellTypes(this.numColumns);
+        super.notifyDataSetChanged();
+    }
+
+    @Override
+    public void notifyDataSetInvalidated() {
+        computeCellTypes(this.numColumns);
+        super.notifyDataSetInvalidated();
     }
 
     @Override
@@ -156,12 +162,12 @@ public class MyRoadCoursesAdapter extends BaseAdapter {
                 convertView = layoutInflater.inflate(R.layout.header_myroad, null);
             }
             final TextView textView = (TextView)convertView.findViewById(R.id.headerTextView);
-            textView.setText(semesterNames[sectionHeaderIndex(cellType)]);
+            textView.setText(RoadDocument.semesterNames[sectionHeaderIndex(cellType)]);
             return convertView;
         }
         // Normal cell
 
-        final Course course = courses.get(courseSemesterIndex(cellType)).get(courseInnerIndex(cellType));
+        final Course course = courseForGridPosition(position);
 
         // 2
         if (convertView == null) {
@@ -179,5 +185,16 @@ public class MyRoadCoursesAdapter extends BaseAdapter {
         titleTextView.setText(course.subjectTitle);
 
         return convertView;
+    }
+
+    public Course courseForGridPosition(int position) {
+        int cellType = cellTypes.get(position);
+        final Course course = document.coursesForSemester(courseSemesterIndex(cellType)).get(courseInnerIndex(cellType));
+        return course;
+    }
+
+    public int semesterForGridPosition(int position) {
+        int cellType = cellTypes.get(position);
+        return courseSemesterIndex(cellType);
     }
 }
