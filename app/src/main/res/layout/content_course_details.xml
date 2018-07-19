@@ -9,6 +9,7 @@
     tools:showIn="@layout/activity_course_details">
 
     <LinearLayout
+        android:id="@+id/courseDetailsLinearLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -28,6 +29,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingVertical="8dp"
-            android:text="@string/large_text" />
+            android:text="@string/large_text"
+            android:textAlignment="textStart"
+            android:textSize="16sp" />
+
     </LinearLayout>
 </android.support.v4.widget.NestedScrollView>

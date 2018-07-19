@@ -9,6 +9,10 @@ public class TaskDispatcher {
         E perform();
     }
 
+    public interface TaskNoReturn {
+        void perform();
+    }
+
     public interface CompletionBlock <E> {
         void completed(E arg);
     }
@@ -28,4 +32,34 @@ public class TaskDispatcher {
             }
         }) .start();
     }
+
+    public static void inBackground(final TaskNoReturn task) {
+        inBackground(task, false);
+    }
+
+    public static void inBackground(final TaskNoReturn task, boolean sync) {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                task.perform();
+            }
+        });
+        thread.start();
+        if (sync) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) { }
+        }
+    }
+
+    public static void onMain(final TaskNoReturn task) {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                task.perform();
+            }
+        });
+    }
+
+
 }

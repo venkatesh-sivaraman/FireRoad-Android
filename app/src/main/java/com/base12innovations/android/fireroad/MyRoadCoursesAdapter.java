@@ -176,7 +176,7 @@ public class MyRoadCoursesAdapter extends BaseAdapter {
             final LayoutInflater layoutInflater = LayoutInflater.from(context);
             convertView = layoutInflater.inflate(R.layout.linearlayout_course, null);
         }
-        ((GradientDrawable)convertView.getBackground()).setColor(0x8800FF00);
+        ((GradientDrawable)convertView.getBackground()).setColor(ColorManager.colorForCourse(course));
 
         // 3
         final TextView idTextView = (TextView)convertView.findViewById(R.id.subjectIDLabel);

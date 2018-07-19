@@ -115,7 +115,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             }
         });
 
-        CourseManager.sharedInstance().loadCourses(new Callable<Void>() {
+        CourseManager.sharedInstance().waitForLoad(new Callable<Void>() {
             @Override
             public Void call() {
                 finishLoadingView();
@@ -127,6 +127,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     }
 
     public void finishLoadingView() {
+
         // Set up model
         Activity currentActivity = getActivity();
         if (currentActivity == null) {

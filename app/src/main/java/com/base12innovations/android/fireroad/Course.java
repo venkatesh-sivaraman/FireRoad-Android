@@ -1,12 +1,14 @@
 package com.base12innovations.android.fireroad;
 
 import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Index;
 import android.arch.persistence.room.PrimaryKey;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 
-@Entity
+@Entity(indices = {@Index(value = {"subjectID"},
+        unique = true)})
 public class Course implements Parcelable {
     @NonNull
     @PrimaryKey(autoGenerate = true)

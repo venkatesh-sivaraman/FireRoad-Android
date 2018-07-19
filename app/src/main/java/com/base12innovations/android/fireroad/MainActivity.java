@@ -38,6 +38,8 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
      */
     private ViewPager mViewPager;
 
+    private CourseLoadingDialogFragment loadingDialogFragment;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,6 +70,29 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         });
 
         CourseManager.sharedInstance().initializeDatabase(this);
+
+        CourseManager.sharedInstance().loadCourses(new CourseManager.LoadCoursesListener() {
+            @Override
+            public void completion() {
+                if (loadingDialogFragment != null) {
+                    loadingDialogFragment.dismiss();
+                }
+            }
+
+            @Override
+            public void error() {
+                if (loadingDialogFragment != null) {
+                    loadingDialogFragment.dismiss();
+                }
+            }
+
+            @Override
+            public void needsFullLoad() {
+                loadingDialogFragment = new CourseLoadingDialogFragment();
+                loadingDialogFragment.setCancelable(false);
+                loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
+            }
+        });
     }
 
 

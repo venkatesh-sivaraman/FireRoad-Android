@@ -3,6 +3,7 @@ package com.base12innovations.android.fireroad;
 import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Delete;
 import android.arch.persistence.room.Insert;
+import android.arch.persistence.room.OnConflictStrategy;
 import android.arch.persistence.room.Query;
 import android.arch.persistence.room.Update;
 
@@ -10,10 +11,10 @@ import java.util.List;
 
 @Dao
 public interface CourseDaoAccess {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertCourse(Course course);
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertCourses(List<Course> courseList);
 
     @Query("SELECT * FROM Course WHERE subjectID = :subjectID")
@@ -27,4 +28,7 @@ public interface CourseDaoAccess {
 
     @Delete
     void deleteCourse(Course course);
+
+    @Query("DELETE FROM Course")
+    void clearCourses();
 }

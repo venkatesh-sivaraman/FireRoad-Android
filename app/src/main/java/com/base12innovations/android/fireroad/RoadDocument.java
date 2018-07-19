@@ -69,8 +69,8 @@ public class RoadDocument extends Document {
             for (int i = 0; i < selectedSubjects.length(); i++) {
                 JSONObject subjectInfo = selectedSubjects.getJSONObject(i);
                 String subjectID = subjectInfo.getString(RoadJSON.subjectID);
-                String subjectTitle = subjectInfo.getString(RoadJSON.subjectTitle);
-                int units = subjectInfo.getInt(RoadJSON.units);
+//                String subjectTitle = subjectInfo.getString(RoadJSON.subjectTitle);
+//                int units = subjectInfo.getInt(RoadJSON.units);
                 int semester = subjectInfo.getInt(RoadJSON.semester);
                 boolean ignoreWarnings = subjectInfo.getBoolean(RoadJSON.overrideWarnings);
 
