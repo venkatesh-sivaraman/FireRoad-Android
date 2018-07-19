@@ -1,5 +1,6 @@
 package com.base12innovations.android.fireroad;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -15,12 +16,15 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.PopupMenu;
+import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 
 /**
@@ -35,6 +39,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     private static final String ARG_TEST_PARAM = "param1";
 
     private MyRoadCoursesAdapter gridAdapter;
+    private ProgressBar loadingIndicator;
 
     private int testParam;
 
@@ -87,23 +92,15 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View layout = inflater.inflate(R.layout.fragment_my_road, container, false);
+        final View layout = inflater.inflate(R.layout.fragment_my_road, container, false);
 
-        // Set up model
-        RoadDocument document = new RoadDocument(new File(getActivity().getFilesDir(), "First Steps.road"));
-        if (document.file.exists()) {
-            document.read();
-        }
-        /*if (document.getAllCourses().size() == 0) {
-            document.addCourse(new Course("8.02", "Physics"), 0);
-            document.addCourse(new Course("18.03", "Differential Equations"), 1);
-            document.addCourse(new Course("16.00", "Unified"), 1);
-            document.addCourse(new Course("6.036", "Introduction to Machine Learning"), 3);
-        }*/
+        // Get view elements
+        loadingIndicator = layout.findViewById(R.id.loadingIndicator);
+        loadingIndicator.setVisibility(ProgressBar.VISIBLE);
 
         // Set up grid view
         GridView grid = layout.findViewById(R.id.gridView);
-        gridAdapter = new MyRoadCoursesAdapter(getActivity(), document, 3);
+        gridAdapter = new MyRoadCoursesAdapter(getActivity(), null, 3);
         grid.setAdapter(gridAdapter);
         grid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -118,8 +115,48 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             }
         });
 
-        setDocument(document);
+        CourseManager.sharedInstance().loadCourses(new Callable<Void>() {
+            @Override
+            public Void call() {
+                finishLoadingView();
+                return null;
+            }
+        });
+
         return layout;
+    }
+
+    public void finishLoadingView() {
+        // Set up model
+        Activity currentActivity = getActivity();
+        if (currentActivity == null) {
+            return;
+        }
+        final RoadDocument document = new RoadDocument(new File(currentActivity.getFilesDir(), "First Steps.road"));
+        TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
+            @Override
+            public Void perform() {
+                if (document.file.exists()) {
+                    document.read();
+                }
+                return null;
+            }
+        }, new TaskDispatcher.CompletionBlock<Void>() {
+            @Override
+            public void completed(Void arg) {
+                gridAdapter.setDocument(document);
+                setDocument(document);
+                loadingIndicator.setVisibility(ProgressBar.GONE);
+            }
+        });
+
+        /*if (document.getAllCourses().size() == 0) {
+            document.addCourse(new Course("8.02", "Physics"), 0);
+            document.addCourse(new Course("18.03", "Differential Equations"), 1);
+            document.addCourse(new Course("16.00", "Unified"), 1);
+            document.addCourse(new Course("6.036", "Introduction to Machine Learning"), 3);
+        }*/
+
     }
 
     // TODO: Rename method, update argument and hook method into UI event

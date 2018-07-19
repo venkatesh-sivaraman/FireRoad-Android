@@ -80,10 +80,13 @@ public class RoadDocument extends Document {
                 if (!courses.containsKey(semester)) {
                     courses.put(semester, new ArrayList<Course>());
                 }
-                Course course = new Course(subjectID, subjectTitle);
-                course.totalUnits = units;
-                courses.get(semester).add(course);
-                overrides.put(course, ignoreWarnings);
+                Course course = CourseManager.sharedInstance().getSubjectByID(subjectID);
+                if (course != null) {
+                    courses.get(semester).add(course);
+                    overrides.put(course, ignoreWarnings);
+                } else {
+                    Log.d("RoadDocument", "Couldn't find course with ID " + subjectID);
+                }
             }
 
         } catch (JSONException e) {
@@ -110,9 +113,9 @@ public class RoadDocument extends Document {
                 List<Course> semCourses = courses.get(semesterIndex);
                 for (Course course : semCourses) {
                     JSONObject courseObj = new JSONObject();
-                    courseObj.put(RoadJSON.subjectID, course.subjectID);
-                    courseObj.put(RoadJSON.subjectTitle, course.subjectTitle);
-                    courseObj.put(RoadJSON.units, course.totalUnits);
+                    courseObj.put(RoadJSON.subjectID, course.getSubjectID());
+                    courseObj.put(RoadJSON.subjectTitle, course.getSubjectTitle());
+                    courseObj.put(RoadJSON.units, course.getTotalUnits());
                     courseObj.put(RoadJSON.semester, semesterIndex);
                     if (overrides.containsKey(course)) {
                         courseObj.put(RoadJSON.overrideWarnings, overrides.get(course));

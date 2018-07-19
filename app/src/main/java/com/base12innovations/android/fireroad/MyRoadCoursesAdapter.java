@@ -57,6 +57,9 @@ public class MyRoadCoursesAdapter extends BaseAdapter {
 
     private void computeCellTypes(int numColumns) {
         cellTypes = new ArrayList<>();
+        if (document == null) {
+            return;
+        }
         for (int i = 0; i < RoadDocument.semesterNames.length; i++) {
             List<Course> semesterCourses = document.coursesForSemester(i);
 
@@ -85,7 +88,6 @@ public class MyRoadCoursesAdapter extends BaseAdapter {
 
     @Override
     public void notifyDataSetChanged() {
-        Log.d("Changed with", this.document.getAllCourses().toString());
         computeCellTypes(this.numColumns);
         super.notifyDataSetChanged();
     }
@@ -181,8 +183,8 @@ public class MyRoadCoursesAdapter extends BaseAdapter {
         final TextView titleTextView = (TextView)convertView.findViewById(R.id.subjectTitleLabel);
 
         // 4
-        idTextView.setText(course.subjectID);
-        titleTextView.setText(course.subjectTitle);
+        idTextView.setText(course.getSubjectID());
+        titleTextView.setText(course.getSubjectTitle());
 
         return convertView;
     }

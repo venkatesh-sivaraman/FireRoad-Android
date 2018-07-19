@@ -25,7 +25,7 @@ public class CourseDetailsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_course_details);
         setupContentView(findViewById(R.id.content));
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle(course.subjectID);
+        toolbar.setTitle(course.getSubjectID());
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -40,8 +40,8 @@ public class CourseDetailsActivity extends AppCompatActivity {
 
     private void setupContentView(View contentView) {
         TextView subjectTitleView = contentView.findViewById(R.id.detailsTitleView);
-        subjectTitleView.setText(course.subjectTitle);
+        subjectTitleView.setText(course.getSubjectTitle());
         TextView subjectDescriptionView = contentView.findViewById(R.id.detailsDescriptionView);
-        subjectDescriptionView.setText(course.subjectDescription);
+        subjectDescriptionView.setText(course.getSubjectDescription());
     }
 }

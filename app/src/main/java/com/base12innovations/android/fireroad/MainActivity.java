@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
             }
         });
 
+        CourseManager.sharedInstance().initializeDatabase(this);
     }
 
 

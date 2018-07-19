@@ -1,21 +1,62 @@
 package com.base12innovations.android.fireroad;
 
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 
+@Entity
 public class Course implements Parcelable {
-    public String subjectID;
-    public String subjectTitle = "";
-    public String subjectDescription = "";
-    public int totalUnits = 0;
+    @NonNull
+    @PrimaryKey(autoGenerate = true)
+    public int uid;
 
-    public Course(String subjectID) {
+    private String subjectID;
+    private String subjectTitle = "";
+    private String subjectDescription = "";
+    private int totalUnits = 0;
+
+    /*public Course(String subjectID) {
         this.subjectID = subjectID;
     }
 
     public Course(String subjectID, String subjectTitle) {
         this.subjectID = subjectID;
         this.subjectTitle = subjectTitle;
+    }*/
+    public Course() {}
+
+    public String getSubjectID() {
+        return subjectID;
+    }
+
+    public void setSubjectID(String subjectID) {
+        this.subjectID = subjectID;
+    }
+
+    public String getSubjectTitle() {
+        return subjectTitle;
+    }
+
+    public void setSubjectTitle(String subjectTitle) {
+        this.subjectTitle = subjectTitle;
+    }
+
+    public String getSubjectDescription() {
+        return subjectDescription;
+    }
+
+    public void setSubjectDescription(String subjectDescription) {
+        this.subjectDescription = subjectDescription;
+    }
+
+    public int getTotalUnits() {
+        return totalUnits;
+    }
+
+    public void setTotalUnits(int totalUnits) {
+        this.totalUnits = totalUnits;
     }
 
     // 99.9% of the time you can just ignore this
