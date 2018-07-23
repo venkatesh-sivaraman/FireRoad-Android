@@ -365,5 +365,7 @@ public class CourseManager {
         return courseDatabase.daoAccess().findCourseWithSubjectID(id);
     }
 
-
+    public List<Course> searchSubjectsFast(String query) {
+        return courseDatabase.daoAccess().searchCoursesByIDOrTitle(query);
+    }
 }

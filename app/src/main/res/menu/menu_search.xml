@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.base12innovations.android.fireroad.SearchCoursesActivity">
+    <item android:id="@+id/searchView"
+        android:title="@string/search_hint"
+        android:icon="@drawable/search_icon"
+        app:showAsAction="always"
+        app:actionViewClass="android.widget.SearchView" />
+</menu>

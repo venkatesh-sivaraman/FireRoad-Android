@@ -1,5 +1,9 @@
 package com.base12innovations.android.fireroad;
 
+import android.app.SearchManager;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -19,6 +23,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.widget.SearchView;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity implements MyRoadFragment.OnFragmentInteractionListener {
@@ -100,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+
         return true;
     }
 
@@ -113,6 +119,9 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        } else if (id == R.id.action_search) {
+            Intent intent = new Intent(this, SearchCoursesActivity.class);
+            startActivity(intent);
         }
 
         return super.onOptionsItemSelected(item);

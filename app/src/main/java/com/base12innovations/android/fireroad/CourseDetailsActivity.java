@@ -41,6 +41,7 @@ public class CourseDetailsActivity extends AppCompatActivity {
         toolbar.setBackgroundColor(barColor);
 
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
