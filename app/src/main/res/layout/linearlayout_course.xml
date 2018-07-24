@@ -4,17 +4,28 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="@dimen/course_cell_height"
-    android:layout_margin="8dp"
     android:background="@drawable/course_background"
     android:elevation="2dp"
     android:gravity="top"
     android:minHeight="84dp"
     android:orientation="vertical">
 
+    <View
+        android:id="@+id/selectionView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="?attr/selectableItemBackground"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
     <TextView
         android:id="@+id/subjectIDLabel"
         android:layout_width="0dp"
         android:layout_height="28dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
         android:text="21M.284"
         android:textAlignment="center"
         android:textColor="@android:color/white"

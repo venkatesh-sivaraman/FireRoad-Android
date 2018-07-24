@@ -28,7 +28,10 @@ public class RoadDocument extends Document {
             "3rd Year Spring",
             "4th Year Fall",
             "4th Year IAP",
-            "4th Year Spring"
+            "4th Year Spring",
+            "5th Year Fall",
+            "5th Year IAP",
+            "5th Year Spring"
     };
 
     protected static class RoadJSON {

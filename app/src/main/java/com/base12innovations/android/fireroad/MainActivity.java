@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -63,6 +64,8 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
 
         mViewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
+        mViewPager.setCurrentItem(1);
+        tabLayout.setupWithViewPager(mViewPager);
         tabLayout.addOnTabSelectedListener(new TabLayout.ViewPagerOnTabSelectedListener(mViewPager));
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -74,30 +77,32 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
             }
         });
 
-        CourseManager.sharedInstance().initializeDatabase(this);
+        if (!CourseManager.sharedInstance().isLoaded()) {
+            CourseManager.sharedInstance().initializeDatabase(this);
 
-        CourseManager.sharedInstance().loadCourses(new CourseManager.LoadCoursesListener() {
-            @Override
-            public void completion() {
-                if (loadingDialogFragment != null) {
-                    loadingDialogFragment.dismiss();
+            CourseManager.sharedInstance().loadCourses(new CourseManager.LoadCoursesListener() {
+                @Override
+                public void completion() {
+                    if (loadingDialogFragment != null) {
+                        loadingDialogFragment.dismiss();
+                    }
                 }
-            }
 
-            @Override
-            public void error() {
-                if (loadingDialogFragment != null) {
-                    loadingDialogFragment.dismiss();
+                @Override
+                public void error() {
+                    if (loadingDialogFragment != null) {
+                        loadingDialogFragment.dismiss();
+                    }
                 }
-            }
 
-            @Override
-            public void needsFullLoad() {
-                loadingDialogFragment = new CourseLoadingDialogFragment();
-                loadingDialogFragment.setCancelable(false);
-                loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
-            }
-        });
+                @Override
+                public void needsFullLoad() {
+                    loadingDialogFragment = new CourseLoadingDialogFragment();
+                    loadingDialogFragment.setCancelable(false);
+                    loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
+                }
+            });
+        }
     }
 
 
@@ -173,6 +178,9 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
      */
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
+        private String[] pageTitles = new String[] {
+                "Explore", "Road", "Schedule", "Majors"
+        };
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
         }
@@ -190,16 +198,22 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
             // Return a PlaceholderFragment (defined as a static inner class below).
-            if (position == 0) {
+            if (position == 1) {
                 return getMyRoadFragment();
             }
             return PlaceholderFragment.newInstance(position + 1);
         }
 
+        @Nullable
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return pageTitles[position];
+        }
+
         @Override
         public int getCount() {
             // Show 3 total pages.
-            return 3;
+            return pageTitles.length;
         }
     }
 }

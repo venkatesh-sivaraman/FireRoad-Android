@@ -7,6 +7,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 
+import java.util.Locale;
+
 @Entity(indices = {@Index(value = {"subjectID"},
         unique = true)})
 public class Course implements Parcelable {
@@ -93,5 +95,19 @@ public class Course implements Parcelable {
         subjectTitle = in.readString();
         subjectDescription = in.readString();
         totalUnits = in.readInt();
+    }
+
+    @Override
+    public String toString() {
+        return String.format(Locale.US, "<Course %s: %s>", getSubjectID(), getSubjectTitle());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!obj.getClass().equals(this.getClass())) {
+            return false;
+        }
+        Course other = (Course)obj;
+        return other.getSubjectID().equals(getSubjectID());
     }
 }

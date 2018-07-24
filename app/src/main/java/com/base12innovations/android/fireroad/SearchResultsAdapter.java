@@ -5,11 +5,19 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import java.util.List;
 
 public class SearchResultsAdapter extends BaseAdapter {
+
+    public interface Delegate {
+        void searchResultsClickedAddButton(Course selectedCourse);
+    }
+
+    public Delegate delegate;
 
     private List<Course> courses;
     private Context context;
@@ -62,10 +70,19 @@ public class SearchResultsAdapter extends BaseAdapter {
             final LayoutInflater layoutInflater = LayoutInflater.from(context);
             view = layoutInflater.inflate(R.layout.cell_search_result, null);
         }
-        Course course = (Course)getItem(i);
+        final Course course = (Course)getItem(i);
         ((TextView)view.findViewById(R.id.subjectIDLabel)).setText(course.getSubjectID());
         ((TextView)view.findViewById(R.id.subjectTitleLabel)).setText(course.getSubjectTitle());
         view.findViewById(R.id.colorCodingView).setBackgroundColor(ColorManager.colorForCourse(course, 0xFF));
+        ImageButton addButton = view.findViewById(R.id.addButton);
+        addButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (delegate != null) {
+                    delegate.searchResultsClickedAddButton(course);
+                }
+            }
+        });
         return view;
     }
 

@@ -171,7 +171,7 @@ public class ColorManager {
     private static float[] brightnesses = new float[] { 0.87f, 0.71f, 0.71f };
 
     public static int colorForCourse(Course course) {
-        return colorForCourse(course, 0xEE);
+        return colorForCourse(course, 0xFF);
     }
 
     public static int colorForCourse(Course course, int alpha) {

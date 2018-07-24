@@ -41,23 +41,8 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     private MyRoadCoursesAdapter gridAdapter;
     private ProgressBar loadingIndicator;
 
-    private int testParam;
-
     private Course currentlySelectedCourse;
     private int currentlySelectedSemester;
-
-    private RoadDocument _document;
-
-    public void setDocument(RoadDocument document) {
-        _document = document;
-        if (gridAdapter != null) {
-            gridAdapter.setDocument(document);
-        }
-    }
-
-    public RoadDocument getDocument() {
-        return _document;
-    }
 
     private OnFragmentInteractionListener mListener;
 
@@ -83,9 +68,6 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            testParam = getArguments().getInt(ARG_TEST_PARAM);
-        }
     }
 
     @Override
@@ -115,6 +97,15 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             }
         });
 
+        User.currentUser().addRoadChangedListener(new User.RoadChangedListener() {
+            @Override
+            public void roadChanged(RoadDocument newDocument) {
+                if (gridAdapter != null) {
+                    gridAdapter.setDocument(newDocument);
+                }
+            }
+        });
+
         CourseManager.sharedInstance().waitForLoad(new Callable<Void>() {
             @Override
             public Void call() {
@@ -133,23 +124,29 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         if (currentActivity == null) {
             return;
         }
-        final RoadDocument document = new RoadDocument(new File(currentActivity.getFilesDir(), "First Steps.road"));
-        TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
-            @Override
-            public Void perform() {
-                if (document.file.exists()) {
-                    document.read();
+        if (User.currentUser().getCurrentDocument() == null) {
+            final RoadDocument document = new RoadDocument(new File(currentActivity.getFilesDir(), "First Steps.road"));
+            TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
+                @Override
+                public Void perform() {
+                    if (document.file.exists()) {
+                        document.read();
+                    }
+                    return null;
                 }
-                return null;
+            }, new TaskDispatcher.CompletionBlock<Void>() {
+                @Override
+                public void completed(Void arg) {
+                    User.currentUser().setCurrentDocument(document);
+                    loadingIndicator.setVisibility(ProgressBar.GONE);
+                }
+            });
+        } else {
+            if (gridAdapter != null) {
+                gridAdapter.setDocument(User.currentUser().getCurrentDocument());
             }
-        }, new TaskDispatcher.CompletionBlock<Void>() {
-            @Override
-            public void completed(Void arg) {
-                gridAdapter.setDocument(document);
-                setDocument(document);
-                loadingIndicator.setVisibility(ProgressBar.GONE);
-            }
-        });
+            loadingIndicator.setVisibility(ProgressBar.GONE);
+        }
 
         /*if (document.getAllCourses().size() == 0) {
             document.addCourse(new Course("8.02", "Physics"), 0);
@@ -216,7 +213,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        getDocument().removeCourse(currentlySelectedCourse, currentlySelectedSemester);
+                        User.currentUser().getCurrentDocument().removeCourse(currentlySelectedCourse, currentlySelectedSemester);
                         gridAdapter.notifyDataSetChanged();
                     }
                 }, 400);

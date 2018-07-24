@@ -54,6 +54,8 @@ public class CourseManager {
     private boolean _isLoading = false;
     public boolean isLoading() { return _isLoading; }
     private float loadingProgress = 0.0f;
+    private boolean _isLoaded = false;
+    public boolean isLoaded() { return _isLoaded; }
     public float getLoadingProgress() { return loadingProgress; }
     private List<Callable<Void>> loadingCompletionHandlers;
 
@@ -124,6 +126,7 @@ public class CourseManager {
                             @Override
                             public void completed(Void arg) {
                                     _isLoading = false;
+                                    _isLoaded = true;
                                     listener.completion();
                                     for (Callable<Void> comp : loadingCompletionHandlers) {
                                         try {
@@ -166,6 +169,12 @@ public class CourseManager {
     }
 
     public void waitForLoad(final Callable<Void> completionHandler) {
+        if (_isLoaded) {
+            try {
+                completionHandler.call();
+            } catch (Exception e) { }
+            return;
+        }
         if (loadingCompletionHandlers != null) {
             loadingCompletionHandlers.add(completionHandler);
         }

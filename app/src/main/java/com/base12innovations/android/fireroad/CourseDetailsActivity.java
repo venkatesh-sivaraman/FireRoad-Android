@@ -15,10 +15,11 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class CourseDetailsActivity extends AppCompatActivity {
+public class CourseDetailsActivity extends AppCompatActivity implements AddCourseDialog.AddCourseDialogDelegate {
 
     public static String COURSE_EXTRA = "CourseDetails_Course";
     public Course course;
+    private AddCourseDialog addCourseDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,8 +48,7 @@ public class CourseDetailsActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+               addCourse();
             }
         });
     }
@@ -72,5 +72,29 @@ public class CourseDetailsActivity extends AppCompatActivity {
 
         ((TextView)metadataView.findViewById(R.id.metadataTitle)).setText(title);
         ((TextView)metadataView.findViewById(R.id.metadataValue)).setText(value);
+    }
+
+    private void addCourse() {
+        addCourseDialog = new AddCourseDialog();
+        addCourseDialog.course = course;
+        addCourseDialog.delegate = this;
+        addCourseDialog.show(getSupportFragmentManager(), "AddCourseFragment");
+    }
+
+    @Override
+    public void addCourseDialogDismissed() {
+        addCourseDialog.dismiss();
+        addCourseDialog = null;
+    }
+
+    @Override
+    public void addCourseDialogAddedToSemester(Course course, int semester) {
+        RoadDocument doc = User.currentUser().getCurrentDocument();
+        if (doc != null) {
+            doc.addCourse(course, semester);
+        }
+        addCourseDialog.dismiss();
+        Snackbar.make(findViewById(R.id.content), "Added " + course.getSubjectID(), Snackbar.LENGTH_LONG).show();
+        addCourseDialog = null;
     }
 }

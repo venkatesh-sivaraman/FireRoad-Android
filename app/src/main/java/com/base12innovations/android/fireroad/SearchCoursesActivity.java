@@ -4,6 +4,7 @@ import android.app.SearchManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -23,11 +24,12 @@ import android.widget.SearchView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SearchCoursesActivity extends AppCompatActivity {
+public class SearchCoursesActivity extends AppCompatActivity implements AddCourseDialog.AddCourseDialogDelegate, SearchResultsAdapter.Delegate {
 
     private Toolbar toolbar;
     private SearchResultsAdapter listAdapter;
     private SearchView searchView;
+    private ListView listView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,11 +49,12 @@ public class SearchCoursesActivity extends AppCompatActivity {
         }
 
         // Set up list view
-        ListView list = findViewById(R.id.resultsList);
+        listView = findViewById(R.id.resultsList);
         listAdapter = new SearchResultsAdapter(this, null);
-        list.setAdapter(listAdapter);
+        listAdapter.delegate = this;
+        listView.setAdapter(listAdapter);
 
-        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 if (searchView.isFocused()) {
@@ -159,4 +162,32 @@ public class SearchCoursesActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    private AddCourseDialog addCourseDialog;
+
+    @Override
+    public void searchResultsClickedAddButton(Course selectedCourse) {
+        addCourseDialog = new AddCourseDialog();
+        addCourseDialog.course = selectedCourse;
+        addCourseDialog.delegate = this;
+        addCourseDialog.show(getSupportFragmentManager(), "AddCourseFragment");
+    }
+
+    @Override
+    public void addCourseDialogDismissed() {
+        addCourseDialog.dismiss();
+        addCourseDialog = null;
+    }
+
+    @Override
+    public void addCourseDialogAddedToSemester(Course course, int semester) {
+        RoadDocument doc = User.currentUser().getCurrentDocument();
+        if (doc != null) {
+            doc.addCourse(course, semester);
+        }
+        addCourseDialog.dismiss();
+        if (listView != null) {
+            Snackbar.make(listView, "Added " + course.getSubjectID(), Snackbar.LENGTH_LONG).show();
+        }
+        addCourseDialog = null;
+    }
 }
