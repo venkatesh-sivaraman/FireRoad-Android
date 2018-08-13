@@ -12,8 +12,7 @@
         android:id="@+id/courseDetailsLinearLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/detailsTitleView"
@@ -22,7 +21,10 @@
             android:paddingVertical="8dp"
             android:text="Signals and Systems"
             android:textSize="24sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:layout_marginTop="@dimen/course_details_padding"
+            android:layout_marginStart="@dimen/course_details_padding"
+            android:layout_marginEnd="@dimen/course_details_padding"/>
 
         <TextView
             android:id="@+id/detailsDescriptionView"
@@ -31,7 +33,9 @@
             android:paddingVertical="8dp"
             android:text="@string/large_text"
             android:textAlignment="textStart"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:layout_marginStart="@dimen/course_details_padding"
+            android:layout_marginEnd="@dimen/course_details_padding" />
 
     </LinearLayout>
 </android.support.v4.widget.NestedScrollView>

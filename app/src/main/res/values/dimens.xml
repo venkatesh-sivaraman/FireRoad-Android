@@ -5,7 +5,11 @@
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="appbar_padding_top">8dp</dimen>
     <dimen name="my_road_header_height">44dp</dimen>
+    <dimen name="course_cell_elevation">3dp</dimen>
     <dimen name="course_cell_height">84dp</dimen>
+    <dimen name="course_cell_default_width">128dp</dimen>
+    <dimen name="course_cell_spacing">6dp</dimen>
+    <dimen name="course_details_padding">16dp</dimen>
     <dimen name="app_bar_height">180dp</dimen>
     <dimen name="text_margin">16dp</dimen>
     <dimen name="filter_button_padding">24dp</dimen>

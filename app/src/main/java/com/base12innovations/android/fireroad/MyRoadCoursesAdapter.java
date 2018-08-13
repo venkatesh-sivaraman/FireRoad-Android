@@ -6,6 +6,9 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ShapeDrawable;
+import android.support.annotation.NonNull;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.Layout;
 import android.util.Log;
 import android.util.TypedValue;
@@ -19,7 +22,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class MyRoadCoursesAdapter extends BaseAdapter {
+public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdapter.ViewHolder> { //BaseAdapter {
+
+    public interface ClickListener {
+        void onClick(Course course, int position, View view);
+    }
+
+    public ClickListener itemClickListener;
 
     private RoadDocument document;
 
@@ -28,56 +37,194 @@ public class MyRoadCoursesAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
-    private final Context context;
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        // each data item is just a string in this case
+        public View cellView;
+
+        public ViewHolder(View v) {
+            super(v);
+            this.cellView = v;
+        }
+    }
+
     private int numColumns;
-    private static int SECTION_SPACING = -100;
-    private static int SECTION_END_SPACE = -200;
 
-    private int sectionHeaderIndex(int code) {
-        return -(code + 1);
+    public MyRoadCoursesAdapter(RoadDocument document, int numColumns) {
+        this.document = document;
+        this.numColumns = numColumns;
     }
 
-    private int codeForSectionHeader(int headerIndex) {
-        return -headerIndex - 1;
-    }
-
-    private int courseSemesterIndex(int code) {
-        return code / 100;
-    }
-
-    private int courseInnerIndex(int code) {
-        return code % 100;
-    }
-
-    private int codeForCourse(int semester, int position) {
-        return semester * 100 + position;
-    }
-
-    private List<Integer> cellTypes;
-
-    private void computeCellTypes(int numColumns) {
-        cellTypes = new ArrayList<>();
+    public Course courseForGridPosition(int position) {
         if (document == null) {
-            return;
+            return null;
         }
+        int cursor = position;
         for (int i = 0; i < RoadDocument.semesterNames.length; i++) {
-            List<Course> semesterCourses = document.coursesForSemester(i);
+            List<Course> semCourses = document.coursesForSemester(i);
+            if (cursor >= semCourses.size() + 1) {
+                cursor -= semCourses.size() + 1;
+            } else {
+                if (cursor == 0) {
+                    // Header
+                    return null;
+                } else {
+                    return semCourses.get(cursor - 1);
+                }
+            }
+        }
+        return null;
+    }
 
-            while (cellTypes.size() % numColumns != 0) {
-                cellTypes.add(SECTION_END_SPACE);
+    public boolean isSectionHeader(int position) {
+        if (document == null) {
+            return false;
+        }
+        int cursor = position;
+        for (int i = 0; i < RoadDocument.semesterNames.length; i++) {
+            List<Course> semCourses = document.coursesForSemester(i);
+            if (cursor >= semCourses.size() + 1) {
+                cursor -= semCourses.size() + 1;
+            } else {
+                if (cursor == 0) {
+                    // Header
+                    return true;
+                } else {
+                    return false;
+                }
             }
-            // Header
-            cellTypes.add(codeForSectionHeader(i));
-            while (cellTypes.size() % numColumns != 0) {
-                cellTypes.add(SECTION_SPACING);
-            }
+        }
+        return false;
+    }
 
-            // Rest of cells
-            for (int j = 0; j < semesterCourses.size(); j++) {
-                cellTypes.add(codeForCourse(i, j));
+    public int semesterForGridPosition(int position) {
+        if (document == null) {
+            return 0;
+        }
+        int cursor = position;
+        for (int i = 0; i < RoadDocument.semesterNames.length; i++) {
+            List<Course> semCourses = document.coursesForSemester(i);
+            if (cursor >= semCourses.size() + 1) {
+                cursor -= semCourses.size() + 1;
+            } else {
+                return i;
             }
+        }
+        return 0;
+    }
+
+    public int semesterPositionForGridPosition(int position) {
+        if (document == null) {
+            return 0;
+        }
+        int cursor = position;
+        for (int i = 0; i < RoadDocument.semesterNames.length; i++) {
+            List<Course> semCourses = document.coursesForSemester(i);
+            if (cursor >= semCourses.size() + 1) {
+                cursor -= semCourses.size() + 1;
+            } else {
+                return cursor - 1;
+            }
+        }
+        return 0;
+    }
+
+    public GridLayoutManager.SpanSizeLookup spanSizeLookup() {
+        return new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int i) {
+                if (isSectionHeader(i)) {
+                    return numColumns;
+                } else {
+                    return 1;
+                }
+            }
+        };
+    }
+
+    public boolean moveCourse(int originalPos, int finalPos) {
+        if (document != null) {
+            int startSem = semesterForGridPosition(originalPos);
+            int startPos = semesterPositionForGridPosition(originalPos);
+            int endSem = semesterForGridPosition(finalPos);
+            int endPos = semesterPositionForGridPosition(finalPos);
+            if (endPos == -1) {
+                // Hovering over a header
+                endSem -= 1;
+                if (endSem < 0) {
+                    return false;
+                }
+                // Move to last index in the previous semester
+                endPos = document.coursesForSemester(endSem).size();
+                if (endSem == startSem) {
+                    // First index in next semester
+                    endSem += 1;
+                    endPos = 0;
+                }
+            }
+            document.moveCourse(startSem, startPos, endSem, endPos);
+            notifyItemMoved(originalPos, finalPos);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return isSectionHeader(position) ? 1 : 0;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+        if (i == 1) {   // Header
+            final LayoutInflater layoutInflater = LayoutInflater.from(viewGroup.getContext());
+            View convertView = layoutInflater.inflate(R.layout.header_myroad, null);
+            ViewHolder vh = new ViewHolder(convertView);
+            return vh;
+        } else {    // Normal cell
+            final LayoutInflater layoutInflater = LayoutInflater.from(viewGroup.getContext());
+            View convertView = layoutInflater.inflate(R.layout.linearlayout_course, null);
+            ViewHolder vh = new ViewHolder(convertView);
+            return vh;
         }
     }
+
+    @Override
+    public void onBindViewHolder(@NonNull final ViewHolder viewHolder, int position) {
+        final View view = viewHolder.cellView;
+        if (isSectionHeader(position)) {
+            final TextView textView = (TextView)view.findViewById(R.id.headerTextView);
+            textView.setText(RoadDocument.semesterNames[semesterForGridPosition(position)]);
+        } else {
+            final Course course = courseForGridPosition(position);
+            ((GradientDrawable)view.getBackground()).setColor(ColorManager.colorForCourse(course));
+
+            final TextView idTextView = (TextView)view.findViewById(R.id.subjectIDLabel);
+            final TextView titleTextView = (TextView)view.findViewById(R.id.subjectTitleLabel);
+            idTextView.setText(course.getSubjectID());
+            titleTextView.setText(course.subjectTitle);
+
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (itemClickListener != null) {
+                        int newPos = viewHolder.getAdapterPosition();
+                        itemClickListener.onClick(course, newPos, view);
+                    }
+                }
+            });
+        }
+    }
+
+    @Override
+    public int getItemCount() {
+        if (document == null) {
+            return 0;
+        }
+        return document.getAllCourses().size() + RoadDocument.semesterNames.length;
+    }
+
+    /*private final Context context;
 
     public MyRoadCoursesAdapter(Context context, RoadDocument document, int numColumns) {
         this.document = document;
@@ -189,14 +336,5 @@ public class MyRoadCoursesAdapter extends BaseAdapter {
         return convertView;
     }
 
-    public Course courseForGridPosition(int position) {
-        int cellType = cellTypes.get(position);
-        final Course course = document.coursesForSemester(courseSemesterIndex(cellType)).get(courseInnerIndex(cellType));
-        return course;
-    }
-
-    public int semesterForGridPosition(int position) {
-        int cellType = cellTypes.get(position);
-        return courseSemesterIndex(cellType);
-    }
+    */
 }

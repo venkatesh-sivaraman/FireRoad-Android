@@ -8,6 +8,8 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -117,8 +119,8 @@ public class RoadDocument extends Document {
                 for (Course course : semCourses) {
                     JSONObject courseObj = new JSONObject();
                     courseObj.put(RoadJSON.subjectID, course.getSubjectID());
-                    courseObj.put(RoadJSON.subjectTitle, course.getSubjectTitle());
-                    courseObj.put(RoadJSON.units, course.getTotalUnits());
+                    courseObj.put(RoadJSON.subjectTitle, course.subjectTitle);
+                    courseObj.put(RoadJSON.units, course.totalUnits);
                     courseObj.put(RoadJSON.semester, semesterIndex);
                     if (overrides.containsKey(course)) {
                         courseObj.put(RoadJSON.overrideWarnings, overrides.get(course));
@@ -177,5 +179,23 @@ public class RoadDocument extends Document {
         boolean ret = courses.get(semester).remove(course);
         save();
         return ret;
+    }
+
+    public void moveCourse(int startSemester, int startPos, int endSemester, int endPos) {
+        if (!courses.containsKey(startSemester)) {
+            return;
+        }
+        List<Course> semCourses = courses.get(startSemester);
+        Course course = semCourses.get(startPos);
+        semCourses.remove(startPos);
+        if (startSemester == endSemester) {
+            semCourses.add(endPos, course);
+        } else {
+            if (!courses.containsKey(endSemester)) {
+                courses.put(endSemester, new ArrayList<Course>());
+            }
+            courses.get(endSemester).add(endPos, course);
+        }
+        save();
     }
 }

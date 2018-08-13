@@ -1,12 +1,17 @@
 package com.base12innovations.android.fireroad;
 
 import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.Index;
 import android.arch.persistence.room.PrimaryKey;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
+import android.text.TextUtils;
+import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 @Entity(indices = {@Index(value = {"subjectID"},
@@ -17,9 +22,144 @@ public class Course implements Parcelable {
     public int uid;
 
     private String subjectID;
-    private String subjectTitle = "";
-    private String subjectDescription = "";
-    private int totalUnits = 0;
+    public String subjectTitle = "";
+    public String subjectDescription = "";
+    public int totalUnits = 0;
+
+    public String getSubjectID() { return subjectID; }
+    public void setSubjectID(String subjectID) { this.subjectID = subjectID; }
+
+    public String subjectLevel = "";
+
+    public String subjectCode() {
+        if (subjectID.contains(".")) {
+            return subjectID.substring(0, subjectID.indexOf("."));
+        }
+        return subjectID;
+    }
+
+    private String equivalentSubjects = "";
+    public String getEquivalentSubjects() { return equivalentSubjects; }
+    public List<String> getEquivalentSubjectsList() { return nonemptyComponents(equivalentSubjects); }
+    public void setEquivalentSubjects(String newValue) { this.equivalentSubjects = newValue; }
+
+    private String jointSubjects = "";
+    public String getJointSubjects() { return jointSubjects; }
+    public List<String> getJointSubjectsList() { return nonemptyComponents(jointSubjects); }
+    public void setJointSubjects(String newValue) { this.jointSubjects = newValue; }
+
+    private String meetsWithSubjects = "";
+    public String getMeetsWithSubjects() { return meetsWithSubjects; }
+    public List<String> getMeetsWithSubjectsList() { return nonemptyComponents(meetsWithSubjects); }
+    public void setMeetsWithSubjects(String newValue) { this.meetsWithSubjects = newValue; }
+
+    private List<String> nonemptyComponents(String contents) {
+        List<String> result = new ArrayList<>();
+        String[] comps = contents.split(",");
+        for (int i = 0; i < comps.length; i++) {
+            if (comps[i].trim().length() > 0) {
+                result.add(comps[i].trim());
+            }
+        }
+        return result;
+    }
+
+    private boolean eitherPrereqOrCoreq = false;
+    public boolean getEitherPrereqOrCoreq() { return eitherPrereqOrCoreq; }
+    public void setEitherPrereqOrCoreq(boolean newValue) { eitherPrereqOrCoreq = newValue; }
+
+    public String gradeRule = "";
+    public String gradeType = "";
+
+    private String instructors = "";
+    public String getInstructors() { return instructors; }
+    public String[] getInstructorsList() { return instructors.split(","); }
+    public void setInstructors(String newValue) { this.instructors = newValue; }
+
+    public boolean isOfferedFall = false;
+    public boolean isOfferedIAP = false;
+    public boolean isOfferedSpring = false;
+    public boolean isOfferedSummer = false;
+    private boolean offeredThisYear = false;
+    public boolean isOfferedThisYear() { return offeredThisYear; }
+    public void setOfferedThisYear(boolean newValue) {
+        offeredThisYear = newValue;
+        updateOfferingPattern();
+    }
+    private String notOfferedYear = "";
+    public String getNotOfferedYear() { return notOfferedYear; }
+    public void setNotOfferedYear(String newValue) {
+        this.notOfferedYear = newValue;
+        updateOfferingPattern();
+    }
+
+    public enum OfferingPattern {
+        EveryYear, AlternateYears, Never
+    }
+    @Ignore
+    public OfferingPattern offeringPattern = OfferingPattern.EveryYear;
+
+    private void updateOfferingPattern() {
+        if (notOfferedYear != null && notOfferedYear.length() > 0) {
+            offeringPattern = OfferingPattern.EveryYear;
+        } else {
+            offeringPattern = isOfferedThisYear() ? OfferingPattern.EveryYear : OfferingPattern.Never;
+        }
+    }
+
+    public boolean variableUnits = false;
+    public int labUnits = 0;
+    public int lectureUnits = 0;
+    public int designUnits = 0;
+    public int preparationUnits = 0;
+
+    public boolean hasFinal = false;
+    public boolean pdfOption = false;
+
+    public String url = "";
+    private String quarterInformation = "";
+
+    enum QuarterOffered {
+        WholeSemester, EndOnly, BeginningOnly
+    }
+    @Ignore
+    public QuarterOffered quarterOffered;
+    @Ignore
+    public String quarterBoundaryDate;
+
+    public String getQuarterInformation() { return quarterInformation; }
+    public void setQuarterInformation(String newValue) {
+        quarterInformation = newValue;
+        String[] comps = quarterInformation.split(",");
+        if (comps.length == 2) {
+            if (comps[0] == "0") {
+                quarterOffered = QuarterOffered.BeginningOnly;
+            } else if (comps[0] == "1") {
+                quarterOffered = QuarterOffered.EndOnly;
+            } else {
+                quarterOffered = QuarterOffered.WholeSemester;
+            }
+            quarterBoundaryDate = comps[1];
+        } else {
+            quarterOffered = QuarterOffered.WholeSemester;
+            quarterBoundaryDate = null;
+        }
+    }
+
+    public int enrollmentNumber = 0;
+    public double rating = 0.0;
+    public double inClassHours = 0.0;
+    public double outOfClassHours = 0.0;
+
+    //var girAttribute: GIRAttribute?
+    //var communicationRequirement: CommunicationAttribute?
+    //var hassAttribute: HASSAttribute?
+
+    // Supplemental attributes
+    //var relatedSubjects: [(String, Float)] = []
+
+    //var schedule: [String: [[CourseScheduleItem]]]?
+
 
     /*public Course(String subjectID) {
         this.subjectID = subjectID;
@@ -30,38 +170,6 @@ public class Course implements Parcelable {
         this.subjectTitle = subjectTitle;
     }*/
     public Course() {}
-
-    public String getSubjectID() {
-        return subjectID;
-    }
-
-    public void setSubjectID(String subjectID) {
-        this.subjectID = subjectID;
-    }
-
-    public String getSubjectTitle() {
-        return subjectTitle;
-    }
-
-    public void setSubjectTitle(String subjectTitle) {
-        this.subjectTitle = subjectTitle;
-    }
-
-    public String getSubjectDescription() {
-        return subjectDescription;
-    }
-
-    public void setSubjectDescription(String subjectDescription) {
-        this.subjectDescription = subjectDescription;
-    }
-
-    public int getTotalUnits() {
-        return totalUnits;
-    }
-
-    public void setTotalUnits(int totalUnits) {
-        this.totalUnits = totalUnits;
-    }
 
     // 99.9% of the time you can just ignore this
     @Override
@@ -99,7 +207,7 @@ public class Course implements Parcelable {
 
     @Override
     public String toString() {
-        return String.format(Locale.US, "<Course %s: %s>", getSubjectID(), getSubjectTitle());
+        return String.format(Locale.US, "<Course %s: %s>", getSubjectID(), subjectTitle);
     }
 
     @Override
@@ -109,5 +217,12 @@ public class Course implements Parcelable {
         }
         Course other = (Course)obj;
         return other.getSubjectID().equals(getSubjectID());
+    }
+
+    public boolean parseBoolean(String value) {
+        if (value.contentEquals("Y") || value.toLowerCase().contentEquals("true")) {
+            return true;
+        }
+        return false;
     }
 }

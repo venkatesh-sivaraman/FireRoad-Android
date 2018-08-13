@@ -72,7 +72,7 @@ public class SearchResultsAdapter extends BaseAdapter {
         }
         final Course course = (Course)getItem(i);
         ((TextView)view.findViewById(R.id.subjectIDLabel)).setText(course.getSubjectID());
-        ((TextView)view.findViewById(R.id.subjectTitleLabel)).setText(course.getSubjectTitle());
+        ((TextView)view.findViewById(R.id.subjectTitleLabel)).setText(course.subjectTitle);
         view.findViewById(R.id.colorCodingView).setBackgroundColor(ColorManager.colorForCourse(course, 0xFF));
         ImageButton addButton = view.findViewById(R.id.addButton);
         addButton.setOnClickListener(new View.OnClickListener() {

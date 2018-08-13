@@ -30,10 +30,18 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class CourseManager {
 
@@ -46,6 +54,9 @@ public class CourseManager {
     private static String prefsDatabaseSemesterKey = "databaseSemesterKey";
     private RequestQueue requestQueue;
     private static int JSON_ERROR = 1001;
+
+    // During debugging, use to force a database update
+    private boolean forceUpdate = false;
 
     // Stored until a successful database update
     private String newSemester;
@@ -107,9 +118,24 @@ public class CourseManager {
                                     listener.needsFullLoad();
                                     courseDatabase.daoAccess().clearCourses();
                                     loadingProgress = 0.0f;
+
+                                    ExecutorService exec = Executors.newFixedThreadPool(3);
                                     for (int i = 0; i < urls.size(); i++) {
-                                        loadCoursesFromURL(urls.get(i));
-                                        loadingProgress += 1.0f / (float) urls.size();
+                                        final int index = i;
+                                        exec.execute(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                loadingProgress += 1.0f / (float) urls.size();
+                                                loadCoursesFromURL(urls.get(index));
+                                            }
+                                        });
+                                    }
+                                    exec.shutdown();
+                                    try {
+                                        exec.awaitTermination(15, TimeUnit.MINUTES);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                        Log.e("CourseManagerUpdate", e.getMessage());
                                     }
                                 }
 
@@ -278,7 +304,7 @@ public class CourseManager {
                 determineDatabaseVersion(semester.replace("-", ","), new JSONRequestCompletion<List<String>>() {
                     @Override
                     public void completed(List<String> response) {
-                        int currentDBVersion = dbPreferences.getInt(prefsDatabaseVersionKey, 0);
+                        int currentDBVersion = forceUpdate ? 0 : dbPreferences.getInt(prefsDatabaseVersionKey, 0);
                         if (newDatabaseVersion != currentDBVersion) {
                             List<URL> urls = new ArrayList<>();
                             for (String path : response) {
@@ -304,8 +330,9 @@ public class CourseManager {
 
             @Override
             public void error(int statusCode) {
-                Log.e("CourseManager", String.format(Locale.US, "Error %d determining semester", statusCode));
-                completion.error(statusCode);
+                completion.completed(new ArrayList<URL>());
+                //Log.e("CourseManager", String.format(Locale.US, "Error %d determining semester", statusCode));
+                //completion.error(statusCode);
             }
         });
     }
@@ -328,14 +355,119 @@ public class CourseManager {
                     course.setSubjectID(component);
                     break;
                 case "Subject Title":
-                    course.setSubjectTitle(component);
+                    course.subjectTitle = component;
                     break;
                 case "Subject Description":
-                    course.setSubjectDescription(component);
+                    course.subjectDescription = component;
                     break;
                 case "Total Units":
-                    course.setTotalUnits(Integer.parseInt(component));
+                    course.totalUnits = Integer.parseInt(component);
                     break;
+                case "Subject Level":
+                    course.subjectLevel = component;
+                    break;
+                case "Equivalent Subjects":
+                    course.setEquivalentSubjects(component.replace(" ", ""));
+                    break;
+                case "Joint Subjects":
+                    course.setJointSubjects(component.replace(" ", ""));
+                    break;
+                case "Meets With Subjects":
+                    course.setMeetsWithSubjects(component.replace(" ", ""));
+                    break;
+                /*case "Prerequisites":
+                    course.prerequisites = component;
+                    break;
+                case "Corequisites":
+                    course.corequisites = component;
+                    break;
+                case "Gir Attribute":
+                    course.girAttribute = component;
+                    break;
+                case "Comm Req Attribute":
+                    course.communicationRequirement = component;
+                    break;
+                case "Hass Attribute":
+                    course.hassAttribute = component;
+                    break;*/
+                case "Grade Rule":
+                    course.gradeRule = component;
+                    break;
+                case "Grade Type":
+                    course.gradeType = component;
+                    break;
+                case "Instructors":
+                    course.setInstructors(component.replace("\\n", "\n"));
+                    break;
+                case "Is Offered Fall Term":
+                    course.isOfferedFall = course.parseBoolean(component);
+                    break;
+                case "Is Offered Iap":
+                    course.isOfferedIAP = course.parseBoolean(component);
+                    break;
+                case "Is Offered Spring Term":
+                    course.isOfferedSpring = course.parseBoolean(component);
+                    break;
+                case "Is Offered Summer Term":
+                    course.isOfferedSummer = course.parseBoolean(component);
+                    break;
+                case "Is Offered This Year":
+                    course.setOfferedThisYear(course.parseBoolean(component));
+                    break;
+                case "Is Variable Units":
+                    course.variableUnits = course.parseBoolean(component);
+                    break;
+                case "Lab Units":
+                    course.labUnits = Integer.parseInt(component);
+                    break;
+                case "Lecture Units":
+                    course.lectureUnits = Integer.parseInt(component);
+                    break;
+                case "Design Units":
+                    course.designUnits = Integer.parseInt(component);
+                    break;
+                case "Preparation Units":
+                    course.preparationUnits = Integer.parseInt(component);
+                    break;
+                case "PDF Option":
+                    course.pdfOption = course.parseBoolean(component);
+                    break;
+                case "Has Final":
+                    course.hasFinal = course.parseBoolean(component);
+                    break;
+                case "Not Offered Year":
+                    course.setNotOfferedYear(component);
+                    break;
+                case "Quarter Information":
+                    course.setQuarterInformation(component);
+                    break;
+                case "Enrollment Number":
+                case "Enrollment":
+                    course.enrollmentNumber = (int)Math.round(Double.parseDouble(component));
+                    break;
+                /*case "Related Subjects":
+                    course.relatedSubjects = component;
+                    break;
+                case "Schedule":
+                    course.schedule = component;
+                    break;*/
+                case "URL":
+                    course.url = component;
+                    break;
+                case "Rating":
+                    course.rating = Double.parseDouble(component);
+                    break;
+                case "In-Class Hours":
+                    course.inClassHours = Double.parseDouble(component);
+                    break;
+                case "Out-of-Class Hours":
+                    course.outOfClassHours = Double.parseDouble(component);
+                    break;
+                case "Prereq or Coreq":
+                    course.setEitherPrereqOrCoreq(course.parseBoolean(component));
+                    break;
+
+
                 default:
                     break;
             }
@@ -347,8 +479,8 @@ public class CourseManager {
         Log.d("CourseManager", "Reading from " + urlToRead.toString());
         String path = urlToRead.getPath();
         String fileName = path.substring(path.lastIndexOf('/') + 1);
-        if (fileName == "courses.txt" || fileName == "features.txt" || fileName == "enrollment.txt"
-                || fileName.contains("condensed") || fileName == "related.txt") {
+        if (fileName.equals("courses.txt") || fileName.equals("features.txt") || fileName.equals("enrollment.txt")
+                || fileName.contains("condensed") || fileName.equals("related.txt")) {
             return;
         }
         try {

@@ -3,10 +3,15 @@ package com.base12innovations.android.fireroad;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
@@ -43,6 +48,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
 
     private Course currentlySelectedCourse;
     private int currentlySelectedSemester;
+    private int currentlySelectedPosition;
 
     private OnFragmentInteractionListener mListener;
 
@@ -81,8 +87,9 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         loadingIndicator.setVisibility(ProgressBar.VISIBLE);
 
         // Set up grid view
-        GridView grid = layout.findViewById(R.id.gridView);
-        gridAdapter = new MyRoadCoursesAdapter(getActivity(), null, 3);
+
+        gridAdapter = new MyRoadCoursesAdapter(null, 3);
+        /*GridView grid = layout.findViewById(R.id.gridView);
         grid.setAdapter(gridAdapter);
         grid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -95,7 +102,57 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 menu.setOnMenuItemClickListener(MyRoadFragment.this);
                 menu.show();
             }
-        });
+        });*/
+        RecyclerView recyclerView = layout.findViewById(R.id.coursesRecyclerView);
+        GridLayoutManager layoutManager = new GridLayoutManager(getActivity(), 3);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setAdapter(gridAdapter);
+        int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.course_cell_spacing);
+        recyclerView.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
+        gridAdapter.itemClickListener = new MyRoadCoursesAdapter.ClickListener() {
+            @Override
+            public void onClick(Course course, int position, View view) {
+                currentlySelectedCourse = course;
+                currentlySelectedSemester = gridAdapter.semesterForGridPosition(position);
+                currentlySelectedPosition = position;
+                PopupMenu menu = new PopupMenu(getActivity(), view);
+                MenuInflater mInflater = menu.getMenuInflater();
+                mInflater.inflate(R.menu.menu_course_cell, menu.getMenu());
+                menu.setOnMenuItemClickListener(MyRoadFragment.this);
+                menu.show();
+            }
+        };
+
+        // Support drag and drop to move courses
+        ItemTouchHelper.Callback _ithCallback = new ItemTouchHelper.Callback() {
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                // get the viewHolder's and target's positions in your adapter data, swap them
+                return gridAdapter.moveCourse(viewHolder.getAdapterPosition(), target.getAdapterPosition());
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) { }
+
+            //defines the enabled move directions in each state (idle, swiping, dragging).
+            @Override
+            public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+                if (gridAdapter.isSectionHeader(viewHolder.getAdapterPosition())) {
+                    return 0;
+                }
+                return makeFlag(ItemTouchHelper.ACTION_STATE_DRAG,
+                        ItemTouchHelper.DOWN | ItemTouchHelper.UP | ItemTouchHelper.START | ItemTouchHelper.END);
+            }
+
+            @Override
+            public boolean isItemViewSwipeEnabled() {
+                return false;
+            }
+        };
+        // Create an `ItemTouchHelper` and attach it to the `RecyclerView`
+        ItemTouchHelper ith = new ItemTouchHelper(_ithCallback);
+        ith.attachToRecyclerView(recyclerView);
+
+        layoutManager.setSpanSizeLookup(gridAdapter.spanSizeLookup());
 
         User.currentUser().addRoadChangedListener(new User.RoadChangedListener() {
             @Override
@@ -214,7 +271,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                     @Override
                     public void run() {
                         User.currentUser().getCurrentDocument().removeCourse(currentlySelectedCourse, currentlySelectedSemester);
-                        gridAdapter.notifyDataSetChanged();
+                        gridAdapter.notifyItemRemoved(currentlySelectedPosition);
                     }
                 }, 400);
                 return true;
@@ -222,6 +279,25 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 return false;
             default:
                 return false;
+        }
+    }
+
+    /// Grid View Layout
+
+    public class SpacesItemDecoration extends RecyclerView.ItemDecoration {
+        private int space;
+
+        public SpacesItemDecoration(int space) {
+            this.space = space;
+        }
+
+        @Override
+        public void getItemOffsets(Rect outRect, View view,
+                                   RecyclerView parent, RecyclerView.State state) {
+            outRect.left = space;
+            outRect.right = space;
+            outRect.bottom = space;
+            outRect.top = space;
         }
     }
 }
