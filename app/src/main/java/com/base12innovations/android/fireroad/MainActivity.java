@@ -1,53 +1,44 @@
 package com.base12innovations.android.fireroad;
 
-import android.app.SearchManager;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
-import android.os.Parcel;
+import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.NavigationView;
-import android.support.design.widget.TabLayout;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.view.ViewPager;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.ImageView;
-import android.widget.SearchView;
 import android.widget.TextView;
 
 import com.arlib.floatingsearchview.FloatingSearchView;
 import com.arlib.floatingsearchview.suggestions.SearchSuggestionsAdapter;
 import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
+import com.base12innovations.android.fireroad.models.Course;
+import com.base12innovations.android.fireroad.models.CourseManager;
+import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
 
-public class MainActivity extends AppCompatActivity implements MyRoadFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate {
+public class MainActivity extends AppCompatActivity implements MyRoadFragment.OnFragmentInteractionListener, RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate {
+
+    private static String CURRENT_VISIBLE_FRAGMENT = "MainActivity.currentVisibleFragment";
+    private int currentVisibleFragment = 0;
 
     private DrawerLayout mDrawer;
     private Toolbar toolbar;
@@ -91,12 +82,17 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
 
         mDrawer = (DrawerLayout) findViewById(R.id.main_content);
         navDrawer = (NavigationView)findViewById(R.id.nav_view);
-        setupDrawerContent(navDrawer);
         setupSearchView();
         setupBottomSheet();
         hideBottomSheet();
 
-        showContentFragment(getMyRoadFragment());
+        if (savedInstanceState != null && savedInstanceState.getInt(CURRENT_VISIBLE_FRAGMENT) != 0) {
+            int visibleFragment = savedInstanceState.getInt(CURRENT_VISIBLE_FRAGMENT);
+            showContentFragment(visibleFragment);
+        } else {
+            showContentFragment(getMyRoadFragment());
+        }
+        setupDrawerContent(navDrawer);
 
         if (!CourseManager.sharedInstance().isLoaded()) {
             CourseManager.sharedInstance().initializeDatabase(this);
@@ -126,6 +122,12 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         }
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
+        super.onSaveInstanceState(outState, outPersistentState);
+        outState.putInt(CURRENT_VISIBLE_FRAGMENT, currentVisibleFragment);
+    }
+
     private void setupDrawerContent(NavigationView navigationView) {
         navigationView.setNavigationItemSelectedListener(
                 new NavigationView.OnNavigationItemSelectedListener() {
@@ -135,12 +137,23 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
                         return true;
                     }
                 });
+        navigationView.setCheckedItem(currentVisibleFragment == 0 ? R.id.my_road_menu_item : currentVisibleFragment);
     }
 
     public void selectDrawerItem(MenuItem menuItem) {
         // Create a new fragment and specify the fragment to show based on nav item clicked
+        showContentFragment(menuItem.getItemId());
+        // Highlight the selected item has been done by NavigationView
+        menuItem.setChecked(true);
+        // Set action bar title
+        setTitle(menuItem.getTitle());
+        // Close the navigation drawer
+        mDrawer.closeDrawers();
+    }
+
+    private void showContentFragment(int id) {
         Fragment fragment = null;
-        switch(menuItem.getItemId()) {
+        switch(id) {
             /*case R.id.browse_menu_item:
                 fragmentClass = FirstFragment.class;
                 break;
@@ -150,18 +163,16 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
             case R.id.nav_third_fragment:
                 fragmentClass = ThirdFragment.class;
                 break;*/
+            case R.id.requirements_menu_item:
+                fragment = RequirementsFragment.newInstance();
+                break;
             default:
                 fragment = getMyRoadFragment();
+                break;
         }
 
         showContentFragment(fragment);
 
-        // Highlight the selected item has been done by NavigationView
-        menuItem.setChecked(true);
-        // Set action bar title
-        setTitle(menuItem.getTitle());
-        // Close the navigation drawer
-        mDrawer.closeDrawers();
     }
 
     private void showContentFragment(Fragment fragment) {
@@ -505,7 +516,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
     }
 
     @Override
-    public void navFragmentWantsCourseDetails(BottomSheetNavFragment fragment, Course course) {
+    public void courseNavigatorWantsCourseDetails(Fragment source, Course course) {
         onShowCourseDetails(course);
     }
 
@@ -523,7 +534,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
     }
 
     @Override
-    public void navFragmentAddedCourse(BottomSheetNavFragment fragment, Course course, int semester) {
+    public void courseNavigatorAddedCourse(Fragment source, Course course, int semester) {
         getMyRoadFragment().roadAddedCourse(course, semester);
         collapseBottomSheet();
     }
@@ -555,4 +566,6 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         fragment.delegate = new WeakReference<BottomSheetNavFragment.Delegate>(this);
         presentBottomSheet(fragment);
     }
+
+    // Requirements
 }

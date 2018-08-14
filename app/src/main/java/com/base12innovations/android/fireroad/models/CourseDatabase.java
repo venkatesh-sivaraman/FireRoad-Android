@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.models;
 
 import android.arch.persistence.room.Database;
 import android.arch.persistence.room.RoomDatabase;

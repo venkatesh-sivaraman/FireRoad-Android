@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.models;
 
 import java.util.ArrayList;
 import java.util.List;

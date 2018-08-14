@@ -1,9 +1,10 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.models;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
-import android.util.Log;
+
+import com.base12innovations.android.fireroad.TaskDispatcher;
 
 import java.util.ArrayList;
 import java.util.Collections;

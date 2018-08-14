@@ -18,6 +18,12 @@ import android.view.animation.ScaleAnimation;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.base12innovations.android.fireroad.models.ColorManager;
+import com.base12innovations.android.fireroad.models.Course;
+import com.base12innovations.android.fireroad.models.CourseManager;
+import com.base12innovations.android.fireroad.models.RoadDocument;
+import com.base12innovations.android.fireroad.models.User;
+
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +31,7 @@ import java.util.Locale;
 
 public class CourseDetailsFragment extends Fragment implements BottomSheetNavFragment, AddCourseDialog.AddCourseDialogDelegate {
 
-    public static String COURSE_EXTRA = "CourseDetails_Course";
+    public static String SUBJECT_ID_EXTRA = "CourseDetails_SubjectID";
     public Course course;
     private AddCourseDialog addCourseDialog;
     private View mContentView;
@@ -41,6 +47,9 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
     public static CourseDetailsFragment newInstance(Course course) {
         CourseDetailsFragment fragment = new CourseDetailsFragment();
         fragment.course = course;
+        Bundle args = new Bundle();
+        args.putString(SUBJECT_ID_EXTRA, course.getSubjectID());
+        fragment.setArguments(args);
         return fragment;
     }
 
@@ -53,40 +62,28 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
         if (course != null) {
             setupContentView(mContentView);
+            setupToolbar();
+        } else {
+            final String subjectID = getArguments().getString(SUBJECT_ID_EXTRA);
 
-            Toolbar toolbar = (Toolbar) layout.findViewById(R.id.toolbar);
-            toolbar.setClickable(true);
-            toolbar.setOnClickListener(new View.OnClickListener() {
+            TaskDispatcher.perform(new TaskDispatcher.Task<Course>() {
                 @Override
-                public void onClick(View view) {
-                    if (delegate.get() != null) {
-                        delegate.get().navFragmentClickedToolbar(CourseDetailsFragment.this);
+                public Course perform() {
+                    if (subjectID != null)
+                        return CourseManager.sharedInstance().getSubjectByID(subjectID);
+                    return null;
+                }
+            }, new TaskDispatcher.CompletionBlock<Course>() {
+                @Override
+                public void completed(Course arg) {
+                    course = arg;
+                    if (course != null) {
+                        setupContentView(mContentView);
+                        setupToolbar();
                     }
                 }
             });
-            if (canGoBack) {
-                toolbar.setNavigationIcon(R.drawable.back_icon);
-                toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (delegate.get() != null) {
-                            delegate.get().navFragmentWantsBack(CourseDetailsFragment.this);
-                        }
-                    }
-                });
-            }
-            toolbar.setTitle(course.getSubjectID());
-            int barColor = ColorManager.colorForCourse(course, 0xFF);
-            toolbar.setBackgroundColor(barColor);
-        } else {
-            Log.d("CourseDetailsFragment", "Subject ID is null");
         }
-
-        //setContentView(R.layout.fragment_course_details);
-        //setupContentView(mContentView);
-
-        //setSupportActionBar(toolbar);
-        //getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         fab = (FloatingActionButton) layout.findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -122,6 +119,33 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
     public void scaleFAB(float newValue) {
         scaleFAB(newValue, false);
+    }
+
+    private void setupToolbar() {
+        Toolbar toolbar = (Toolbar) mContentView.findViewById(R.id.toolbar);
+        toolbar.setClickable(true);
+        toolbar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (delegate.get() != null) {
+                    delegate.get().navFragmentClickedToolbar(CourseDetailsFragment.this);
+                }
+            }
+        });
+        if (canGoBack) {
+            toolbar.setNavigationIcon(R.drawable.back_icon);
+            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (delegate.get() != null) {
+                        delegate.get().navFragmentWantsBack(CourseDetailsFragment.this);
+                    }
+                }
+            });
+        }
+        toolbar.setTitle(course.getSubjectID());
+        int barColor = ColorManager.colorForCourse(course, 0xFF);
+        toolbar.setBackgroundColor(barColor);
     }
 
     private void setupContentView(View contentView) {
@@ -296,7 +320,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         if (doc != null) {
             boolean worked = doc.addCourse(course, semester);
             if (worked && delegate.get() != null)
-                delegate.get().navFragmentAddedCourse(this, course, semester);
+                delegate.get().courseNavigatorAddedCourse(this, course, semester);
         }
         addCourseDialog.dismiss();
         Snackbar.make(mContentView, "Added " + course.getSubjectID(), Snackbar.LENGTH_LONG).show();
@@ -305,7 +329,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
     public void showCourseDetails(Course course) {
         if (delegate.get() != null) {
-            delegate.get().navFragmentWantsCourseDetails(this, course);
+            delegate.get().courseNavigatorWantsCourseDetails(this, course);
         }
     }
 }

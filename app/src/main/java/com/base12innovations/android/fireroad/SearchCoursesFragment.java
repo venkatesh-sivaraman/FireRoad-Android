@@ -14,6 +14,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
+import com.base12innovations.android.fireroad.models.Course;
+import com.base12innovations.android.fireroad.models.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.RoadDocument;
+import com.base12innovations.android.fireroad.models.User;
+
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
@@ -145,7 +150,7 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
     @Override
     public void searchResultsClickedCourse(Course selectedCourse) {
         if (delegate.get() != null) {
-            delegate.get().navFragmentWantsCourseDetails(SearchCoursesFragment.this, selectedCourse);
+            delegate.get().courseNavigatorWantsCourseDetails(SearchCoursesFragment.this, selectedCourse);
         }
     }
 
@@ -161,7 +166,7 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
         if (doc != null) {
             boolean worked = doc.addCourse(course, semester);
             if (worked && delegate.get() != null) {
-                delegate.get().navFragmentAddedCourse(this, course, semester);
+                delegate.get().courseNavigatorAddedCourse(this, course, semester);
             }
         }
         addCourseDialog.dismiss();

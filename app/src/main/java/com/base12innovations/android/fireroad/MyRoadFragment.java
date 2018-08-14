@@ -2,9 +2,7 @@ package com.base12innovations.android.fireroad;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Rect;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -19,6 +17,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
+
+import com.base12innovations.android.fireroad.models.Course;
+import com.base12innovations.android.fireroad.models.CourseManager;
+import com.base12innovations.android.fireroad.models.RoadDocument;
+import com.base12innovations.android.fireroad.models.User;
 
 import java.io.File;
 import java.util.concurrent.Callable;
