@@ -12,23 +12,15 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.GridView;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
-import android.widget.Spinner;
-import android.widget.TextView;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.Callable;
 
 
@@ -49,6 +41,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     private Course currentlySelectedCourse;
     private int currentlySelectedSemester;
     private int currentlySelectedPosition;
+    private RecyclerView recyclerView;
 
     private OnFragmentInteractionListener mListener;
 
@@ -103,13 +96,19 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 menu.show();
             }
         });*/
-        RecyclerView recyclerView = layout.findViewById(R.id.coursesRecyclerView);
+        recyclerView = layout.findViewById(R.id.coursesRecyclerView);
         GridLayoutManager layoutManager = new GridLayoutManager(getActivity(), 3);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(gridAdapter);
         int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.course_cell_spacing);
         recyclerView.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
         gridAdapter.itemClickListener = new MyRoadCoursesAdapter.ClickListener() {
+            @Override
+            public void onClick(Course course, int position, View view) {
+                showCourseDetails(course);
+            }
+        };
+        gridAdapter.itemLongClickListener = new MyRoadCoursesAdapter.ClickListener() {
             @Override
             public void onClick(Course course, int position, View view) {
                 currentlySelectedCourse = course;
@@ -122,6 +121,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 menu.show();
             }
         };
+
 
         // Support drag and drop to move courses
         ItemTouchHelper.Callback _ithCallback = new ItemTouchHelper.Callback() {
@@ -214,10 +214,13 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
 
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
+    public void roadAddedCourse(Course course, int semester) {
+        if (gridAdapter != null) {
+            int position = gridAdapter.lastPositionForSemester(semester);
+            gridAdapter.notifyItemInserted(position);
+            if (recyclerView != null) {
+                recyclerView.scrollToPosition(position);
+            }
         }
     }
 
@@ -250,13 +253,16 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
      */
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
+        void onShowCourseDetails(Course course);
     }
 
     public void showCourseDetails(Course course) {
-        Intent intent = new Intent(getActivity(), CourseDetailsActivity.class);
-        intent.putExtra(CourseDetailsActivity.COURSE_EXTRA, currentlySelectedCourse);
-        startActivity(intent);
+        /*Intent intent = new Intent(getActivity(), CourseDetailsFragment.class);
+        intent.putExtra(CourseDetailsFragment.COURSE_EXTRA, currentlySelectedCourse);
+        startActivity(intent);*/
+        if (mListener != null) {
+            mListener.onShowCourseDetails(course);
+        }
     }
 
     @Override

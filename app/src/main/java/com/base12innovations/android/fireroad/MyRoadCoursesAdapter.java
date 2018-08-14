@@ -29,6 +29,7 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
     }
 
     public ClickListener itemClickListener;
+    public ClickListener itemLongClickListener;
 
     private RoadDocument document;
 
@@ -73,6 +74,23 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
             }
         }
         return null;
+    }
+
+    /**
+     * Returns the index of the last course in the given semester.
+     * @param semester the semester number.
+     * @return an integer indicating the index of the last course.
+     */
+    public int lastPositionForSemester(int semester) {
+        if (document == null) {
+            return 0;
+        }
+        int cursor = 0;
+        for (int i = 0; i <= semester; i++) {
+            List<Course> semCourses = document.coursesForSemester(i);
+            cursor += semCourses.size() + 1;
+        }
+        return cursor - 1;
     }
 
     public boolean isSectionHeader(int position) {
@@ -211,6 +229,16 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
                         int newPos = viewHolder.getAdapterPosition();
                         itemClickListener.onClick(course, newPos, view);
                     }
+                }
+            });
+            view.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    if (itemLongClickListener != null) {
+                        int newPos = viewHolder.getAdapterPosition();
+                        itemLongClickListener.onClick(course, newPos, view);
+                    }
+                    return true;
                 }
             });
         }

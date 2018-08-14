@@ -2,7 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.base12innovations.android.fireroad.SearchCoursesActivity">
+    tools:context="com.base12innovations.android.fireroad.SearchCoursesFragment">
     <item android:id="@+id/searchView"
         android:title="@string/search_hint"
         android:icon="@drawable/search_icon"

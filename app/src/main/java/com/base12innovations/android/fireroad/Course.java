@@ -40,25 +40,25 @@ public class Course implements Parcelable {
 
     private String equivalentSubjects = "";
     public String getEquivalentSubjects() { return equivalentSubjects; }
-    public List<String> getEquivalentSubjectsList() { return nonemptyComponents(equivalentSubjects); }
+    public List<String> getEquivalentSubjectsList() { return nonemptyComponents(equivalentSubjects, ","); }
     public void setEquivalentSubjects(String newValue) { this.equivalentSubjects = newValue; }
 
     private String jointSubjects = "";
     public String getJointSubjects() { return jointSubjects; }
-    public List<String> getJointSubjectsList() { return nonemptyComponents(jointSubjects); }
+    public List<String> getJointSubjectsList() { return nonemptyComponents(jointSubjects, ","); }
     public void setJointSubjects(String newValue) { this.jointSubjects = newValue; }
 
     private String meetsWithSubjects = "";
     public String getMeetsWithSubjects() { return meetsWithSubjects; }
-    public List<String> getMeetsWithSubjectsList() { return nonemptyComponents(meetsWithSubjects); }
+    public List<String> getMeetsWithSubjectsList() { return nonemptyComponents(meetsWithSubjects, ","); }
     public void setMeetsWithSubjects(String newValue) { this.meetsWithSubjects = newValue; }
 
-    private List<String> nonemptyComponents(String contents) {
+    private List<String> nonemptyComponents(String contents, String splitter) {
         List<String> result = new ArrayList<>();
-        String[] comps = contents.split(",");
+        String[] comps = contents.split(splitter);
         for (int i = 0; i < comps.length; i++) {
             if (comps[i].trim().length() > 0) {
-                result.add(comps[i].trim());
+                result.add(comps[i].trim().replace("[J]", "").replace("#", ""));
             }
         }
         return result;
@@ -155,20 +155,37 @@ public class Course implements Parcelable {
     //var communicationRequirement: CommunicationAttribute?
     //var hassAttribute: HASSAttribute?
 
-    // Supplemental attributes
-    //var relatedSubjects: [(String, Float)] = []
+    public String prerequisites = "";
+    public List<List<String>> getPrerequisitesList() {
+        List<String> topLevel = nonemptyComponents(prerequisites, ";");
+        List<List<String>> result = new ArrayList<>();
+        for (String top : topLevel) {
+            List<String> item = nonemptyComponents(top, ",");
+            if (item.size() > 0)
+                result.add(item);
+        }
+        return result;
+    }
+    public String corequisites = "";
+    public List<List<String>> getCorequisitesList() {
+        List<String> topLevel = nonemptyComponents(corequisites, ";");
+        List<List<String>> result = new ArrayList<>();
+        for (String top : topLevel) {
+            List<String> item = nonemptyComponents(top, ",");
+            if (item.size() > 0)
+                result.add(item);
+        }
+        return result;
+    }
+
+    public String relatedSubjects = "";
+    public List<String> getRelatedSubjectsList() {
+        return nonemptyComponents(relatedSubjects, ",");
+    }
 
     //var schedule: [String: [[CourseScheduleItem]]]?
 
 
-    /*public Course(String subjectID) {
-        this.subjectID = subjectID;
-    }
-
-    public Course(String subjectID, String subjectTitle) {
-        this.subjectID = subjectID;
-        this.subjectTitle = subjectTitle;
-    }*/
     public Course() {}
 
     // 99.9% of the time you can just ignore this

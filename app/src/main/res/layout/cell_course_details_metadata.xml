@@ -13,7 +13,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_marginRight="4dp"
-            android:layout_weight="2"
+            android:layout_weight="3"
             android:text="Units"
             android:textAlignment="textEnd"
             android:textStyle="bold" />

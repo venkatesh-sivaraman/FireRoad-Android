@@ -71,7 +71,7 @@ public class CourseManager {
     private List<Callable<Void>> loadingCompletionHandlers;
 
     private static final String DATABASE_NAME = "course_db";
-    private CourseDatabase courseDatabase;
+    public CourseDatabase courseDatabase;
     private CourseManager() { }
 
     public static CourseManager sharedInstance() {
@@ -91,6 +91,8 @@ public class CourseManager {
 
         dbPreferences = context.getSharedPreferences(COURSE_DATABASE_PREFERENCES, Context.MODE_PRIVATE);
         requestQueue = Volley.newRequestQueue(context);
+
+        CourseSearchEngine.sharedInstance().initialize(context);
     }
 
     public interface LoadCoursesListener {
@@ -506,7 +508,4 @@ public class CourseManager {
         return courseDatabase.daoAccess().findCourseWithSubjectID(id);
     }
 
-    public List<Course> searchSubjectsFast(String query) {
-        return courseDatabase.daoAccess().searchCoursesByIDOrTitle(query);
-    }
 }

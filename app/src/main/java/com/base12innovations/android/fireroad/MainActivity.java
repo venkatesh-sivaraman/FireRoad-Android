@@ -5,10 +5,15 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Parcel;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -17,32 +22,39 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
+import android.text.Html;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity implements MyRoadFragment.OnFragmentInteractionListener {
+import com.arlib.floatingsearchview.FloatingSearchView;
+import com.arlib.floatingsearchview.suggestions.SearchSuggestionsAdapter;
+import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
 
-    /**
-     * The {@link android.support.v4.view.PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link android.support.v4.app.FragmentStatePagerAdapter}.
-     */
-    private SectionsPagerAdapter mSectionsPagerAdapter;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Stack;
 
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
-    private ViewPager mViewPager;
+public class MainActivity extends AppCompatActivity implements MyRoadFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate {
+
+    private DrawerLayout mDrawer;
+    private Toolbar toolbar;
+    private NavigationView navDrawer;
+    private FloatingSearchView mSearchView;
+
+    private MyRoadFragment myRoadFragment;
 
     private CourseLoadingDialogFragment loadingDialogFragment;
 
@@ -51,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        /*Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
@@ -75,7 +87,16 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
-        });
+        });*/
+
+        mDrawer = (DrawerLayout) findViewById(R.id.main_content);
+        navDrawer = (NavigationView)findViewById(R.id.nav_view);
+        setupDrawerContent(navDrawer);
+        setupSearchView();
+        setupBottomSheet();
+        hideBottomSheet();
+
+        showContentFragment(getMyRoadFragment());
 
         if (!CourseManager.sharedInstance().isLoaded()) {
             CourseManager.sharedInstance().initializeDatabase(this);
@@ -105,6 +126,58 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         }
     }
 
+    private void setupDrawerContent(NavigationView navigationView) {
+        navigationView.setNavigationItemSelectedListener(
+                new NavigationView.OnNavigationItemSelectedListener() {
+                    @Override
+                    public boolean onNavigationItemSelected(MenuItem menuItem) {
+                        selectDrawerItem(menuItem);
+                        return true;
+                    }
+                });
+    }
+
+    public void selectDrawerItem(MenuItem menuItem) {
+        // Create a new fragment and specify the fragment to show based on nav item clicked
+        Fragment fragment = null;
+        switch(menuItem.getItemId()) {
+            /*case R.id.browse_menu_item:
+                fragmentClass = FirstFragment.class;
+                break;
+            case R.id.nav_second_fragment:
+                fragmentClass = SecondFragment.class;
+                break;
+            case R.id.nav_third_fragment:
+                fragmentClass = ThirdFragment.class;
+                break;*/
+            default:
+                fragment = getMyRoadFragment();
+        }
+
+        showContentFragment(fragment);
+
+        // Highlight the selected item has been done by NavigationView
+        menuItem.setChecked(true);
+        // Set action bar title
+        setTitle(menuItem.getTitle());
+        // Close the navigation drawer
+        mDrawer.closeDrawers();
+    }
+
+    private void showContentFragment(Fragment fragment) {
+        if (fragment != null) {
+            // Insert the fragment by replacing any existing fragment
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            fragmentManager.beginTransaction().replace(R.id.fr_content, fragment).commit();
+        }
+    }
+
+    public MyRoadFragment getMyRoadFragment() {
+        if (myRoadFragment == null) {
+            myRoadFragment = new MyRoadFragment();
+        }
+        return myRoadFragment;
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -124,96 +197,362 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
-        } else if (id == R.id.action_search) {
-            Intent intent = new Intent(this, SearchCoursesActivity.class);
-            startActivity(intent);
+        } else if (id == R.id.action_filter) {
+            /*Intent intent = new Intent(this, SearchCoursesFragment.class);
+            startActivity(intent);*/
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
+    // Searching
 
-        public PlaceholderFragment() {
+    private static int NUM_SEARCH_SUGGESTIONS = 5;
+    private boolean isSearching = false;
+
+    private void setupSearchView() {
+        mSearchView = findViewById(R.id.floating_search_view);
+        mSearchView.attachNavigationDrawerToMenuButton(mDrawer);
+        mSearchView.setOnLeftMenuClickListener(new FloatingSearchView.OnLeftMenuClickListener() {
+            @Override
+            public void onMenuOpened() {
+                mDrawer.openDrawer(Gravity.START);
+            }
+
+            @Override
+            public void onMenuClosed() {
+                mDrawer.closeDrawers();
+            }
+        });
+        mSearchView.setOnClearSearchActionListener(new FloatingSearchView.OnClearSearchActionListener() {
+            @Override
+            public void onClearSearchClicked() {
+                loadSearchResults("");
+            }
+        });
+        mSearchView.setOnQueryChangeListener(new FloatingSearchView.OnQueryChangeListener() {
+            @Override
+            public void onSearchTextChanged(String oldQuery, String newQuery) {
+                loadSearchResults(newQuery);
+            }
+        });
+        mSearchView.setOnFocusChangeListener(new FloatingSearchView.OnFocusChangeListener() {
+            @Override
+            public void onFocus() {
+                loadSearchResults(mSearchView.getQuery());
+            }
+
+            @Override
+            public void onFocusCleared() { }
+        });
+        mSearchView.setOnBindSuggestionCallback(new SearchSuggestionsAdapter.OnBindSuggestionCallback() {
+            @Override
+            public void onBindSuggestion(View suggestionView, ImageView leftIcon, TextView textView, SearchSuggestion item, int itemPosition) {
+                CourseSearchSuggestion suggestion = (CourseSearchSuggestion)item;
+                if (suggestion.isRecent) {
+                    leftIcon.setImageResource(R.drawable.recent_icon);
+                } else {
+                    leftIcon.setImageDrawable(null);
+                }
+                textView.setLines(1);
+                textView.setText(Html.fromHtml(item.getBody(), Html.FROM_HTML_MODE_LEGACY));
+            }
+        });
+
+        mSearchView.setOnSearchListener(new FloatingSearchView.OnSearchListener() {
+            @Override
+            public void onSuggestionClicked(SearchSuggestion searchSuggestion) {
+                final CourseSearchSuggestion suggestion = (CourseSearchSuggestion)searchSuggestion;
+                mSearchView.clearSuggestions();
+                mSearchView.clearSearchFocus();
+                detailsStack = null;
+                TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+                    @Override
+                    public void perform() {
+                        final Course course = CourseManager.sharedInstance().getSubjectByID(suggestion.subjectID);
+                        if (course == null) {
+                            return;
+                        }
+                        CourseSearchEngine.sharedInstance().addRecentCourse(course);
+                        TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                            @Override
+                            public void perform() {
+                                onShowCourseDetails(course);
+                            }
+                        });
+                    }
+                });
+            }
+
+            @Override
+            public void onSearchAction(final String currentQuery) {
+                mSearchView.clearSuggestions();
+                mSearchView.clearSearchFocus();
+                detailsStack = null;
+                TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+                    @Override
+                    public void perform() {
+                        final Course course = CourseManager.sharedInstance().getSubjectByID(currentQuery);
+                        if (course != null)
+                            CourseSearchEngine.sharedInstance().addRecentCourse(course);
+                        TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                            @Override
+                            public void perform() {
+                                if (course == null) {
+                                    showSearchCoursesView(currentQuery);
+                                } else {
+                                    onShowCourseDetails(course);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    public void loadSearchResults(final String query) {
+        if (isSearching) {
+            return;
+        }
+        if (query.length() == 0) {
+            // Put recents here
+            CourseSearchEngine.sharedInstance().getRecentCourses(new CourseSearchEngine.RecentCoursesCallback() {
+                @Override
+                public void result(List<Course> courses) {
+                    List<CourseSearchSuggestion> suggestions = new ArrayList<>();
+                    for (Course course : courses) {
+                        if (suggestions.size() > NUM_SEARCH_SUGGESTIONS)
+                            break;
+                        suggestions.add(new CourseSearchSuggestion(course.getSubjectID(), course.subjectTitle, true));
+                    }
+                    if (mSearchView.getQuery().length() == 0) {
+                        mSearchView.swapSuggestions(suggestions);
+                    }
+                }
+            });
+            return;
         }
 
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
+        isSearching = true;
+        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                final List<Course> courses = CourseSearchEngine.sharedInstance().searchSubjectsFast(query);
+                TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                    @Override
+                    public void perform() {
+                        isSearching = false;
+                        List<CourseSearchSuggestion> suggestions = new ArrayList<>();
+                        for (Course course : courses) {
+                            if (suggestions.size() > NUM_SEARCH_SUGGESTIONS)
+                                break;
+                            suggestions.add(new CourseSearchSuggestion(course.getSubjectID(), course.subjectTitle, false));
+                        }
+                        mSearchView.swapSuggestions(suggestions);
+                        if (!mSearchView.getQuery().equals(query)) {
+                            loadSearchResults(mSearchView.getQuery());
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    // Bottom sheet
+
+    private class BottomSheetItem {
+        String searchQuery;
+        Course course;
+
+        BottomSheetItem(String query) {
+            this.searchQuery = query;
         }
 
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-            textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
-            return rootView;
+        BottomSheetItem(Course course) {
+            this.course = course;
+        }
+    }
+
+    private View bottomSheet;
+    private SearchCoursesFragment searchCoursesFragment;
+    private CourseDetailsFragment currentDetailsFragment;
+    private List<BottomSheetItem> detailsStack;
+
+    private void setupBottomSheet() {
+        bottomSheet = findViewById(R.id.bottom_sheet);
+        final BottomSheetBehavior bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
+        bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+            @Override
+            public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                switch (newState) {
+                    case BottomSheetBehavior.STATE_HIDDEN:
+                        currentDetailsFragment = null;
+                        detailsStack = null;
+                    case BottomSheetBehavior.STATE_COLLAPSED:
+                        View dimmer = findViewById(R.id.backgroundDimmer);
+                        dimmer.setVisibility(View.GONE);
+                        dimmer.setClickable(false);
+                        if (currentDetailsFragment != null) {
+                            currentDetailsFragment.scaleFAB(0.0f, true);
+                        }
+                        break;
+                    case BottomSheetBehavior.STATE_EXPANDED:
+                        if (currentDetailsFragment != null) {
+                            currentDetailsFragment.scaleFAB(1.0f, true);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            @Override
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+                View dimmer = findViewById(R.id.backgroundDimmer);
+                dimmer.setVisibility(View.VISIBLE);
+                dimmer.setClickable(true);
+                dimmer.setAlpha(slideOffset);
+                if (currentDetailsFragment != null) {
+                    currentDetailsFragment.scaleFAB(slideOffset);
+                }
+            }
+        });
+
+        View dimmer = findViewById(R.id.backgroundDimmer);
+        dimmer.setAlpha(0.0f);
+        dimmer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                }
+            }
+        });
+    }
+
+    private void presentBottomSheet(Fragment fragment) {
+        // Insert the fragment by replacing any existing fragment
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.beginTransaction().replace(R.id.detail_content, fragment).commit();
+        expandBottomSheet();
+    }
+
+    private void dimViewOn() {
+        Log.d("MainActivity", "Dimming on");
+        View dimmer = findViewById(R.id.backgroundDimmer);
+        dimmer.setVisibility(View.VISIBLE);
+        dimmer.setClickable(true);
+        AlphaAnimation animation1 = new AlphaAnimation(dimmer.getAlpha(), 1.0f);
+        animation1.setDuration(300);
+        animation1.setFillAfter(true);
+        dimmer.startAnimation(animation1);
+    }
+
+    private void dimViewOff() {
+        Log.d("MainActivity", "Dimming off");
+        final View dimmer = findViewById(R.id.backgroundDimmer);
+        dimmer.setClickable(false);
+        if (dimmer.getVisibility() == View.VISIBLE) {
+            AlphaAnimation animation1 = new AlphaAnimation(dimmer.getAlpha(), 0.0f);
+            animation1.setDuration(300);
+            animation1.setFillAfter(true);
+            animation1.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
+
+                }
+
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    dimmer.setVisibility(View.GONE);
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+
+                }
+            });
+            dimmer.startAnimation(animation1);
+        }
+    }
+
+    private void expandBottomSheet() {
+        BottomSheetBehavior bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+        dimViewOn();
+    }
+
+    private void hideBottomSheet() {
+        BottomSheetBehavior bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+        currentDetailsFragment = null;
+        detailsStack = null;
+        dimViewOff();
+    }
+
+    private void collapseBottomSheet() {
+        BottomSheetBehavior bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        dimViewOff();
+    }
+
+    @Override
+    public void navFragmentClickedToolbar(BottomSheetNavFragment fragment) {
+        // Expand bottom sheet
+        expandBottomSheet();
+    }
+
+    @Override
+    public void navFragmentWantsCourseDetails(BottomSheetNavFragment fragment, Course course) {
+        onShowCourseDetails(course);
+    }
+
+    @Override
+    public void navFragmentWantsBack(BottomSheetNavFragment fragment) {
+        if (detailsStack != null && detailsStack.size() >= 2) {
+            detailsStack.remove(detailsStack.size() - 1);
+            BottomSheetItem last = detailsStack.remove(detailsStack.size() - 1);
+            if (last.searchQuery != null) {
+                showSearchCoursesView(last.searchQuery);
+            } else if (last.course != null) {
+                onShowCourseDetails(last.course);
+            }
         }
     }
 
     @Override
-    public void onFragmentInteraction(Uri uri) {
-        Log.d("This is a tag", uri.toString());
+    public void navFragmentAddedCourse(BottomSheetNavFragment fragment, Course course, int semester) {
+        getMyRoadFragment().roadAddedCourse(course, semester);
+        collapseBottomSheet();
     }
 
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
-
-        private String[] pageTitles = new String[] {
-                "Explore", "Road", "Schedule", "Majors"
-        };
-        public SectionsPagerAdapter(FragmentManager fm) {
-            super(fm);
+    public void showSearchCoursesView(String query) {
+        SearchCoursesFragment fragment = SearchCoursesFragment.newInstance(query);
+        searchCoursesFragment = fragment;
+        if (detailsStack == null) {
+            detailsStack = new Stack<>();
         }
+        fragment.canGoBack = detailsStack.size() > 0;
+        detailsStack.add(new BottomSheetItem(query));
+        fragment.delegate = new WeakReference<BottomSheetNavFragment.Delegate>(this);
+        presentBottomSheet(fragment);
+    }
 
-        private MyRoadFragment _myRoadFragment = null;
+    // My Road
 
-        public MyRoadFragment getMyRoadFragment() {
-            if (_myRoadFragment == null) {
-                _myRoadFragment = new MyRoadFragment();
-            }
-            return _myRoadFragment;
+    @Override
+    public void onShowCourseDetails(Course course) {
+        Log.d("MainActivity", "Presenting details for " + course.getSubjectID());
+        CourseDetailsFragment fragment = CourseDetailsFragment.newInstance(course);
+        currentDetailsFragment = fragment;
+        if (detailsStack == null) {
+            detailsStack = new Stack<>();
         }
-
-        @Override
-        public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            if (position == 1) {
-                return getMyRoadFragment();
-            }
-            return PlaceholderFragment.newInstance(position + 1);
-        }
-
-        @Nullable
-        @Override
-        public CharSequence getPageTitle(int position) {
-            return pageTitles[position];
-        }
-
-        @Override
-        public int getCount() {
-            // Show 3 total pages.
-            return pageTitles.length;
-        }
+        fragment.canGoBack = detailsStack.size() > 0;
+        detailsStack.add(new BottomSheetItem(course));
+        fragment.delegate = new WeakReference<BottomSheetNavFragment.Delegate>(this);
+        presentBottomSheet(fragment);
     }
 }

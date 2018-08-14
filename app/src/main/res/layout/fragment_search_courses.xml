@@ -5,8 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    app:statusBarBackground="@color/colorPrimaryDark"
-    tools:context=".SearchCoursesActivity">
+    tools:context=".SearchCoursesFragment">
 
     <android.support.design.widget.AppBarLayout
         android:id="@+id/app_bar"
@@ -23,13 +22,33 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <ListView
+    <!--<ListView
         android:id="@+id/resultsList"
         style="@android:style/Widget.Material.ListView"
         android:layout_width="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
         android:divider="@drawable/search_courses_divider"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        app:layout_scrollFlags="scroll|snap"
         android:dividerHeight="1px"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content" />-->
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/resultsList"
+        android:scrollbars="vertical"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+    <ProgressBar
+        android:id="@+id/loadingIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:indeterminate="true"
+        android:indeterminateTintMode="src_atop"
+        android:indeterminateTint="@color/colorAccent"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </android.support.design.widget.CoordinatorLayout>

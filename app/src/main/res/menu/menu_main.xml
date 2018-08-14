@@ -3,13 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.base12innovations.android.fireroad.MainActivity">
     <item
-        android:id="@+id/action_settings"
+        android:id="@+id/action_filter"
         android:orderInCategory="100"
-        android:title="@string/action_settings"
-        app:showAsAction="never" />
-    <item android:id="@+id/action_search"
-        android:title="Add Subjects"
-        android:icon="@drawable/add_icon"
-        app:showAsAction="ifRoom" />
+        android:title="Filter"
+        android:icon="@drawable/filter_icon"
+        app:showAsAction="always" />
 
 </menu>

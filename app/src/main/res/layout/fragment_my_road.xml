@@ -9,6 +9,9 @@
     <android.support.v7.widget.RecyclerView
         android:id="@+id/coursesRecyclerView"
         android:scrollbars="vertical"
+        android:paddingTop="@dimen/main_view_content_padding_top"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/browse_menu_item"
+            android:icon="@drawable/browse_icon"
+            android:title="Browse" />
+        <item
+            android:id="@+id/my_road_menu_item"
+            android:checked="true"
+            android:icon="@drawable/my_road_icon"
+            android:title="My Road" />
+        <item
+            android:id="@+id/requirements_menu_item"
+            android:icon="@drawable/requirements_icon"
+            android:title="Requirements" />
+        <item
+            android:id="@+id/schedule_menu_item"
+            android:icon="@drawable/schedule_icon"
+            android:title="Schedule" />
+    </group>
+
+</menu>

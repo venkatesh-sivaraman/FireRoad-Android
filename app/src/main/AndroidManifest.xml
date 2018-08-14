@@ -22,11 +22,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".CourseDetailsActivity"
+            android:name=".CourseDetailsFragment"
             android:label="@string/title_activity_course_details"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar" />
-        <activity android:name=".SearchCoursesActivity"
+        <activity android:name=".SearchCoursesFragment"
             android:label="SearchCoursesActivity"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar">

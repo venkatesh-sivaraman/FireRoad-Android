@@ -158,15 +158,18 @@ public class RoadDocument extends Document {
         return new ArrayList<Course>();
     }
 
-    public void addCourse(Course course, int semester) {
+    public boolean addCourse(Course course, int semester) {
         if (semester < 0 || semester >= semesterNames.length) {
-            return;
+            return false;
         }
         if (!courses.containsKey(semester)) {
             courses.put(semester, new ArrayList<Course>());
+        } else {
+            return false;
         }
         courses.get(semester).add(course);
         save();
+        return true;
     }
 
     public boolean removeCourse(Course course, int semester) {
