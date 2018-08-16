@@ -45,6 +45,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     private int currentlySelectedSemester;
     private int currentlySelectedPosition;
     private RecyclerView recyclerView;
+    private PopupMenu currentPopupMenu;
 
     private OnFragmentInteractionListener mListener;
 
@@ -122,6 +123,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 mInflater.inflate(R.menu.menu_course_cell, menu.getMenu());
                 menu.setOnMenuItemClickListener(MyRoadFragment.this);
                 menu.show();
+                currentPopupMenu = menu;
             }
         };
 
@@ -130,6 +132,10 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         ItemTouchHelper.Callback _ithCallback = new ItemTouchHelper.Callback() {
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
                 // get the viewHolder's and target's positions in your adapter data, swap them
+                if (currentPopupMenu != null) {
+                    currentPopupMenu.dismiss();
+                    currentPopupMenu = null;
+                }
                 return gridAdapter.moveCourse(viewHolder.getAdapterPosition(), target.getAdapterPosition());
             }
 
@@ -141,6 +147,10 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
                 if (gridAdapter.isSectionHeader(viewHolder.getAdapterPosition())) {
                     return 0;
+                }
+                if (currentPopupMenu != null) {
+                    currentPopupMenu.dismiss();
+                    currentPopupMenu = null;
                 }
                 return makeFlag(ItemTouchHelper.ACTION_STATE_DRAG,
                         ItemTouchHelper.DOWN | ItemTouchHelper.UP | ItemTouchHelper.START | ItemTouchHelper.END);
@@ -270,6 +280,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
 
     @Override
     public boolean onMenuItemClick(MenuItem menuItem) {
+        currentPopupMenu = null;
         switch (menuItem.getItemId()) {
             case R.id.viewCourse:
                 showCourseDetails(currentlySelectedCourse);

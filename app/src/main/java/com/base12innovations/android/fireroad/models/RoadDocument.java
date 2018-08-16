@@ -130,7 +130,6 @@ public class RoadDocument extends Document {
             }
             parentObject.put(RoadJSON.selectedSubjects, subjects);
 
-            Log.d("JSON write result", parentObject.toString());
             return parentObject.toString();
 
         } catch (JSONException e) {

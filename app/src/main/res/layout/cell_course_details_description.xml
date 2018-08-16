@@ -8,17 +8,16 @@
     android:padding="2dp">
 
     <TextView
-        android:id="@+id/headingTitle"
+        android:id="@+id/descriptionLabel"
         android:layout_width="0px"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:layout_marginBottom="4dp"
-        android:layout_marginRight="4dp"
+        android:layout_marginEnd="4dp"
         android:layout_marginTop="4dp"
         android:layout_weight="2"
-        android:text="Heading"
+        android:text="Description text"
         android:textAlignment="textStart"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+        android:textSize="16sp" />
 
 </LinearLayout>

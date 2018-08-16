@@ -1,9 +1,11 @@
 package com.base12innovations.android.fireroad;
 
+import android.animation.Animator;
 import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.NavigationView;
+import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -37,9 +39,6 @@ import java.util.Stack;
 
 public class MainActivity extends AppCompatActivity implements MyRoadFragment.OnFragmentInteractionListener, RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate {
 
-    private static String CURRENT_VISIBLE_FRAGMENT = "MainActivity.currentVisibleFragment";
-    private int currentVisibleFragment = 0;
-
     private DrawerLayout mDrawer;
     private Toolbar toolbar;
     private NavigationView navDrawer;
@@ -54,42 +53,13 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        /*Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-
-        // Set up the ViewPager with the sections adapter.
-        mViewPager = (ViewPager) findViewById(R.id.container);
-        mViewPager.setAdapter(mSectionsPagerAdapter);
-
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
-
-        mViewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
-        mViewPager.setCurrentItem(1);
-        tabLayout.setupWithViewPager(mViewPager);
-        tabLayout.addOnTabSelectedListener(new TabLayout.ViewPagerOnTabSelectedListener(mViewPager));
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });*/
-
         mDrawer = (DrawerLayout) findViewById(R.id.main_content);
         navDrawer = (NavigationView)findViewById(R.id.nav_view);
         setupSearchView();
         setupBottomSheet();
         hideBottomSheet();
 
-        if (savedInstanceState != null && savedInstanceState.getInt(CURRENT_VISIBLE_FRAGMENT) != 0) {
-            int visibleFragment = savedInstanceState.getInt(CURRENT_VISIBLE_FRAGMENT);
-            showContentFragment(visibleFragment);
-        } else {
+        if (getSupportFragmentManager().findFragmentById(R.id.fr_content) == null) {
             showContentFragment(getMyRoadFragment());
         }
         setupDrawerContent(navDrawer);
@@ -122,11 +92,11 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         }
     }
 
-    @Override
+    /*@Override
     public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
         super.onSaveInstanceState(outState, outPersistentState);
         outState.putInt(CURRENT_VISIBLE_FRAGMENT, currentVisibleFragment);
-    }
+    }*/
 
     private void setupDrawerContent(NavigationView navigationView) {
         navigationView.setNavigationItemSelectedListener(
@@ -137,7 +107,6 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
                         return true;
                     }
                 });
-        navigationView.setCheckedItem(currentVisibleFragment == 0 ? R.id.my_road_menu_item : currentVisibleFragment);
     }
 
     public void selectDrawerItem(MenuItem menuItem) {
@@ -451,14 +420,23 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
     }
 
     private void dimViewOn() {
-        Log.d("MainActivity", "Dimming on");
-        View dimmer = findViewById(R.id.backgroundDimmer);
-        dimmer.setVisibility(View.VISIBLE);
+        final View dimmer = findViewById(R.id.backgroundDimmer);
         dimmer.setClickable(true);
-        AlphaAnimation animation1 = new AlphaAnimation(dimmer.getAlpha(), 1.0f);
-        animation1.setDuration(300);
-        animation1.setFillAfter(true);
-        dimmer.startAnimation(animation1);
+        dimmer.animate().alpha(1.0f).setDuration(300).setListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animator) { }
+
+            @Override
+            public void onAnimationEnd(Animator animator) {
+                dimmer.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animator) { }
+
+            @Override
+            public void onAnimationRepeat(Animator animator) { }
+        });
     }
 
     private void dimViewOff() {
@@ -539,6 +517,14 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         collapseBottomSheet();
     }
 
+    @Override
+    public void courseNavigatorWantsSearchCourses(Fragment source, String searchTerm) {
+        detailsStack = null;
+        currentDetailsFragment = null;
+        searchCoursesFragment = null;
+        showSearchCoursesView(searchTerm);
+    }
+
     public void showSearchCoursesView(String query) {
         SearchCoursesFragment fragment = SearchCoursesFragment.newInstance(query);
         searchCoursesFragment = fragment;
@@ -555,7 +541,13 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
 
     @Override
     public void onShowCourseDetails(Course course) {
-        Log.d("MainActivity", "Presenting details for " + course.getSubjectID());
+        if (detailsStack != null && detailsStack.size() > 0) {
+            Course lastCourse = detailsStack.get(detailsStack.size() - 1).course;
+            if (lastCourse != null && lastCourse.getSubjectID().equals(course.getSubjectID())) {
+                expandBottomSheet();
+                return;
+            }
+        }
         CourseDetailsFragment fragment = CourseDetailsFragment.newInstance(course);
         currentDetailsFragment = fragment;
         if (detailsStack == null) {

@@ -20,11 +20,17 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -41,6 +47,7 @@ public class CourseManager {
     private static String COURSE_DATABASE_PREFERENCES = "com.base12innovations.android.fireroad.courseDatabasePreferences";
     private SharedPreferences dbPreferences;
     private static String prefsDatabaseVersionKey = "databaseVersionKey";
+    private static String prefsRequirementsVersionKey = "requirementsVersionKey";
     private static String prefsDatabaseSemesterKey = "databaseSemesterKey";
     private RequestQueue requestQueue;
     private static int JSON_ERROR = 1001;
@@ -51,6 +58,7 @@ public class CourseManager {
     // Stored until a successful database update
     private String newSemester;
     private int newDatabaseVersion;
+    private int newRequirementsVersion;
 
     private boolean _isLoading = false;
     public boolean isLoading() { return _isLoading; }
@@ -83,6 +91,7 @@ public class CourseManager {
         requestQueue = Volley.newRequestQueue(context);
 
         CourseSearchEngine.sharedInstance().initialize(context);
+        RequirementsListManager.sharedInstance().initialize(context);
     }
 
     public interface LoadCoursesListener {
@@ -118,7 +127,13 @@ public class CourseManager {
                                             @Override
                                             public void run() {
                                                 loadingProgress += 1.0f / (float) urls.size();
-                                                loadCoursesFromURL(urls.get(index));
+
+                                                // Determine the type of file and send to the appropriate parser
+                                                if (urls.get(index).getPath().contains(requirementsPrefix)) {
+                                                    downloadRequirementsFile(urls.get(index));
+                                                } else {
+                                                    loadCoursesFromURL(urls.get(index));
+                                                }
                                             }
                                         });
                                     }
@@ -134,6 +149,8 @@ public class CourseManager {
                                 SharedPreferences.Editor editor = dbPreferences.edit();
                                 if (newDatabaseVersion != 0)
                                     editor.putInt(prefsDatabaseVersionKey, newDatabaseVersion);
+                                if (newRequirementsVersion != 0)
+                                    editor.putInt(prefsRequirementsVersionKey, newRequirementsVersion);
                                 if (newSemester != null && newSemester.length() > 0)
                                     editor.putString(prefsDatabaseSemesterKey, newSemester);
                                 editor.apply();
@@ -162,26 +179,6 @@ public class CourseManager {
                         listener.error();
                     }
                 });
-
-                /*if (courseDatabase.daoAccess().getNumberOfCourses() == 0) {
-                    String[] subjectIDs = new String[] {
-                            "6.003", "18.03", "7.013", "6.046"
-                    };
-                    String[] subjectTitles = new String[] {
-                            "Signals and Systems", "Differential Equations", "Introductory Biology", "Advanced Algorithms"
-                    };
-                    for (int i = 0; i < subjectIDs.length; i++) {
-                        Course course = new Course();
-                        course.setSubjectID(subjectIDs[i]);
-                        course.setSubjectTitle(subjectTitles[i]);
-                        courseDatabase.daoAccess().insertCourse(course);
-                    }
-                } else {
-                    Log.d("CourseManager", "Didn't need to load courses");
-                }
-
-                Log.d("CourseManager", "Has " + Integer.toString(courseDatabase.daoAccess().getNumberOfCourses()) + " courses");
-                return null;*/
             }
         });
     }
@@ -205,9 +202,11 @@ public class CourseManager {
         void error(int statusCode);
     }
 
-    private static String databaseSemestersURL = "https://venkats.scripts.mit.edu/fireroad_dev/courseupdater/semesters";
-    private static String databaseVersionURL = "https://venkats.scripts.mit.edu/fireroad_dev/courseupdater/check";
-    private static String catalogDownloadURL = "https://venkats.scripts.mit.edu/catalogs/";
+    private static String BASE_URL = "https://venkats.scripts.mit.edu/";
+    private static String databaseSemestersURL = BASE_URL + "fireroad/courseupdater/semesters";
+    private static String databaseVersionURL = BASE_URL + "fireroad/courseupdater/check";
+    private static String catalogDownloadURL = BASE_URL + "catalogs/";
+    private static String requirementsPrefix = "requirements/";
 
     private void determineCurrentSemester(final JSONRequestCompletion<String> completion) {
         String url = databaseSemestersURL;
@@ -251,7 +250,8 @@ public class CourseManager {
         // We always use version 0, because this implementation needs to rebuild the entire database every time
         // there is an update.
         int version = 0; //dbPreferences.getInt(prefsDatabaseVersionKey, 0);
-        String url = databaseVersionURL + String.format(Locale.US, "?sem=%s&v=%d", Uri.encode(semester), version);
+        int reqVersion = dbPreferences.getInt(prefsRequirementsVersionKey, 0);
+        String url = databaseVersionURL + String.format(Locale.US, "?sem=%s&v=%d&rv=%d", Uri.encode(semester), version, reqVersion);
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
                 (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
 
@@ -264,6 +264,16 @@ public class CourseManager {
                             for (int i = 0; i < delta.length(); i++) {
                                 String item = delta.getString(i);
                                 deltaList.add(item);
+                            }
+
+                            int reqVersion = response.getInt("rv");
+                            if (reqVersion != 0) {
+                                delta = response.getJSONArray("r_delta");
+                                for (int i = 0; i < delta.length(); i++) {
+                                    String item = delta.getString(i);
+                                    deltaList.add(item);
+                                }
+                                newRequirementsVersion = reqVersion;
                             }
 
                             newDatabaseVersion = currentVersion;
@@ -297,19 +307,21 @@ public class CourseManager {
                     @Override
                     public void completed(List<String> response) {
                         int currentDBVersion = forceUpdate ? 0 : dbPreferences.getInt(prefsDatabaseVersionKey, 0);
-                        if (newDatabaseVersion != currentDBVersion) {
-                            List<URL> urls = new ArrayList<>();
+                        int currentReqVersion = forceUpdate ? 0 : dbPreferences.getInt(prefsRequirementsVersionKey, 0);
+                        List<URL> urls = new ArrayList();
+                        if (newDatabaseVersion != currentDBVersion || newRequirementsVersion != currentReqVersion) {
                             for (String path : response) {
+                                if (newDatabaseVersion == currentDBVersion && !path.contains(requirementsPrefix)) {
+                                    continue;
+                                }
                                 try {
                                     urls.add(new URL(catalogDownloadURL + path));
                                 } catch (MalformedURLException e) {
                                     Log.e("CourseManager", "Malformed URL, " + catalogDownloadURL + path);
                                 }
                             }
-                            completion.completed(urls);
-                        } else {
-                            completion.completed(new ArrayList<URL>());
                         }
+                        completion.completed(urls);
                     }
 
                     @Override
@@ -367,7 +379,7 @@ public class CourseManager {
                 case "Meets With Subjects":
                     course.setMeetsWithSubjects(component.replace(" ", ""));
                     break;
-                /*case "Prerequisites":
+                case "Prerequisites":
                     course.prerequisites = component;
                     break;
                 case "Corequisites":
@@ -381,7 +393,7 @@ public class CourseManager {
                     break;
                 case "Hass Attribute":
                     course.hassAttribute = component;
-                    break;*/
+                    break;
                 case "Grade Rule":
                     course.gradeRule = component;
                     break;
@@ -494,8 +506,48 @@ public class CourseManager {
 
     }
 
+    private void downloadRequirementsFile(URL url) {
+        try {
+            URLConnection ucon = url.openConnection();
+            ucon.setReadTimeout(5000);
+            ucon.setConnectTimeout(10000);
+
+            InputStream is = ucon.getInputStream();
+            BufferedInputStream inStream = new BufferedInputStream(is, 1024 * 5);
+
+            String fileName = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
+            File file = RequirementsListManager.sharedInstance().getPathForRequirementsFile(fileName);
+
+            boolean success;
+            if (file.exists()) {
+                success = file.delete();
+            }
+            success = file.createNewFile();
+            if (!success) {
+                Log.d("CourseManager", "Failed to create file to download requirements file");
+                return;
+            }
+
+            FileOutputStream outStream = new FileOutputStream(file);
+            byte[] buff = new byte[5 * 1024];
+
+            int len;
+            while ((len = inStream.read(buff)) != -1) {
+                outStream.write(buff, 0, len);
+            }
+
+            outStream.flush();
+            outStream.close();
+            inStream.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Serving courses
+
     public Course getSubjectByID(final String id) {
         return courseDatabase.daoAccess().findCourseWithSubjectID(id);
     }
-
 }

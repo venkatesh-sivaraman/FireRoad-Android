@@ -15,6 +15,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 
 import com.base12innovations.android.fireroad.models.Course;
+import com.base12innovations.android.fireroad.models.RequirementsList;
+import com.base12innovations.android.fireroad.models.RequirementsListManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,23 +71,18 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
 
         listEmbedView = layout.findViewById(R.id.requirementsList);
         courseSelector = layout.findViewById(R.id.courseSelector);
-        final CharSequence[] majors = new CharSequence[]{
-                Html.fromHtml("<b>2</b> - Mechanical Engineering", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>3</b> - Materials Science and Engineering", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>4</b> - Architecture", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>5</b> - Chemistry", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>6-1</b> - Electrical Engineering", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>6-3</b> - Computer Science", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>6-7</b> - Computational Biology", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>2</b> - Mechanical Engineering", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>3</b> - Materials Science and Engineering", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>4</b> - Architecture", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>5</b> - Chemistry", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>6-1</b> - Electrical Engineering", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>6-3</b> - Computer Science", Html.FROM_HTML_MODE_LEGACY),
-                Html.fromHtml("<b>6-7</b> - Computational Biology", Html.FROM_HTML_MODE_LEGACY)
-        };
-        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<CharSequence>(getContext(), android.R.layout.simple_list_item_1, majors);
+        setupRequirementsListSelector();
+        return layout;
+    }
+
+    private void setupRequirementsListSelector() {
+        final List<RequirementsList> reqLists = RequirementsListManager.sharedInstance().getAllRequirementsLists();
+        CharSequence[] courses = new CharSequence[reqLists.size()];
+        for (int i = 0; i < reqLists.size(); i++) {
+            RequirementsList rList = reqLists.get(i);
+            courses[i] = Html.fromHtml("<b>" + rList.shortTitle + "</b> - " + (rList.titleNoDegree != null ? rList.titleNoDegree : rList.title), Html.FROM_HTML_MODE_LEGACY);
+        }
+        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<CharSequence>(getContext(), android.R.layout.simple_list_item_1, courses);
 
         courseSelector.setAdapter(adapter);
         courseSelector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -93,7 +90,7 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 Log.d("Requirements", "Clicked item at " + Integer.toString(i));
 
-                showRequirementsList(majors[i].toString());
+                showRequirementsList(reqLists.get(i));
             }
 
             @Override
@@ -101,7 +98,6 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
                 Log.d("Requirements", "Selected nothing");
             }
         });
-        return layout;
     }
 
     @Override
@@ -121,8 +117,8 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
         mListener = null;
     }
 
-    public void showRequirementsList(String listID) {
-        RequirementsListFragment fragment = RequirementsListFragment.newInstance(listID);
+    public void showRequirementsList(RequirementsList list) {
+        RequirementsListFragment fragment = RequirementsListFragment.newInstance(list.listID);
         fragment.delegate = this;
         FragmentManager fragmentManager = getChildFragmentManager();
         fragmentManager.beginTransaction().replace(listEmbedView.getId(), fragment).commit();
@@ -156,6 +152,13 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
     public void courseNavigatorWantsCourseDetails(Fragment source, Course course) {
         if (mListener != null) {
             mListener.courseNavigatorWantsCourseDetails(this, course);
+        }
+    }
+
+    @Override
+    public void courseNavigatorWantsSearchCourses(Fragment source, String searchTerm) {
+        if (mListener != null) {
+            mListener.courseNavigatorWantsSearchCourses(this, searchTerm);
         }
     }
 }

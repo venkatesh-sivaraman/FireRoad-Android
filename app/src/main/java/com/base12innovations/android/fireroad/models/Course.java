@@ -7,10 +7,14 @@ import android.arch.persistence.room.PrimaryKey;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Entity(indices = {@Index(value = {"subjectID"},
         unique = true)})
@@ -117,22 +121,38 @@ public class Course implements Parcelable {
     public String url = "";
     private String quarterInformation = "";
 
-    enum QuarterOffered {
+    public enum QuarterOffered {
         WholeSemester, EndOnly, BeginningOnly
     }
+
     @Ignore
-    public QuarterOffered quarterOffered;
+    private QuarterOffered quarterOffered;
+    public QuarterOffered getQuarterOffered() {
+        if (quarterOffered == null) {
+            updateQuarterInformation();
+        }
+        return quarterOffered;
+    }
     @Ignore
-    public String quarterBoundaryDate;
+    private String quarterBoundaryDate;
+    public String getQuarterBoundaryDate() {
+        if (quarterBoundaryDate == null) {
+            updateQuarterInformation();
+        }
+        return quarterBoundaryDate;
+    };
 
     public String getQuarterInformation() { return quarterInformation; }
     public void setQuarterInformation(String newValue) {
         quarterInformation = newValue;
+        updateQuarterInformation();
+    }
+    private void updateQuarterInformation() {
         String[] comps = quarterInformation.split(",");
         if (comps.length == 2) {
-            if (comps[0] == "0") {
+            if (comps[0].equals("0")) {
                 quarterOffered = QuarterOffered.BeginningOnly;
-            } else if (comps[0] == "1") {
+            } else if (comps[0].equals("1")) {
                 quarterOffered = QuarterOffered.EndOnly;
             } else {
                 quarterOffered = QuarterOffered.WholeSemester;
@@ -149,9 +169,158 @@ public class Course implements Parcelable {
     public double inClassHours = 0.0;
     public double outOfClassHours = 0.0;
 
-    //var girAttribute: GIRAttribute?
-    //var communicationRequirement: CommunicationAttribute?
-    //var hassAttribute: HASSAttribute?
+    public enum GIRAttribute {
+        PHYSICS_1("PHY1"), PHYSICS_2("PHY2"),
+        CHEMISTRY("CHEM"), BIOLOGY("BIOL"),
+        CALCULUS_1("CAL1"), CALCULUS_2("CAL2"),
+        LAB("LAB"), REST("REST");
+
+        private static Map<String, GIRAttribute> lowercasedNames;
+        private static Map<GIRAttribute, String> descriptions;
+        private static Map<String, GIRAttribute> lowercasedDescriptions;
+        static {
+            lowercasedNames = new HashMap<>();
+            lowercasedNames.put("phy1", PHYSICS_1);
+            lowercasedNames.put("phy2", PHYSICS_2);
+            lowercasedNames.put("chem", CHEMISTRY);
+            lowercasedNames.put("biol", BIOLOGY);
+            lowercasedNames.put("cal1", CALCULUS_1);
+            lowercasedNames.put("cal2", CALCULUS_2);
+            lowercasedNames.put("lab", LAB);
+            lowercasedNames.put("rest", REST);
+            descriptions = new HashMap<>();
+            descriptions.put(GIRAttribute.PHYSICS_1, "Physics I GIR");
+            descriptions.put(GIRAttribute.PHYSICS_2, "Physics II GIR");
+            descriptions.put(GIRAttribute.CHEMISTRY, "Chemistry GIR");
+            descriptions.put(GIRAttribute.BIOLOGY, "Biology GIR");
+            descriptions.put(GIRAttribute.CALCULUS_1, "Calculus I GIR");
+            descriptions.put(GIRAttribute.CALCULUS_2, "Calculus II GIR");
+            descriptions.put(GIRAttribute.LAB, "Lab GIR");
+            descriptions.put(GIRAttribute.REST, "REST GIR");
+            lowercasedDescriptions = new HashMap<>();
+            for (GIRAttribute attr : descriptions.keySet()) {
+                lowercasedDescriptions.put(descriptions.get(attr).toLowerCase(), attr);
+            }
+        }
+
+        public final String rawValue;
+
+        GIRAttribute(final String raw) {
+            this.rawValue = raw;
+        }
+
+        @Override
+        public String toString() {
+            return descriptions.get(this);
+        }
+
+        public static GIRAttribute fromRaw(String raw) {
+            String trimmed = raw.toLowerCase().replaceAll("gir:", "").trim();
+            if (lowercasedNames.containsKey(trimmed)) {
+                return lowercasedNames.get(trimmed);
+            } else if (lowercasedDescriptions.containsValue(trimmed)) {
+                return lowercasedDescriptions.get(trimmed);
+            }
+            return null;
+        }
+    }
+
+    public enum CommunicationAttribute {
+        CI_H("CI-H"), CI_HW("CI-HW");
+
+        public final String rawValue;
+        CommunicationAttribute(final String raw) {
+            this.rawValue = raw;
+        }
+
+        private static Map<CommunicationAttribute, String> descriptions;
+        private static Map<String, CommunicationAttribute> lowercasedNames;
+        static {
+            descriptions = new HashMap<>();
+            descriptions.put(CommunicationAttribute.CI_H, "Communication Intensive");
+            descriptions.put(CommunicationAttribute.CI_HW, "Communication Intensive with Writing");
+            lowercasedNames = new HashMap<>();
+            lowercasedNames.put("ci-h", CI_H);
+            lowercasedNames.put("ci-hw", CI_HW);
+        }
+
+        @Override
+        public String toString() {
+            return rawValue;
+        }
+
+        public String descriptionText() {
+            return descriptions.get(this);
+        }
+
+        public static CommunicationAttribute fromRaw(String raw) {
+            String trimmed = raw.trim().toLowerCase();
+            if (lowercasedNames.containsKey(trimmed)) {
+                return lowercasedNames.get(trimmed);
+            }
+            return null;
+        }
+    }
+
+    public enum HASSAttribute {
+        ANY("HASS"), ARTS("HASS-A"), SOCIAL_SCIENCES("HASS-S"), HUMANITIES("HASS-H");
+
+        public final String rawValue;
+        HASSAttribute(final String raw) {
+            this.rawValue = raw;
+        }
+
+        private static Map<HASSAttribute, String> descriptions;
+        private static Map<String, HASSAttribute> lowercasedNames;
+        static {
+            descriptions = new HashMap<>();
+            descriptions.put(HASSAttribute.ANY, "HASS");
+            descriptions.put(HASSAttribute.ARTS, "HASS Arts");
+            descriptions.put(HASSAttribute.HUMANITIES, "HASS Humanities");
+            descriptions.put(HASSAttribute.SOCIAL_SCIENCES, "HASS Social Sciences");
+            lowercasedNames = new HashMap<>();
+            lowercasedNames.put("hass", ANY);
+            lowercasedNames.put("hass-a", ARTS);
+            lowercasedNames.put("hass-s", SOCIAL_SCIENCES);
+            lowercasedNames.put("hass-h", HUMANITIES);
+        }
+
+        @Override
+        public String toString() {
+            return rawValue;
+        }
+
+        public String descriptionText() {
+            return descriptions.get(this);
+        }
+
+        public static HASSAttribute fromRaw(String raw) {
+            String trimmed = raw.trim().toLowerCase();
+            if (lowercasedNames.containsKey(trimmed)) {
+                return lowercasedNames.get(trimmed);
+            }
+            return null;
+        }
+    }
+
+    public String girAttribute;
+    public GIRAttribute getGIRAttribute() { return girAttribute != null ? GIRAttribute.fromRaw(girAttribute) : null; }
+
+    public String communicationRequirement;
+    public CommunicationAttribute getCommunicationRequirement() {
+        if (communicationRequirement != null) {
+            return CommunicationAttribute.fromRaw(communicationRequirement);
+        }
+        return null;
+    }
+
+    public String hassAttribute;
+    public HASSAttribute getHASSAttribute() {
+        if (hassAttribute != null) {
+            return HASSAttribute.fromRaw(hassAttribute);
+        }
+        return null;
+    }
 
     public String prerequisites = "";
     public List<List<String>> getPrerequisitesList() {
@@ -231,7 +400,7 @@ public class Course implements Parcelable {
             return false;
         }
         Course other = (Course)obj;
-        return other.getSubjectID().equals(getSubjectID());
+        return other.getSubjectID().equals(getSubjectID()) && other.subjectTitle.equals(subjectTitle);
     }
 
     public boolean parseBoolean(String value) {

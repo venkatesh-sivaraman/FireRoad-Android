@@ -62,7 +62,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
         if (course != null) {
             setupContentView(mContentView);
-            setupToolbar();
+            setupToolbar(layout);
         } else {
             final String subjectID = getArguments().getString(SUBJECT_ID_EXTRA);
 
@@ -79,7 +79,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
                     course = arg;
                     if (course != null) {
                         setupContentView(mContentView);
-                        setupToolbar();
+                        setupToolbar(layout);
                     }
                 }
             });
@@ -121,8 +121,8 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         scaleFAB(newValue, false);
     }
 
-    private void setupToolbar() {
-        Toolbar toolbar = (Toolbar) mContentView.findViewById(R.id.toolbar);
+    private void setupToolbar(View layout) {
+        Toolbar toolbar = (Toolbar) layout.findViewById(R.id.toolbar);
         toolbar.setClickable(true);
         toolbar.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -156,39 +156,9 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
         LinearLayout layout = contentView.findViewById(R.id.courseDetailsLinearLayout);
 
-        String unitsString;
-        if (course.variableUnits) {
-            unitsString = "arranged";
-        } else {
-            unitsString = String.format(Locale.US, "%d total (%d-%d-%d)", course.totalUnits, course.lectureUnits, course.labUnits, course.preparationUnits);
-        }
-        if (course.hasFinal) {
-            unitsString += "\nHas final";
-        }
-        if (course.pdfOption) {
-            unitsString += "\n[P/D/F]";
-        }
-        addMetadataItem(layout, "Units", unitsString);
-
-        List<String> offeredItems = new ArrayList<>();
-        if (course.isOfferedFall) {
-            offeredItems.add("fall");
-        }
-        if (course.isOfferedIAP) {
-            offeredItems.add("IAP");
-        }
-        if (course.isOfferedSpring) {
-            offeredItems.add("spring");
-        }
-        if (course.isOfferedSummer) {
-            offeredItems.add("summer");
-        }
-        String offeredString = TextUtils.join(", ", offeredItems);
-        if (offeredString.length() == 0) {
-            offeredString = "information unavailable";
-        }
-        offeredString = offeredString.substring(0, 1).toUpperCase() + offeredString.substring(1);
-        addMetadataItem(layout, "Offered", offeredString);
+        addUnitsItem(layout);
+        addRequirementsItem(layout);
+        addOfferedItem(layout);
 
         String[] instructors = course.getInstructorsList();
         if (instructors.length > 0) {
@@ -201,7 +171,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
         addHeaderItem(layout, "Ratings");
         if (course.rating != 0.0) {
-            addMetadataItem(layout, "Average Rating", Double.toString(course.rating));
+            addMetadataItem(layout, "Average Rating", Double.toString(course.rating) + " out of 7");
         }
         if (course.inClassHours != 0.0 || course.outOfClassHours != 0.0) {
             addMetadataItem(layout, "Hours", String.format(Locale.US, "%.2g in class\n%.2g out of class", course.inClassHours, course.outOfClassHours));
@@ -226,6 +196,80 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             addCourseListItem(layout, subjectList);
         }
     }
+
+    // Adding information types
+
+    private void addUnitsItem(LinearLayout layout) {
+        String unitsString;
+        if (course.variableUnits) {
+            unitsString = "arranged";
+        } else {
+            unitsString = String.format(Locale.US, "%d total (%d-%d-%d)", course.totalUnits, course.lectureUnits, course.labUnits, course.preparationUnits);
+        }
+        if (course.hasFinal) {
+            unitsString += "\nHas final";
+        }
+        if (course.pdfOption) {
+            unitsString += "\n[P/D/F]";
+        }
+        addMetadataItem(layout, "Units", unitsString);
+    }
+
+    private void addOfferedItem(LinearLayout layout) {
+        List<String> offeredItems = new ArrayList<>();
+        if (course.isOfferedFall) {
+            offeredItems.add("Fall");
+        }
+        if (course.isOfferedIAP) {
+            offeredItems.add("IAP");
+        }
+        if (course.isOfferedSpring) {
+            offeredItems.add("Spring");
+        }
+        if (course.isOfferedSummer) {
+            offeredItems.add("Summer");
+        }
+        String offeredString = TextUtils.join(", ", offeredItems);
+        if (offeredString.length() == 0) {
+            offeredString = "Information unavailable";
+        }
+
+        if (course.getQuarterOffered() == Course.QuarterOffered.BeginningOnly) {
+            offeredString += "\n1st quarter";
+            if (course.getQuarterBoundaryDate() != null) {
+                offeredString += " - ends " + course.getQuarterBoundaryDate().substring(0, 1).toUpperCase() + course.getQuarterBoundaryDate().substring(1);
+            }
+        } else if (course.getQuarterOffered() == Course.QuarterOffered.EndOnly) {
+            offeredString += "\n2nd quarter";
+            if (course.getQuarterBoundaryDate() != null) {
+                offeredString += " - starts " + course.getQuarterBoundaryDate().substring(0, 1).toUpperCase() + course.getQuarterBoundaryDate().substring(1);
+            }
+        }
+        //offeredString = offeredString.substring(0, 1).toUpperCase() + offeredString.substring(1);
+        addMetadataItem(layout, "Offered", offeredString);
+    }
+
+    private void addRequirementsItem(LinearLayout layout) {
+        List<String> reqs = new ArrayList<>();
+        Course.GIRAttribute gir = course.getGIRAttribute();
+        if (gir != null) {
+            reqs.add(gir.toString());
+        }
+        Course.CommunicationAttribute comm = course.getCommunicationRequirement();
+        if (comm != null) {
+            reqs.add(comm.toString());
+        }
+        Course.HASSAttribute hass = course.getHASSAttribute();
+        if (hass!= null) {
+            reqs.add(hass.toString());
+        }
+
+        if (reqs.size() > 0) {
+            addMetadataItem(layout, "Fulfills", TextUtils.join(", ", reqs));
+        }
+    }
+
+    // Layout
 
     private void addMetadataItem(LinearLayout layout, String title, String value) {
         int margin = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_details_padding);

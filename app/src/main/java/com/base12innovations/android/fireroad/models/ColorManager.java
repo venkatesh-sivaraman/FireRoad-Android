@@ -1,6 +1,7 @@
 package com.base12innovations.android.fireroad.models;
 
 import android.graphics.Color;
+import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -167,6 +168,21 @@ public class ColorManager {
         svMap.put("SP", 0);
     }
 
+    // For GIRs, CIs, etc.
+    private static Map<String, Integer> specialColors;
+    static {
+        float saturation = 0.7f;
+        float brightness = 0.6525f;
+        specialColors = new HashMap<>();
+        specialColors.put("GIR", Color.HSVToColor(new float[] { 18.0f, saturation, brightness }));
+        specialColors.put("HASS", Color.HSVToColor(new float[] { 162.0f, saturation, brightness }));
+        specialColors.put("HASS-A", Color.HSVToColor(new float[] { 198.0f, saturation, brightness }));
+        specialColors.put("HASS-H", Color.HSVToColor(new float[] { 234.0f, saturation, brightness }));
+        specialColors.put("HASS-S", Color.HSVToColor(new float[] { 270.0f, saturation, brightness }));
+        specialColors.put("CI-H", Color.HSVToColor(new float[] { 306.0f, saturation, brightness }));
+        specialColors.put("CI-HW", Color.HSVToColor(new float[] { 342.0f, saturation, brightness }));
+    }
+
     private static float[] saturations = new float[] { 0.7f, 0.52f, 0.88f };
     private static float[] brightnesses = new float[] { 0.87f, 0.71f, 0.71f };
 
@@ -175,6 +191,12 @@ public class ColorManager {
     }
 
     public static int colorForCourse(Course course, int alpha) {
+        if (course.getSubjectID() != null && specialColors.containsKey(course.getSubjectID())) {
+            Log.d("ColorManager", "Special color for " + course.getSubjectID() + ": " + Integer.toString(specialColors.get(course.getSubjectID())));
+            return specialColors.get(course.getSubjectID());
+        }
+        if (course.getSubjectID() == null || !course.getSubjectID().contains("."))
+            return Color.parseColor("#FFBBBBBB");
         String department = course.getSubjectID().substring(0, course.getSubjectID().indexOf('.'));
         if (!hueMap.containsKey(department)) {
             return Color.parseColor("#FFBBBBBB");
