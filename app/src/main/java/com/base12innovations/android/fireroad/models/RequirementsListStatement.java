@@ -9,10 +9,19 @@ import org.w3c.dom.Text;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Random;
+import java.util.Set;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.function.IntBinaryOperator;
+import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -442,5 +451,280 @@ public class RequirementsListStatement {
         return mParent.keyPath() + "." + Integer.toString(mParent.requirements.indexOf(this));
     }
 
+    // Computing requirements status
 
+    public class FulfillmentProgress {
+        int progress;
+        int max;
+        FulfillmentProgress(int p, int m) {
+            progress = p;
+            max = m;
+        }
+        public int getProgress() { return progress; }
+        public int getMax() { return max; }
+    }
+
+    private boolean isFulfilled = false;
+    public boolean isFulfilled() { return isFulfilled; }
+
+    private FulfillmentProgress fulfillmentProgress;
+    private FulfillmentProgress subjectProgress;
+    private FulfillmentProgress unitProgress;
+    public FulfillmentProgress getFulfillmentProgress() { return fulfillmentProgress; }
+    public FulfillmentProgress getSubjectProgress() { return subjectProgress; }
+    public FulfillmentProgress getUnitProgress() { return unitProgress; }
+
+    public List<Course> coursesSatisfyingRequirement(final List<Course> courses) {
+        if (requirement != null) {
+            return (List<Course>)(Object)(courses.stream().filter(new Predicate<Course>() {
+                @Override
+                public boolean test(Course course) {
+                    return course.satisfiesRequirement(requirement, courses);
+                }
+            }).collect(Collectors.toList()));
+        }
+        return new ArrayList<>();
+    }
+
+    private boolean numberSatisfiesThreshold(int number, int units, Threshold threshold) {
+        int criterion = threshold.criterion == ThresholdCriterion.UNITS ? units : number;
+        switch (threshold.type) {
+            case GREATER_THAN:
+                return criterion > threshold.cutoff;
+            case GREATER_THAN_OR_EQUAL:
+                return criterion >= threshold.cutoff;
+            case LESS_THAN:
+                return criterion < threshold.cutoff;
+            case LESS_THAN_OR_EQUAL:
+                return criterion <= threshold.cutoff;
+        }
+        return false;
+    }
+
+    private FulfillmentProgress ceilingThreshold(int progress, int max) {
+        return new FulfillmentProgress(Math.min(Math.max(0, progress), max), max);
+    }
+
+    private int totalUnitsInCourses(Collection<Course> courses) {
+        return courses.stream().mapToInt(new ToIntFunction<Course>() {
+            @Override
+            public int applyAsInt(Course course) {
+                return course.totalUnits;
+            }
+        }).sum();
+    }
+
+    private FulfillmentProgress sumFulfillmentProgresses(List<RequirementsListStatement> reqs, final ThresholdCriterion crit, final ToIntFunction<Integer> maxFunction) {
+        return reqs.stream().map(new Function<RequirementsListStatement, FulfillmentProgress>() {
+            @Override
+            public FulfillmentProgress apply(RequirementsListStatement req) {
+                if (crit == ThresholdCriterion.SUBJECTS)
+                    return req.subjectProgress;
+                return req.unitProgress;
+            }
+        }).reduce(new FulfillmentProgress(0, 0), new BinaryOperator<FulfillmentProgress>() {
+            @Override
+            public FulfillmentProgress apply(FulfillmentProgress p1, FulfillmentProgress p2) {
+                if (p2 == null) return p1;
+                if (maxFunction != null)
+                    return new FulfillmentProgress(p1.progress + p2.progress, p1.max + maxFunction.applyAsInt(p2.max));
+                return new FulfillmentProgress(p1.progress + p2.progress, p1.max + p2.max);
+            }
+        });
+    }
+
+    private int thresholdCutoff(Threshold t, ThresholdCriterion criterion) {
+        if (criterion == ThresholdCriterion.SUBJECTS)
+            return t.cutoff / (t.criterion == ThresholdCriterion.UNITS ? DEFAULT_UNIT_COUNT : 1);
+        return t.cutoff * (t.criterion == ThresholdCriterion.SUBJECTS ? DEFAULT_UNIT_COUNT : 1);
+    }
+
+    /**
+     * This is a large and complicated method that provides considerable information about the
+     * requirement's fulfillment status. It sets the `isFulfilled` property, which indicates whether
+     * the requirement is complete. It also sets the `subjectProgress` and `unitProgress` properties,
+     * which indicate the progress toward completion. The percentageFulfilled() value is computed
+     * using these quantities.
+     *
+     - Returns: The set of courses that satisfy this requirement.
+     */
+    public Set<Course> computeRequirementStatus(List<Course> courses) {
+        if (requirement != null) {
+            // It's a basic requirement
+            Set<Course> satisfiedCourses = new HashSet<>();
+            if (isPlainString && manualProgress != 0 && threshold != null) {
+                // Use manual progress
+                isFulfilled = manualProgress == threshold.cutoff;
+                int subjects = 0, units = 0;
+                if (threshold.criterion == ThresholdCriterion.UNITS) {
+                    units = manualProgress;
+                    subjects = manualProgress / DEFAULT_UNIT_COUNT;
+                } else {
+                    units = manualProgress * DEFAULT_UNIT_COUNT;
+                    subjects = manualProgress;
+                }
+                subjectProgress = ceilingThreshold(subjects, thresholdCutoff(threshold, ThresholdCriterion.SUBJECTS));
+                unitProgress = ceilingThreshold(units, thresholdCutoff(threshold, ThresholdCriterion.UNITS));
+
+                // Fill with dummy courses
+                Random rng = new Random();
+                for (int i = 0; i < subjectProgress.progress; i++) {
+                    int id = rng.nextInt();
+                    Course dummy = new Course();
+                    dummy.setSubjectID("generatedCourse" + Integer.toString(id));
+                    dummy.subjectTitle = "generatedCourse" + Integer.toString(id);
+                    satisfiedCourses.add(dummy);
+                }
+            } else {
+                // Example: requirement CI-H, we want to show how many have been fulfilled
+                satisfiedCourses.addAll(coursesSatisfyingRequirement(courses));
+                if (threshold != null) {
+                    // A specific number of courses is required
+                    subjectProgress = ceilingThreshold(satisfiedCourses.size(), thresholdCutoff(threshold, ThresholdCriterion.SUBJECTS));
+                    unitProgress = ceilingThreshold(totalUnitsInCourses(satisfiedCourses), thresholdCutoff(threshold, ThresholdCriterion.UNITS));
+                    isFulfilled = numberSatisfiesThreshold(subjectProgress.progress, unitProgress.progress, threshold);
+                } else {
+                    // Only one is needed
+                    int progress = Math.min(satisfiedCourses.size(), 1);
+                    isFulfilled = satisfiedCourses.size() > 0;
+                    subjectProgress = ceilingThreshold(progress, 1);
+                    if (satisfiedCourses.size() > 0)
+                        unitProgress = ceilingThreshold(satisfiedCourses.iterator().next().totalUnits, DEFAULT_UNIT_COUNT);
+                    else
+                        unitProgress = ceilingThreshold(0, DEFAULT_UNIT_COUNT);
+                }
+            }
+            fulfillmentProgress = (threshold != null && threshold.criterion == ThresholdCriterion.UNITS) ? unitProgress : subjectProgress;
+            return satisfiedCourses;
+        }
+
+        if (requirements == null) return new HashSet<>();
+        // It's a compound requirement
+
+        Map<RequirementsListStatement, Set<Course>> satByCategory = new HashMap<>();
+        Set<Course> totalSat = new HashSet<>();
+        int numReqsSatisfied = 0;
+        for (RequirementsListStatement req : requirements) {
+            Set<Course> sat = req.computeRequirementStatus(courses);
+            if (req.isFulfilled)
+                numReqsSatisfied += 1;
+            satByCategory.put(req, sat);
+            totalSat.addAll(sat);
+        }
+        List<RequirementsListStatement> sortedProgresses = new ArrayList<>(requirements);
+        sortedProgresses.sort(new Comparator<RequirementsListStatement>() {
+            @Override
+            public int compare(RequirementsListStatement t1, RequirementsListStatement t2) {
+                float p1 = t1.percentageFulfilled(), p2 = t2.percentageFulfilled();
+                return -Float.compare(p1, p2);
+            }
+        });
+
+        if (threshold == null && distinctThreshold == null) {
+            isFulfilled = (numReqsSatisfied > 0);
+            if (connectionType == ConnectionType.ANY) {
+                // Simple "any" statement
+                if (sortedProgresses.size() > 0) {
+                    subjectProgress = sortedProgresses.get(0).subjectProgress;
+                    unitProgress = sortedProgresses.get(0).unitProgress;
+                } else {
+                    subjectProgress = new FulfillmentProgress(0, 0);
+                    unitProgress = new FulfillmentProgress(0, 0);
+                }
+            } else {
+                // "All" statement, will be finalized later
+                subjectProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.SUBJECTS, null);
+                unitProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.UNITS, null);
+            }
+        } else {
+            if (distinctThreshold != null) {
+                // Clip the progresses to the ones which the user is closest to completing
+                sortedProgresses = sortedProgresses.subList(0, Math.min(distinctThreshold.getActualCutoff(), sortedProgresses.size()));
+                totalSat = new HashSet<>();
+                for (RequirementsListStatement req : sortedProgresses) {
+                    totalSat.addAll(satByCategory.get(req));
+                }
+            }
+
+            if (threshold == null && distinctThreshold != null) {
+                // required number of statements
+                if (distinctThreshold.type == ThresholdType.GREATER_THAN_OR_EQUAL ||
+                        distinctThreshold.type == ThresholdType.GREATER_THAN)
+                    isFulfilled = numReqsSatisfied >= distinctThreshold.getActualCutoff();
+                else
+                    isFulfilled = true;
+                subjectProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.SUBJECTS, new ToIntFunction<Integer>() {
+                    @Override
+                    public int applyAsInt(Integer integer) {
+                        return Math.max(integer, 1);
+                    }
+                });
+                unitProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.UNITS, new ToIntFunction<Integer>() {
+                    @Override
+                    public int applyAsInt(Integer integer) {
+                        return integer == 0 ? DEFAULT_UNIT_COUNT : integer;
+                    }
+                });
+            } else if (threshold != null) {
+                // required number of subjects or units
+                subjectProgress = new FulfillmentProgress(totalSat.size(), thresholdCutoff(threshold, ThresholdCriterion.SUBJECTS));
+                unitProgress = new FulfillmentProgress(totalUnitsInCourses(totalSat), thresholdCutoff(threshold, ThresholdCriterion.UNITS));
+
+                if (distinctThreshold != null &&
+                        (distinctThreshold.type == ThresholdType.GREATER_THAN ||
+                                distinctThreshold.type == ThresholdType.GREATER_THAN_OR_EQUAL)) {
+                    isFulfilled = numberSatisfiesThreshold(subjectProgress.progress, unitProgress.progress, threshold) && numReqsSatisfied >= distinctThreshold.getActualCutoff();
+                    if (numReqsSatisfied < distinctThreshold.getActualCutoff()) {
+                        subjectProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.SUBJECTS, new ToIntFunction<Integer>() {
+                            @Override
+                            public int applyAsInt(Integer integer) {
+                                return Math.max(integer, 1);
+                            }
+                        });
+                        unitProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.UNITS, new ToIntFunction<Integer>() {
+                            @Override
+                            public int applyAsInt(Integer integer) {
+                                return integer == 0 ? DEFAULT_UNIT_COUNT : integer;
+                            }
+                        });
+                    }
+                } else {
+                    isFulfilled = numberSatisfiesThreshold(subjectProgress.progress, unitProgress.progress, threshold);
+                }
+            }
+        }
+
+        if (connectionType == ConnectionType.ALL) {
+            // "all" statement - make above progresses more stringent
+            isFulfilled = isFulfilled && (numReqsSatisfied == requirements.size());
+            if (subjectProgress.progress == subjectProgress.max && requirements.size() > numReqsSatisfied) {
+                // Not satisfied, but subject progress makes it look satisfied, so lower the progress
+                subjectProgress.max += requirements.size() - numReqsSatisfied;
+                unitProgress.max += (requirements.size() - numReqsSatisfied) * DEFAULT_UNIT_COUNT;
+            }
+        }
+
+        // Polish up values
+        subjectProgress = ceilingThreshold(subjectProgress.progress, subjectProgress.max);
+        unitProgress = ceilingThreshold(unitProgress.progress, unitProgress.max);
+        fulfillmentProgress = (threshold != null && threshold.criterion == ThresholdCriterion.UNITS) ? unitProgress : subjectProgress;
+
+        return totalSat;
+    }
+
+    public float percentageFulfilled() {
+        if ((connectionType == ConnectionType.NONE && getManualProgress() == 0) || fulfillmentProgress == null)
+            return 0.0f;
+        if (fulfillmentProgress.progress == 0 && fulfillmentProgress.max == 0)
+            return 0.0f;
+        return Math.min(1.0f, (float)fulfillmentProgress.progress / (float)fulfillmentProgress.max) * 100.0f;
+    }
+
+    private int manualProgress = 0;
+    public int getManualProgress() {
+        return manualProgress;
+    }
+    public void setManualProgress(int newValue) {
+        manualProgress = newValue;
+    }
 }

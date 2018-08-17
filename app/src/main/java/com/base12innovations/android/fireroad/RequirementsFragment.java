@@ -36,6 +36,13 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
 
     private Spinner courseSelector;
     private View listEmbedView;
+    private int currentSelection;
+    private RequirementsListFragment currentListFragment;
+    RequirementsBrowserAdapter spinnerAdapter;
+
+    public RequirementsListFragment getCurrentListFragment() {
+        return currentListFragment;
+    }
 
     public RequirementsFragment() {
         // Required empty public constructor
@@ -72,30 +79,31 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
         listEmbedView = layout.findViewById(R.id.requirementsList);
         courseSelector = layout.findViewById(R.id.courseSelector);
         setupRequirementsListSelector();
+        if (savedInstanceState == null) {
+            courseSelector.setSelection(1);
+        }
         return layout;
     }
 
     private void setupRequirementsListSelector() {
         final List<RequirementsList> reqLists = RequirementsListManager.sharedInstance().getAllRequirementsLists();
-        CharSequence[] courses = new CharSequence[reqLists.size()];
-        for (int i = 0; i < reqLists.size(); i++) {
-            RequirementsList rList = reqLists.get(i);
-            courses[i] = Html.fromHtml("<b>" + rList.shortTitle + "</b> - " + (rList.titleNoDegree != null ? rList.titleNoDegree : rList.title), Html.FROM_HTML_MODE_LEGACY);
-        }
-        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<CharSequence>(getContext(), android.R.layout.simple_list_item_1, courses);
+
+        final RequirementsBrowserAdapter adapter = new RequirementsBrowserAdapter(getActivity(), reqLists);
+        spinnerAdapter = adapter;
 
         courseSelector.setAdapter(adapter);
         courseSelector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                Log.d("Requirements", "Clicked item at " + Integer.toString(i));
-
-                showRequirementsList(reqLists.get(i));
+                if (currentSelection != i) {
+                    currentSelection = i;
+                    showRequirementsList((RequirementsList) adapter.getItem(i));
+                }
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
-                Log.d("Requirements", "Selected nothing");
+                currentSelection = 1;
             }
         });
     }
@@ -109,19 +117,32 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
         }
+        if (courseSelector != null && currentSelection != 0) {
+            int oldSelection = currentSelection;
+            currentSelection = 0;
+            courseSelector.setSelection(oldSelection);
+        }
     }
 
     @Override
     public void onDetach() {
-        super.onDetach();
         mListener = null;
+        super.onDetach();
     }
 
     public void showRequirementsList(RequirementsList list) {
         RequirementsListFragment fragment = RequirementsListFragment.newInstance(list.listID);
         fragment.delegate = this;
+        currentListFragment = fragment;
         FragmentManager fragmentManager = getChildFragmentManager();
         fragmentManager.beginTransaction().replace(listEmbedView.getId(), fragment).commit();
+    }
+
+    public void notifyRequirementsStatusChanged() {
+        if (currentListFragment != null)
+            currentListFragment.updateRequirementStatus();
+        if (spinnerAdapter != null)
+            spinnerAdapter.resetRequirementsCache();
     }
 
     /**

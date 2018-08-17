@@ -1,11 +1,9 @@
 package com.base12innovations.android.fireroad;
 
 import android.animation.Animator;
-import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.NavigationView;
-import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -31,6 +29,7 @@ import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -45,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
     private FloatingSearchView mSearchView;
 
     private MyRoadFragment myRoadFragment;
+    private RequirementsFragment requirementsFragment;
 
     private CourseLoadingDialogFragment loadingDialogFragment;
 
@@ -133,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
                 fragmentClass = ThirdFragment.class;
                 break;*/
             case R.id.requirements_menu_item:
-                fragment = RequirementsFragment.newInstance();
+                fragment = getRequirementsFragment();
                 break;
             default:
                 fragment = getMyRoadFragment();
@@ -150,13 +150,6 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
             FragmentManager fragmentManager = getSupportFragmentManager();
             fragmentManager.beginTransaction().replace(R.id.fr_content, fragment).commit();
         }
-    }
-
-    public MyRoadFragment getMyRoadFragment() {
-        if (myRoadFragment == null) {
-            myRoadFragment = new MyRoadFragment();
-        }
-        return myRoadFragment;
     }
 
     @Override
@@ -515,6 +508,9 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
     public void courseNavigatorAddedCourse(Fragment source, Course course, int semester) {
         getMyRoadFragment().roadAddedCourse(course, semester);
         collapseBottomSheet();
+        if (requirementsFragment != null) {
+            requirementsFragment.notifyRequirementsStatusChanged();
+        }
     }
 
     @Override
@@ -539,6 +535,13 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
 
     // My Road
 
+    public MyRoadFragment getMyRoadFragment() {
+        if (myRoadFragment == null) {
+            myRoadFragment = new MyRoadFragment();
+        }
+        return myRoadFragment;
+    }
+
     @Override
     public void onShowCourseDetails(Course course) {
         if (detailsStack != null && detailsStack.size() > 0) {
@@ -560,4 +563,9 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
     }
 
     // Requirements
+    private RequirementsFragment getRequirementsFragment() {
+        if (requirementsFragment == null)
+            requirementsFragment = RequirementsFragment.newInstance();
+        return requirementsFragment;
+    }
 }

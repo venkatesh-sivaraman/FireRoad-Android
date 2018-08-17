@@ -3,6 +3,8 @@ package com.base12innovations.android.fireroad.models;
 import android.content.Context;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.utils.AlphanumComparator;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,6 +13,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,12 +48,15 @@ public class RequirementsListManager {
     }
 
     public List<RequirementsList> getAllRequirementsLists() {
-        List<String> sortedKeys = new ArrayList<>(requirementsLists.keySet());
-        Collections.sort(sortedKeys);
-        List<RequirementsList> result = new ArrayList<>();
-        for (String listID : sortedKeys) {
-            result.add(requirementsLists.get(listID));
-        }
+        List<RequirementsList> result = new ArrayList<>(requirementsLists.values());
+        final Comparator<String> comp = new AlphanumComparator();
+        Collections.sort(result, new Comparator<RequirementsList>() {
+            @Override
+            public int compare(RequirementsList item1, RequirementsList item2) {
+                return comp.compare(item1.mediumTitle != null ? item1.mediumTitle : item1.shortTitle,
+                        item2.mediumTitle != null ? item2.mediumTitle : item2.shortTitle);
+            }
+        });
         return result;
     }
 

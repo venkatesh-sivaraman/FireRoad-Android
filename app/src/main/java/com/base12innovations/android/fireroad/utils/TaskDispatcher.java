@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.utils;
 
 import android.os.Handler;
 import android.os.Looper;

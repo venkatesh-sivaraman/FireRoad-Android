@@ -23,6 +23,7 @@ import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -160,9 +161,9 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         addRequirementsItem(layout);
         addOfferedItem(layout);
 
-        String[] instructors = course.getInstructorsList();
-        if (instructors.length > 0) {
-            addMetadataItem(layout, "Instructor" + (instructors.length != 1 ? "s" : ""), TextUtils.join(", ", instructors));
+        List<String> instructors = course.getInstructorsList();
+        if (instructors.size() > 0) {
+            addMetadataItem(layout, "Instructor" + (instructors.size() != 1 ? "s" : ""), TextUtils.join(", ", instructors));
         }
 
         if (course.enrollmentNumber > 0) {
@@ -363,11 +364,13 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         RoadDocument doc = User.currentUser().getCurrentDocument();
         if (doc != null) {
             boolean worked = doc.addCourse(course, semester);
-            if (worked && delegate.get() != null)
-                delegate.get().courseNavigatorAddedCourse(this, course, semester);
+            if (worked) {
+                if (delegate.get() != null)
+                    delegate.get().courseNavigatorAddedCourse(this, course, semester);
+                Snackbar.make(mContentView, "Added " + course.getSubjectID(), Snackbar.LENGTH_LONG).show();
+            }
         }
         addCourseDialog.dismiss();
-        Snackbar.make(mContentView, "Added " + course.getSubjectID(), Snackbar.LENGTH_LONG).show();
         addCourseDialog = null;
     }
 

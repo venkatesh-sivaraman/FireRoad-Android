@@ -14,7 +14,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.base12innovations.android.fireroad.TaskDispatcher;
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,7 +22,6 @@ import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

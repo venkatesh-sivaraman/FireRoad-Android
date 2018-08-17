@@ -1,17 +1,19 @@
 package com.base12innovations.android.fireroad;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.models.ColorManager;
@@ -20,13 +22,17 @@ import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.RequirementsList;
 import com.base12innovations.android.fireroad.models.RequirementsListManager;
 import com.base12innovations.android.fireroad.models.RequirementsListStatement;
+import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 
 /**
@@ -44,6 +50,7 @@ public class RequirementsListFragment extends Fragment {
     public RequirementsList requirementsList;
 
     public OnFragmentInteractionListener delegate;
+    private View mLayout;
 
     public RequirementsListFragment() {
         // Required empty public constructor
@@ -70,16 +77,26 @@ public class RequirementsListFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View layout = inflater.inflate(R.layout.fragment_requirements_list, container, false);
+        mLayout = layout;
         if (requirementsListID != null) {
             RequirementsList reqList = RequirementsListManager.sharedInstance().getRequirementsList(requirementsListID);
             if (reqList != null) {
                 requirementsList = reqList;
                 reqList.loadIfNeeded();
-                LinearLayout contentLayout = (LinearLayout)layout.findViewById(R.id.reqListLinearLayout);
+                if (User.currentUser().getCurrentDocument() != null)
+                    requirementsList.computeRequirementStatus(User.currentUser().getCurrentDocument().getAllCourses());
+                LinearLayout contentLayout = (LinearLayout)mLayout.findViewById(R.id.reqListLinearLayout);
                 buildRequirementsListLayout(contentLayout);
             }
         }
         return layout;
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        Log.d("RequirementsListFragment", "Hidden changed");
+        updateRequirementStatus();
     }
 
     // Layout logic
@@ -161,7 +178,14 @@ public class RequirementsListFragment extends Fragment {
 
     // Layout building
 
+    private Map<RequirementsListStatement, View> headerCells;
+    private Map<RequirementsListStatement, View> courseListCells;
+
     private void buildRequirementsListLayout(LinearLayout layout) {
+        layout.removeAllViews();
+        headerCells = new HashMap<>();
+        courseListCells = new HashMap<>();
+
         if (requirementsList.title != null && requirementsList.title.length() > 0) {
             addHeaderItem(layout, requirementsList.title);
         }
@@ -181,13 +205,13 @@ public class RequirementsListFragment extends Fragment {
                 // Remove title and add back with threshold information separate
                 if (topLevelReq.title != null) {
                     items.remove(0);
-                    items.add(0, new PresentationItem(CellType.TITLE, null, topLevelReq.title));
+                    items.add(0, new PresentationItem(CellType.TITLE, topLevelReq, topLevelReq.title));
                     int indexToInsert = 1;
                     if (items.size() > indexToInsert && items.get(indexToInsert).cellType == CellType.DESCRIPTION)
                         indexToInsert += 1;
                     String desc = topLevelReq.getThresholdDescription();
                     if (desc != null && desc.length() > 0)
-                        items.add(indexToInsert, new PresentationItem(CellType.TITLE_2, null, desc.substring(0, 1).toUpperCase() + desc.substring(1) + ":"));
+                        items.add(indexToInsert, new PresentationItem(CellType.TITLE_2, topLevelReq, desc.substring(0, 1).toUpperCase() + desc.substring(1) + ":"));
                 }
 
                 addCard(layout, items);
@@ -195,6 +219,28 @@ public class RequirementsListFragment extends Fragment {
         }
 
         // Add URL here
+    }
+
+    public void updateRequirementStatus() {
+        if (requirementsList != null) {
+            if (User.currentUser().getCurrentDocument() != null)
+                requirementsList.computeRequirementStatus(User.currentUser().getCurrentDocument().getAllCourses());
+            updateRequirementStatus(requirementsList);
+        }
+    }
+
+    public void updateRequirementStatus(RequirementsListStatement statement) {
+        if (headerCells == null || courseListCells == null) return;
+        if (headerCells.containsKey(statement)) {
+            updateSubHeaderProgress(headerCells.get(statement), statement.percentageFulfilled());
+        }
+        if (courseListCells.containsKey(statement)) {
+            formatCourseCellFulfillmentIndicator(courseListCells.get(statement), statement.getFulfillmentProgress());
+        }
+        if (statement.getRequirements() != null) {
+            for (RequirementsListStatement subReq : statement.getRequirements())
+                updateRequirementStatus(subReq);
+        }
     }
 
     private void addCard(final LinearLayout layout, List<PresentationItem> items, boolean nested, int rowIndex) {
@@ -222,10 +268,13 @@ public class RequirementsListFragment extends Fragment {
         // Add the presentation items
         for (PresentationItem item : items) {
             switch (item.cellType) {
+                case TITLE_2:
+                    View headerView = addSubHeaderItem(card, item.text, 0.0f, textSize(item.cellType));
+                    break;
                 case TITLE:
                 case TITLE_1:
-                case TITLE_2:
-                    addSubHeaderItem(card, item.text, textSize(item.cellType));
+                    headerView = addSubHeaderItem(card, item.text, item.statement.percentageFulfilled(), textSize(item.cellType));
+                    headerCells.put(item.statement, headerView);
                     break;
                 case DESCRIPTION:
                     addDescriptionItem(card, item.text);
@@ -283,21 +332,37 @@ public class RequirementsListFragment extends Fragment {
         titleView.setText(title);
     }
 
-    private void addSubHeaderItem(LinearLayout layout, String title, float textSize) {
+    private View addSubHeaderItem(LinearLayout layout, String title, float progress, float textSize) {
         int margin = (int) getResources().getDimension(R.dimen.requirements_card_padding);
         LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         lparams.setMargins(margin, 0, margin, 0);
-        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_header, null);
+        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_requirements_header, null);
         layout.addView(metadataView);
         metadataView.setLayoutParams(lparams);
 
         TextView titleView = (TextView)metadataView.findViewById(R.id.headingTitle);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSize);
         titleView.setText(title);
+        updateSubHeaderProgress(metadataView, progress);
+
+        return metadataView;
     }
 
-    private void addDescriptionItem(LinearLayout layout, String description) {
+    private void updateSubHeaderProgress(View metadataView, float progress) {
+        if (progress <= 0.5f) {
+            metadataView.findViewById(R.id.progressLabel).setVisibility(View.GONE);
+        } else {
+            TextView progressLabel = metadataView.findViewById(R.id.progressLabel);
+            progressLabel.setVisibility(View.VISIBLE);
+            progressLabel.setText(String.format(Locale.US, "%d%%", (int)progress));
+
+            int color = Color.HSVToColor(new float[] { 1.8f * progress, 0.5f, 0.8f });
+            ((GradientDrawable)progressLabel.getBackground()).setColor(color);
+        }
+    }
+
+    private View addDescriptionItem(LinearLayout layout, String description) {
         int margin = (int) getResources().getDimension(R.dimen.requirements_card_padding);
         LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -307,9 +372,10 @@ public class RequirementsListFragment extends Fragment {
         metadataView.setLayoutParams(lparams);
 
         ((TextView)metadataView.findViewById(R.id.descriptionLabel)).setText(description);
+        return metadataView;
     }
 
-    private void addCourseListItem(final LinearLayout layout, final List<RequirementsListStatement> requirements) {
+    private View addCourseListItem(final LinearLayout layout, final List<RequirementsListStatement> requirements) {
         View listView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_list, null);
         layout.addView(listView);
         final int rowIndex = layout.getChildCount() - 1;
@@ -349,15 +415,18 @@ public class RequirementsListFragment extends Fragment {
                     @Override
                     public void perform() {
                         for (int i = 0; i < courses.size(); i++) {
-                            addCourseCell(layout, rowIndex, listLayout, courses.get(i), requirements.get(i));
+                            View cell = addCourseCell(layout, rowIndex, listLayout, courses.get(i), requirements.get(i));
+                            courseListCells.put(requirements.get(i), cell);
                         }
                     }
                 });
             }
         });
+
+        return listView;
     }
 
-    private void addCourseCell(final LinearLayout parentLayout, final int rowIndex, LinearLayout layout, final Course course, final RequirementsListStatement statement) {
+    private View addCourseCell(final LinearLayout parentLayout, final int rowIndex, LinearLayout layout, final Course course, final RequirementsListStatement statement) {
         int width = (int) getResources().getDimension(R.dimen.course_cell_default_width);
         int height = (int) getResources().getDimension(R.dimen.course_cell_height);
         int margin = (int) getResources().getDimension(R.dimen.course_cell_spacing);
@@ -368,9 +437,15 @@ public class RequirementsListFragment extends Fragment {
         layout.addView(courseThumbnail);
         courseThumbnail.setLayoutParams(params);
         courseThumbnail.setElevation(elevation);
-        ((GradientDrawable)courseThumbnail.getBackground()).setColor(ColorManager.colorForCourse(course));
+
+        int color = ColorManager.colorForCourse(course);
+        ProgressBar pBar = courseThumbnail.findViewById(R.id.requirementsProgressBar);
+        pBar.setProgressTintList(ColorStateList.valueOf(ColorManager.darkenColor(color, 0xFF)));
+        pBar.setProgressBackgroundTintList(ColorStateList.valueOf(ColorManager.lightenColor(color, 0xFF)));
+        ((GradientDrawable)courseThumbnail.getBackground()).setColor(color);
         ((TextView) courseThumbnail.findViewById(R.id.subjectIDLabel)).setText(course.getSubjectID());
         ((TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel)).setText(course.subjectTitle);
+        formatCourseCellFulfillmentIndicator(courseThumbnail, statement.getFulfillmentProgress());
 
         courseThumbnail.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -378,6 +453,27 @@ public class RequirementsListFragment extends Fragment {
                 onClickCourseCell(parentLayout, rowIndex, courseThumbnail, course, statement);
             }
         });
+        return courseThumbnail;
+    }
+
+    private void formatCourseCellFulfillmentIndicator(View courseThumbnail, RequirementsListStatement.FulfillmentProgress progress) {
+        ProgressBar pBar = courseThumbnail.findViewById(R.id.requirementsProgressBar);
+        if (progress != null) {
+            if (progress.getProgress() == progress.getMax())
+                courseThumbnail.setAlpha(0.5f);
+            else
+                courseThumbnail.setAlpha(1.0f);
+
+            if (progress.getMax() != 1) {
+                pBar.setVisibility(View.VISIBLE);
+                pBar.setMax(progress.getMax());
+                pBar.setProgress(progress.getProgress());
+            } else {
+                pBar.setVisibility(View.GONE);
+            }
+        } else {
+            pBar.setVisibility(View.GONE);
+        }
     }
 
     private void onClickCourseCell(final LinearLayout layout, final int rowIndex, View thumbnail, final Course course, final RequirementsListStatement req) {
@@ -390,6 +486,7 @@ public class RequirementsListFragment extends Fragment {
         }, new TaskDispatcher.CompletionBlock<Boolean>() {
             @Override
             public void completed(Boolean arg) {
+                Log.d("RequirementsListFragment", req.toString() + ", " + Boolean.toString(req.isPlainString));
                 if (arg) {
                     // It's a real course, show details
                     if (delegate != null) {

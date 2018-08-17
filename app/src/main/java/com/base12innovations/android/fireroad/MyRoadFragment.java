@@ -10,6 +10,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -22,6 +23,7 @@ import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.io.File;
 import java.util.concurrent.Callable;
@@ -101,9 +103,10 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             }
         });*/
         recyclerView = layout.findViewById(R.id.coursesRecyclerView);
+        recyclerView.setHasFixedSize(false);
         GridLayoutManager layoutManager = new GridLayoutManager(getActivity(), 3);
-        recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(gridAdapter);
+        recyclerView.setLayoutManager(layoutManager);
         int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.course_cell_spacing);
         recyclerView.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
         gridAdapter.itemClickListener = new MyRoadCoursesAdapter.ClickListener() {
@@ -147,10 +150,6 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
                 if (gridAdapter.isSectionHeader(viewHolder.getAdapterPosition())) {
                     return 0;
-                }
-                if (currentPopupMenu != null) {
-                    currentPopupMenu.dismiss();
-                    currentPopupMenu = null;
                 }
                 return makeFlag(ItemTouchHelper.ACTION_STATE_DRAG,
                         ItemTouchHelper.DOWN | ItemTouchHelper.UP | ItemTouchHelper.START | ItemTouchHelper.END);

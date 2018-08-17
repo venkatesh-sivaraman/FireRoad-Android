@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
-import com.base12innovations.android.fireroad.TaskDispatcher;
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,6 +88,18 @@ public class CourseSearchEngine {
                 searchFields.add(course.corequisites.toLowerCase());
             if (course.relatedSubjects != null)
                 searchFields.add(course.relatedSubjects.toLowerCase());
+            if (course.getGIRAttribute() != null) {
+                searchFields.add(course.getGIRAttribute().toString().toLowerCase());
+                searchFields.add(course.getGIRAttribute().rawValue.toLowerCase());
+            }
+            if (course.getCommunicationRequirement() != null) {
+                searchFields.add(course.getCommunicationRequirement().descriptionText().toLowerCase());
+                searchFields.add(course.getCommunicationRequirement().toString().toLowerCase());
+            }
+            if (course.getHASSAttribute() != null) {
+                searchFields.add(course.getHASSAttribute().descriptionText().toLowerCase());
+                searchFields.add(course.getHASSAttribute().toString().toLowerCase());
+            }
             float relevance = 0.0f;
             for (String comp : queryComps) {
                 boolean found = false;

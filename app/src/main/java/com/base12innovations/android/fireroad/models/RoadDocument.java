@@ -45,7 +45,7 @@ public class RoadDocument extends Document {
     }
 
     Map<Integer, List<Course>> courses = new HashMap<>();
-    List<String> coursesOfStudy = new ArrayList<>();
+    public List<String> coursesOfStudy = new ArrayList<>();
     Map<Course, Boolean> overrides = new HashMap<>();
 
     public RoadDocument(File location) {
@@ -156,14 +156,12 @@ public class RoadDocument extends Document {
     }
 
     public boolean addCourse(Course course, int semester) {
-        if (semester < 0 || semester >= semesterNames.length) {
+        if (semester < 0 || semester >= semesterNames.length)
             return false;
-        }
-        if (!courses.containsKey(semester)) {
+        if (!courses.containsKey(semester))
             courses.put(semester, new ArrayList<Course>());
-        } else {
+        if (courses.get(semester).contains(course))
             return false;
-        }
         courses.get(semester).add(course);
         save();
         return true;

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="40dp"
+    android:background="?attr/selectableItemBackground"
+    android:descendantFocusability="blocksDescendants">
+
+    <LinearLayout
+        android:id="@+id/textContent"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@id/progressLabel"
+        android:layout_marginEnd="8dp"
+        android:orientation="horizontal">
+
+        <View
+            android:id="@+id/colorCodingView"
+            android:layout_width="5dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="16dp" />
+
+        <TextView
+            android:id="@+id/subjectIDLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="8dp"
+            android:gravity="center_vertical"
+            android:text="18.03"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/subjectTitleLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:text="Differential Equations" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/progressLabel"
+        android:background="@drawable/requirements_status_background"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:text="100%"
+        android:elevation="2dp"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="2dp"
+        android:textAlignment="textEnd"
+        android:textColor="@android:color/white"
+        android:textStyle="bold" />
+</RelativeLayout>

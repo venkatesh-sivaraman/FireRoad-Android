@@ -192,12 +192,15 @@ public class ColorManager {
 
     public static int colorForCourse(Course course, int alpha) {
         if (course.getSubjectID() != null && specialColors.containsKey(course.getSubjectID())) {
-            Log.d("ColorManager", "Special color for " + course.getSubjectID() + ": " + Integer.toString(specialColors.get(course.getSubjectID())));
             return specialColors.get(course.getSubjectID());
         }
         if (course.getSubjectID() == null || !course.getSubjectID().contains("."))
             return Color.parseColor("#FFBBBBBB");
         String department = course.getSubjectID().substring(0, course.getSubjectID().indexOf('.'));
+        return colorForDepartment(department, alpha);
+    }
+
+    public static int colorForDepartment(String department, int alpha) {
         if (!hueMap.containsKey(department)) {
             return Color.parseColor("#FFBBBBBB");
         }
@@ -211,5 +214,11 @@ public class ColorManager {
         float[] values = new float[] { 0.0f, 0.0f, 0.0f };
         Color.colorToHSV(color, values);
         return Color.HSVToColor(alpha, new float[] {values[0], values[1], values[2] * 0.8f});
+    }
+
+    public static int lightenColor(int color, int alpha) {
+        float[] values = new float[] { 0.0f, 0.0f, 0.0f };
+        Color.colorToHSV(color, values);
+        return Color.HSVToColor(alpha, new float[] {values[0], values[1], Math.min(1.0f, values[2] * 1.3f)});
     }
 }

@@ -144,11 +144,9 @@ public class RequirementsList extends RequirementsListStatement {
 
         // Second line is the description of the course
         String descriptionLine = lines.remove(0);
-        Log.d("RequirementsList", "Content description " + descriptionLine);
         if (descriptionLine.length() > 0) {
             contentDescription = descriptionLine.replaceAll("\\\\n", "\n");
         }
-        Log.d("RequirementsList", "Now content description " + descriptionLine);
 
         if (lines.size() == 0) {
             Log.e("RequirementsList", listID + ": Reached end of file early!");

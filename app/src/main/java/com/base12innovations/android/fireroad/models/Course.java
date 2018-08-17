@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Entity(indices = {@Index(value = {"subjectID"},
         unique = true)})
@@ -75,7 +77,15 @@ public class Course implements Parcelable {
 
     private String instructors = "";
     public String getInstructors() { return instructors; }
-    public String[] getInstructorsList() { return instructors.split(","); }
+    public List<String> getInstructorsList() {
+        String[] comps = instructors.split(",");
+        List<String> inst = new ArrayList<>();
+        for (String comp : comps) {
+            if (comp.length() == 0) continue;
+            inst.add(comp);
+        }
+        return inst;
+    }
     public void setInstructors(String newValue) { this.instructors = newValue; }
 
     public boolean isOfferedFall = false;
@@ -223,6 +233,10 @@ public class Course implements Parcelable {
             }
             return null;
         }
+
+        public boolean satisfies(GIRAttribute otherAttr) {
+            return otherAttr != null && otherAttr == this;
+        }
     }
 
     public enum CommunicationAttribute {
@@ -259,6 +273,10 @@ public class Course implements Parcelable {
                 return lowercasedNames.get(trimmed);
             }
             return null;
+        }
+
+        public boolean satisfies(CommunicationAttribute otherAttr) {
+            return otherAttr != null && (this == CI_HW || otherAttr == this);
         }
     }
 
@@ -300,6 +318,10 @@ public class Course implements Parcelable {
                 return lowercasedNames.get(trimmed);
             }
             return null;
+        }
+
+        public boolean satisfies(HASSAttribute otherAttr) {
+            return otherAttr != null && (otherAttr == ANY || otherAttr == this);
         }
     }
 
@@ -409,4 +431,92 @@ public class Course implements Parcelable {
         }
         return false;
     }
+
+    // Satisfying requirements
+
+    /**
+     * Specifies that a given requirement can be satisfied by a given subject ID.
+     */
+    private static class EquivalencePair {
+        String requirement;
+        String subjectID;
+        EquivalencePair(String r, String s) {
+            this.requirement = r;
+            this.subjectID = s;
+        }
+    }
+
+    /**
+     * Specifies that having ALL of a given list of subject IDs is equivalent to a requirement.
+     */
+    private static class EquivalenceSet {
+        List<String> subjectIDs;
+        String requirement;
+        EquivalenceSet(String r, List<String> s) {
+            this.requirement = r;
+            this.subjectIDs = s;
+        }
+    }
+    private static List<EquivalencePair> equivalencePairs;
+    private static List<EquivalenceSet> equivalenceSets;
+    static {
+        equivalencePairs = new ArrayList<>();
+        equivalencePairs.add(new EquivalencePair("6.0001", "6.00"));
+        equivalencePairs.add(new EquivalencePair("6.0002", "6.00"));
+        equivalenceSets = new ArrayList<>();
+        equivalenceSets.add(new EquivalenceSet("6.00", Arrays.asList("6.0001", "6.0002")));
+    }
+
+    /**
+     If `allCourses` is not nil, it may be a list of courses that can potentially
+     satisfy the requirement. If a combination of courses satisfies the requirement,
+     this method will return true.
+     */
+    public boolean satisfiesRequirement(String requirement, final List<Course> allCourses) {
+        final String req = requirement.replaceAll("GIR:", "");
+        // Normal requirement-course relationship
+        if (getSubjectID().equals(req) ||
+                getJointSubjectsList().contains(req) ||
+                getEquivalentSubjectsList().contains(req) ||
+                (getGIRAttribute() != null && getGIRAttribute().satisfies(GIRAttribute.fromRaw(req))) ||
+                (getCommunicationRequirement() != null && getCommunicationRequirement().satisfies(CommunicationAttribute.fromRaw(req))) ||
+                (getHASSAttribute() != null && getHASSAttribute().satisfies(HASSAttribute.fromRaw(req)))) {
+            return true;
+        }
+        // The course satisfies more than the requirement
+        if (equivalencePairs.stream().filter(new Predicate<EquivalencePair>() {
+            @Override
+            public boolean test(EquivalencePair x) {
+                return x.subjectID.equals(getSubjectID()) && x.requirement.equals(req);
+            }
+        }).collect(Collectors.toList()).size() > 0)
+            return true;
+        // Multiple courses from the allCourses list together satisfy a requirement
+        if (allCourses != null) {
+            List<Object> satisfyingSets = equivalenceSets.stream().filter(new Predicate<EquivalenceSet>() {
+                @Override
+                public boolean test(EquivalenceSet equivalenceSet) {
+                    if (!equivalenceSet.requirement.equals(req)) return false;
+                    for (String sID : equivalenceSet.subjectIDs) {
+                        boolean found = false;
+                        for (Course course : allCourses) {
+                            if (course.getSubjectID() == sID) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found)
+                            return false;
+                    }
+                    return true;
+                }
+            }).collect(Collectors.toList());
+            if (satisfyingSets.size() > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }
