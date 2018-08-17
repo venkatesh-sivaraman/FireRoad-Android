@@ -19,6 +19,7 @@ import android.widget.TextView;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
+import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.RequirementsList;
 import com.base12innovations.android.fireroad.models.RequirementsListManager;
 import com.base12innovations.android.fireroad.models.RequirementsListStatement;
@@ -29,6 +30,7 @@ import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -497,8 +499,41 @@ public class RequirementsListFragment extends Fragment {
                 } else if (req.requirement != null) {
                     // Search
                     String reqString = req.requirement.replaceAll("GIR:", "");
+
+                    // Set up requirement filters based on the content of the string
+                    EnumSet<CourseSearchEngine.Filter> filters = CourseSearchEngine.Filter.noFilter;
+                    Course.GIRAttribute gir = Course.GIRAttribute.fromRaw(reqString);
+                    Course.HASSAttribute hass = Course.HASSAttribute.fromRaw(reqString);
+                    Course.CommunicationAttribute ci = Course.CommunicationAttribute.fromRaw(reqString);
+                    if (ci != null) {
+                        if (ci == Course.CommunicationAttribute.CI_H)
+                            CourseSearchEngine.Filter.filterCI(filters, CourseSearchEngine.Filter.CI_H);
+                        else if (ci == Course.CommunicationAttribute.CI_HW)
+                            CourseSearchEngine.Filter.filterCI(filters, CourseSearchEngine.Filter.CI_HW);
+                    } else if (hass != null) {
+                        CourseSearchEngine.Filter baseOption = CourseSearchEngine.Filter.HASS_NONE;
+                        switch (hass) {
+                            case ANY:
+                                baseOption = CourseSearchEngine.Filter.HASS;
+                                break;
+                            case ARTS:
+                                baseOption = CourseSearchEngine.Filter.HASS_A;
+                                break;
+                            case HUMANITIES:
+                                baseOption = CourseSearchEngine.Filter.HASS_H;
+                                break;
+                            case SOCIAL_SCIENCES:
+                                baseOption = CourseSearchEngine.Filter.HASS_S;
+                                break;
+                        }
+                        CourseSearchEngine.Filter.filterHASS(filters, baseOption);
+                    } else if (gir != null) {
+                        CourseSearchEngine.Filter.filterGIR(filters, CourseSearchEngine.Filter.GIR);
+                    }
+                    CourseSearchEngine.Filter.filterSearchField(filters, CourseSearchEngine.Filter.SEARCH_REQUIREMENTS);
+
                     if (delegate != null) {
-                        delegate.courseNavigatorWantsSearchCourses(RequirementsListFragment.this, reqString);
+                        delegate.courseNavigatorWantsSearchCourses(RequirementsListFragment.this, reqString, filters);
                     }
                 } else {
                     // Sub-requirements page

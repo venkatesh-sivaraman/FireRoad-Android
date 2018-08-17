@@ -15,10 +15,12 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 
 import com.base12innovations.android.fireroad.models.Course;
+import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.RequirementsList;
 import com.base12innovations.android.fireroad.models.RequirementsListManager;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 
@@ -177,9 +179,9 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
     }
 
     @Override
-    public void courseNavigatorWantsSearchCourses(Fragment source, String searchTerm) {
+    public void courseNavigatorWantsSearchCourses(Fragment source, String searchTerm, EnumSet<CourseSearchEngine.Filter> filters) {
         if (mListener != null) {
-            mListener.courseNavigatorWantsSearchCourses(this, searchTerm);
+            mListener.courseNavigatorWantsSearchCourses(this, searchTerm, filters);
         }
     }
 }

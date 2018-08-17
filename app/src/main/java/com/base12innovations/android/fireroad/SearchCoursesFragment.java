@@ -20,17 +20,21 @@ import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
+import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 public class SearchCoursesFragment extends Fragment implements BottomSheetNavFragment, AddCourseDialog.AddCourseDialogDelegate, SearchResultsAdapter.Delegate {
 
     private static String SEARCH_QUERY_EXTRA = "_searchQueryString";
+    private static String SEARCH_FILTERS_EXTRA = "_searchFilters";
     private Toolbar toolbar;
     private SearchResultsAdapter listAdapter;
     private RecyclerView resultsView;
     public String searchQuery;
+    public EnumSet<CourseSearchEngine.Filter> filters;
     public boolean canGoBack = false;
 
     private ProgressBar progressIndicator;
@@ -39,10 +43,12 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
 
     }
 
-    public static SearchCoursesFragment newInstance(String query) {
+    public static SearchCoursesFragment newInstance(String query, EnumSet<CourseSearchEngine.Filter> filters) {
         SearchCoursesFragment fragment = new SearchCoursesFragment();
         Bundle args = new Bundle();
         args.putString(SEARCH_QUERY_EXTRA, query);
+        if (filters != null)
+            args.putSerializable(SEARCH_FILTERS_EXTRA, filters);
         fragment.setArguments(args);
         return fragment;
     }
@@ -55,6 +61,15 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
         View layout = inflater.inflate(R.layout.fragment_search_courses, container, false);
 
         searchQuery = getArguments().getString(SEARCH_QUERY_EXTRA);
+        Serializable f = getArguments().getSerializable(SEARCH_FILTERS_EXTRA);
+        if (f != null && f instanceof EnumSet) {
+            try {
+                filters = (EnumSet<CourseSearchEngine.Filter>)f;
+            } catch (ClassCastException e) {
+                e.printStackTrace();
+            }
+        }
+
         // Set up recycler view
         listAdapter = new SearchResultsAdapter(getContext(), null);
         listAdapter.delegate = new WeakReference<SearchResultsAdapter.Delegate>(this);
@@ -114,14 +129,17 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
             public void perform() {
 
                 // Do the search
-                final List<Course> courses = CourseSearchEngine.sharedInstance().searchSubjects(query);
+                final List<Course> courses = CourseSearchEngine.sharedInstance().searchSubjects(query, filters);
 
                 // On completion
                 TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
                     @Override
                     public void perform() {
                         isSearching = false;
-                        toolbar.setTitle(Integer.toString(courses.size()) + " Search Results");
+                        String title = Integer.toString(courses.size()) + " Search Results";
+                        if (!filters.equals(CourseSearchEngine.Filter.noFilter))
+                            title += " (filters on)";
+                        toolbar.setTitle(title);
                         progressIndicator.setVisibility(ProgressBar.INVISIBLE);
                         listAdapter.setCourses(courses);
                         if (!searchQuery.equals(query)) {

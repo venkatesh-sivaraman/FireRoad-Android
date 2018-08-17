@@ -53,7 +53,8 @@ public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAd
 
         for (RequirementsList list : input) {
             int listToAdd = 4; // Other
-            if (User.currentUser().getCurrentDocument().coursesOfStudy.contains(list.listID))
+            if (User.currentUser().getCurrentDocument() != null &&
+                    User.currentUser().getCurrentDocument().coursesOfStudy.contains(list.listID))
                 listToAdd = 0;
             else if (list.listID.contains("major"))
                 listToAdd = 1;
@@ -121,11 +122,11 @@ public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAd
 
     @Override
     public View getDropDownView(int position, View convertView, ViewGroup parent) {
-        View myView;
+        View myView = convertView;
         int viewType = getItemViewType(position);
-        if (viewType == HEADER_VIEW)
+        if (viewType == HEADER_VIEW && (myView == null || myView.findViewById(R.id.headerLabel) == null))
             myView = inflater.inflate(R.layout.cell_requirements_browse_header, parent, false);
-        else
+        else if (viewType == REQ_LIST_VIEW && (myView == null || myView.findViewById(R.id.progressLabel) == null))
             myView = inflater.inflate(R.layout.cell_requirements_browser, parent, false);
         myView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, myView.getLayoutParams().height));
         if (viewType == HEADER_VIEW)
@@ -151,7 +152,7 @@ public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAd
         if (rList == null) {
             return;
         }
-        ((TextView)myView.findViewById(R.id.subjectIDLabel)).setText(rList.mediumTitle != null ? rList.mediumTitle : rList.shortTitle);
+        ((TextView)myView.findViewById(R.id.subjectIDLabel)).setText(shortTitleForRequirementsList(rList));
         ((TextView)myView.findViewById(R.id.subjectTitleLabel)).setText(rList.titleNoDegree != null ? rList.titleNoDegree : rList.title);
         String dept = rList.shortTitle;
         String[] comps = dept.split("[^A-z0-9]");
@@ -162,6 +163,10 @@ public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAd
             colorView.setBackgroundColor(ColorManager.colorForDepartment(comps[0], 0xFF));
 
         updateProgressLabel(myView, rList);
+    }
+
+    private static String shortTitleForRequirementsList(RequirementsList rList) {
+        return rList.mediumTitle != null ? rList.mediumTitle : rList.shortTitle;
     }
 
     private void updateProgressLabel(final View metadataView, final RequirementsList rList) {
@@ -186,6 +191,9 @@ public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAd
         }, new TaskDispatcher.CompletionBlock<Float>() {
             @Override
             public void completed(Float progress) {
+                // If the view has moved on, don't update
+                if (!((TextView)metadataView.findViewById(R.id.subjectIDLabel)).getText().equals(shortTitleForRequirementsList(rList)))
+                    return;
                 updateProgressLabelPrecomputed(metadataView, progress);
             }
         });

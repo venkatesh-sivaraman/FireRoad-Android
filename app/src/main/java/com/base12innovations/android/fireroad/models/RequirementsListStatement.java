@@ -400,7 +400,8 @@ public class RequirementsListStatement {
         }
 
         TopLevelItemsResult topLevelItems = separateTopLevelItems(filteredStatement);
-        if (threshold != null && threshold.cutoff != 0 && threshold.type == ThresholdType.GREATER_THAN_OR_EQUAL) {
+        if (threshold != null && threshold.cutoff != 0 && threshold.type == ThresholdType.GREATER_THAN_OR_EQUAL
+                && topLevelItems.connectionType == ConnectionType.ALL) {
             // Force the connection type to be any (there's no way it can be all)
             connectionType = ConnectionType.ANY;
         } else {

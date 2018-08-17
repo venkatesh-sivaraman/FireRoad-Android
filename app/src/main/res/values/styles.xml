@@ -19,4 +19,9 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="AppTheme.FilterButtonSelected" parent="Widget.AppCompat.Button.Colored">
+        <item name="android:colorButtonNormal">@color/colorPrimaryDark</item>
+        <item name="android:colorControlHighlight">@color/colorPrimary</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
 </resources>

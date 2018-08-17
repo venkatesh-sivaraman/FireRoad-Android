@@ -3,12 +3,14 @@ package com.base12innovations.android.fireroad.models;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 
 public class CourseSearchEngine {
@@ -27,6 +29,70 @@ public class CourseSearchEngine {
         preferences = context.getSharedPreferences(COURSE_SEARCH_PREFERENCES, Context.MODE_PRIVATE);
     }
 
+    // Filter options
+
+    public enum Filter {
+        GIR_NONE, GIR, GIR_LAB, GIR_REST,
+        HASS_NONE, HASS, HASS_A, HASS_S, HASS_H,
+        CI_NONE, CI_H, CI_HW, NOT_CI,
+        OFFERED_NONE, OFFERED_FALL, OFFERED_SPRING, OFFERED_IAP,
+        LEVEL_NONE, LEVEL_UG, LEVEL_G,
+        SEARCH_ID, SEARCH_TITLE, SEARCH_PREREQS, SEARCH_COREQS, SEARCH_INSTRUCTORS, SEARCH_REQUIREMENTS,
+        CONFLICTS_ANY, CONFLICTS_NO_LECTURE, CONFLICTS_NOT_ALLOWED;
+
+        public static EnumSet<Filter> allGIRFilters = EnumSet.of(GIR_NONE, GIR, GIR_LAB, GIR_REST);
+        public static EnumSet<Filter> allHASSFilters = EnumSet.of(HASS_NONE, HASS, HASS_A, HASS_S, HASS_H);
+        public static EnumSet<Filter> allCIFilters = EnumSet.of(CI_NONE, CI_H, CI_HW, NOT_CI);
+        public static EnumSet<Filter> allOfferedFilters = EnumSet.of(OFFERED_NONE, OFFERED_FALL, OFFERED_IAP, OFFERED_SPRING);
+        public static EnumSet<Filter> allLevelFilters = EnumSet.of(LEVEL_NONE, LEVEL_UG, LEVEL_G);
+        public static EnumSet<Filter> allConflictsFilters = EnumSet.of(CONFLICTS_ANY, CONFLICTS_NO_LECTURE, CONFLICTS_NOT_ALLOWED);
+        public static EnumSet<Filter> searchAllFields = EnumSet.of(SEARCH_ID, SEARCH_TITLE, SEARCH_PREREQS, SEARCH_COREQS, SEARCH_INSTRUCTORS, SEARCH_REQUIREMENTS);
+        public static EnumSet<Filter> noFilter = union(searchAllFields, EnumSet.of(GIR_NONE, HASS_NONE, CI_NONE, LEVEL_NONE, OFFERED_NONE, CONFLICTS_ANY));
+
+        @SafeVarargs
+        private static EnumSet<Filter> union(EnumSet<Filter> ... enums) {
+            if (enums.length == 0)
+                return EnumSet.noneOf(Filter.class);
+            EnumSet<Filter> result = EnumSet.copyOf(enums[0]);
+            for (int i = 1; i < enums.length; i++)
+                result.addAll(enums[i]);
+            return result;
+        }
+
+        // Convenience functions to replace certain axes of filter options
+
+        public static void filterGIR(EnumSet<Filter> filter, Filter girOption) {
+            filter.removeAll(allGIRFilters);
+            filter.add(girOption);
+        }
+        public static void filterHASS(EnumSet<Filter> filter, Filter hassOption) {
+            filter.removeAll(allHASSFilters);
+            filter.add(hassOption);
+        }
+        public static void filterCI(EnumSet<Filter> filter, Filter ciOption) {
+            filter.removeAll(allCIFilters);
+            filter.add(ciOption);
+        }
+        public static void filterOffered(EnumSet<Filter> filter, Filter offeredOption) {
+            filter.removeAll(allOfferedFilters);
+            filter.add(offeredOption);
+        }
+        public static void filterLevel(EnumSet<Filter> filter, Filter levelOption) {
+            filter.removeAll(allLevelFilters);
+            filter.add(levelOption);
+        }
+        public static void filterConflict(EnumSet<Filter> filter, Filter conflictOption) {
+            filter.removeAll(allConflictsFilters);
+            filter.add(conflictOption);
+        }
+        public static void filterSearchField(EnumSet<Filter> filter, Filter searchField) {
+            filter.removeAll(searchAllFields);
+            filter.add(searchField);
+        }
+    }
+
+    // Searching
+
     private class SearchItem {
         Course course;
         float relevance;
@@ -39,11 +105,19 @@ public class CourseSearchEngine {
 
     public float searchProgress = 0.0f;
 
-    public List<Course> searchSubjectsFast(String query) {
+    /**
+     * Searches the course database using an SQL select query.
+     * @param query - the search string.
+     * @param filters - the search filters to apply.
+     * @return a list of courses whose subject IDs or titles match the query exactly.
+     */
+    public List<Course> searchSubjectsFast(String query, EnumSet<Filter> filters) {
         List<Course> results = CourseManager.sharedInstance().courseDatabase.daoAccess().searchCoursesByIDOrTitle(query);
         // Sort results by if they match subject ID vs subject title
         List<SearchItem> searchItems = new ArrayList<>();
         for (Course course : results) {
+            if (!courseSatisfiesSearchFilters(course, filters))
+                continue;
             float relevance = 0.0f;
             if (course.getSubjectID().contains(query)) {
                 if (course.getSubjectID().indexOf(query) == 0) {
@@ -64,42 +138,23 @@ public class CourseSearchEngine {
         return sortedSearchResults(searchItems);
     }
 
-    public List<Course> searchSubjects(String query) {
+    /**
+     * Searches the course database one by one, using the search engine's filters if applicable.
+     * @param query - the search string.
+     * @param filters - filters to apply
+     * @return a list of courses which match the query according to the given filters.
+     */
+    public List<Course> searchSubjects(String query, EnumSet<Filter> filters) {
         String[] queryComps = query.toLowerCase().split("[ ;:,]");
         searchProgress = 0.0f;
         List<Course> allCourses = CourseManager.sharedInstance().courseDatabase.daoAccess().allCourses();
         float interval = 1.0f / (float)allCourses.size();
         List<SearchItem> searchItems = new ArrayList<>();
         for (Course course : allCourses) {
-            if (course.getSubjectID() == null)
-                continue;
             searchProgress += interval;
-            List<String> searchFields = new ArrayList<>();
-            searchFields.add(course.getSubjectID().toLowerCase());
-            if (course.subjectTitle != null)
-                searchFields.add(course.subjectTitle.toLowerCase());
-            if (course.subjectDescription!= null)
-                searchFields.add(course.subjectDescription.toLowerCase());
-            if (course.getInstructors() != null)
-                searchFields.add(course.getInstructors().toLowerCase());
-            if (course.prerequisites != null)
-                searchFields.add(course.prerequisites.toLowerCase());
-            if (course.corequisites != null)
-                searchFields.add(course.corequisites.toLowerCase());
-            if (course.relatedSubjects != null)
-                searchFields.add(course.relatedSubjects.toLowerCase());
-            if (course.getGIRAttribute() != null) {
-                searchFields.add(course.getGIRAttribute().toString().toLowerCase());
-                searchFields.add(course.getGIRAttribute().rawValue.toLowerCase());
-            }
-            if (course.getCommunicationRequirement() != null) {
-                searchFields.add(course.getCommunicationRequirement().descriptionText().toLowerCase());
-                searchFields.add(course.getCommunicationRequirement().toString().toLowerCase());
-            }
-            if (course.getHASSAttribute() != null) {
-                searchFields.add(course.getHASSAttribute().descriptionText().toLowerCase());
-                searchFields.add(course.getHASSAttribute().toString().toLowerCase());
-            }
+            if (course.getSubjectID() == null || !courseSatisfiesSearchFilters(course, filters))
+                continue;
+            List<String> searchFields = searchFieldsForCourse(course, filters);
             float relevance = 0.0f;
             for (String comp : queryComps) {
                 boolean found = false;
@@ -127,6 +182,107 @@ public class CourseSearchEngine {
             }
         }
         return sortedSearchResults(searchItems);
+    }
+
+    private boolean courseSatisfiesSearchFilters(Course course, EnumSet<Filter> filters) {
+        if (filters == null) return true;
+
+        boolean fulfillsGIR = false;
+        if (filters.contains(Filter.GIR_NONE)) {
+            fulfillsGIR = true;
+        } else if (filters.contains(Filter.GIR) && course.getGIRAttribute() != null) {
+            Log.d("CourseSearchEngine","Must require GIR");
+            fulfillsGIR = true;
+        } else if (filters.contains(Filter.GIR_LAB) && course.getGIRAttribute() == Course.GIRAttribute.LAB) {
+            fulfillsGIR = true;
+        } else if (filters.contains(Filter.GIR_REST) && course.getGIRAttribute() == Course.GIRAttribute.REST) {
+            fulfillsGIR = true;
+        }
+        if (!fulfillsGIR) return false;
+
+        boolean fulfillsHASS = false;
+        if (filters.contains(Filter.HASS_NONE)) {
+            fulfillsHASS = true;
+        } else if (filters.contains(Filter.HASS) && course.getHASSAttribute() != null) {
+            fulfillsHASS = true;
+        } else if (filters.contains(Filter.HASS_A) && course.getHASSAttribute() == Course.HASSAttribute.ARTS) {
+            fulfillsHASS = true;
+        } else if (filters.contains(Filter.HASS_S) && course.getHASSAttribute() == Course.HASSAttribute.SOCIAL_SCIENCES) {
+            fulfillsHASS = true;
+        } else if (filters.contains(Filter.HASS_H) && course.getHASSAttribute() == Course.HASSAttribute.HUMANITIES) {
+            fulfillsHASS = true;
+        }
+        if (!fulfillsHASS) return false;
+
+        boolean fulfillsCI = false;
+        if (filters.contains(Filter.CI_NONE)) {
+            fulfillsCI = true;
+        } else if (filters.contains(Filter.CI_H) && course.getCommunicationRequirement() == Course.CommunicationAttribute.CI_H) {
+            fulfillsCI = true;
+        } else if (filters.contains(Filter.NOT_CI) && course.getCommunicationRequirement() == null) {
+            fulfillsCI = true;
+        } else if (filters.contains(Filter.CI_HW) && course.getCommunicationRequirement() == Course.CommunicationAttribute.CI_HW) {
+            fulfillsCI = true;
+        }
+        if (!fulfillsCI) return false;
+
+        boolean fulfillsOffered = false;
+        if (filters.contains(Filter.OFFERED_NONE)) {
+            fulfillsOffered = true;
+        } else if (filters.contains(Filter.OFFERED_FALL) && course.isOfferedFall) {
+            fulfillsOffered = true;
+        } else if (filters.contains(Filter.OFFERED_SPRING) && course.isOfferedSpring) {
+            fulfillsOffered = true;
+        } else if (filters.contains(Filter.OFFERED_IAP) && course.isOfferedIAP) {
+            fulfillsOffered = true;
+        }
+        if (!fulfillsOffered) return false;
+
+        boolean fulfillsLevel = false;
+        if (filters.contains(Filter.LEVEL_NONE)) {
+            fulfillsLevel = true;
+        } else if (filters.contains(Filter.LEVEL_UG) && course.subjectLevel.equals("U")) {
+            fulfillsLevel = true;
+        } else if (filters.contains(Filter.LEVEL_G) && course.subjectLevel.equals("G")) {
+            fulfillsLevel = true;
+        }
+        if (!fulfillsLevel) return false;
+
+        return true;
+
+    }
+
+    private List<String> searchFieldsForCourse(Course course, EnumSet<Filter> mFilters) {
+        List<String> searchFields = new ArrayList<>();
+
+        EnumSet<Filter> filters = mFilters == null ? Filter.noFilter : mFilters;
+
+        if (filters.contains(Filter.SEARCH_ID))
+            searchFields.add(course.getSubjectID().toLowerCase());
+        if (course.subjectTitle != null && filters.contains(Filter.SEARCH_TITLE))
+            searchFields.add(course.subjectTitle.toLowerCase());
+        if (course.getInstructors() != null && filters.contains(Filter.SEARCH_INSTRUCTORS))
+            searchFields.add(course.getInstructors().toLowerCase());
+        if (course.prerequisites != null && filters.contains(Filter.SEARCH_PREREQS))
+            searchFields.add(course.prerequisites.toLowerCase());
+        if (course.corequisites != null && filters.contains(Filter.SEARCH_COREQS))
+            searchFields.add(course.corequisites.toLowerCase());
+
+        if (filters.contains(Filter.SEARCH_REQUIREMENTS)) {
+            if (course.getGIRAttribute() != null) {
+                searchFields.add(course.getGIRAttribute().toString().toLowerCase());
+                searchFields.add(course.getGIRAttribute().rawValue.toLowerCase());
+            }
+            if (course.getCommunicationRequirement() != null) {
+                searchFields.add(course.getCommunicationRequirement().descriptionText().toLowerCase());
+                searchFields.add(course.getCommunicationRequirement().toString().toLowerCase());
+            }
+            if (course.getHASSAttribute() != null) {
+                searchFields.add(course.getHASSAttribute().descriptionText().toLowerCase());
+                searchFields.add(course.getHASSAttribute().toString().toLowerCase());
+            }
+        }
+        return searchFields;
     }
 
     private List<Course> sortedSearchResults(List<SearchItem> searchItems) {

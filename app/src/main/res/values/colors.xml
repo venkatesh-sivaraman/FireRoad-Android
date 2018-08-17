@@ -4,4 +4,7 @@
     <color name="colorPrimaryDark">#830501</color>
     <color name="colorAccent">#f44336</color>
     <color name="neutralButtonColor">#392121</color>
+    <color name="hassColor">#68debb</color>
+    <color name="girColor">#de8c68</color>
+    <color name="ciColor">#de68d2</color>
 </resources>

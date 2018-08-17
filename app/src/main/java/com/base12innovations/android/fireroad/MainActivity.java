@@ -33,15 +33,19 @@ import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Stack;
 
-public class MainActivity extends AppCompatActivity implements MyRoadFragment.OnFragmentInteractionListener, RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate {
+public class MainActivity extends AppCompatActivity implements MyRoadFragment.OnFragmentInteractionListener,
+        RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate,
+        FilterDialogFragment.Delegate {
 
     private DrawerLayout mDrawer;
     private Toolbar toolbar;
     private NavigationView navDrawer;
     private FloatingSearchView mSearchView;
+    private MenuItem filterItem;
 
     private MyRoadFragment myRoadFragment;
     private RequirementsFragment requirementsFragment;
@@ -183,6 +187,20 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
 
     private static int NUM_SEARCH_SUGGESTIONS = 5;
     private boolean isSearching = false;
+    private FilterDialogFragment mFilterDialog;
+    private EnumSet<CourseSearchEngine.Filter> filters = EnumSet.copyOf(CourseSearchEngine.Filter.noFilter);
+
+    public void setFilters(EnumSet<CourseSearchEngine.Filter> newValue) {
+        filters = newValue;
+        if (filterItem != null) {
+            if (filters.equals(CourseSearchEngine.Filter.noFilter))
+                filterItem.setIcon(R.drawable.filter_icon);
+            else
+                filterItem.setIcon(R.drawable.filter_icon_filled);
+            // This is needed to refresh the icon, due to peculiarities with floatingsearchview
+            mSearchView.clearSearchFocus();
+        }
+    }
 
     private void setupSearchView() {
         mSearchView = findViewById(R.id.floating_search_view);
@@ -283,6 +301,22 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
                 });
             }
         });
+
+        mSearchView.setOnMenuItemClickListener(new FloatingSearchView.OnMenuItemClickListener() {
+            @Override
+            public void onActionMenuItemSelected(MenuItem item) {
+                if (item.getItemId() == R.id.action_filter) {
+                    // Show filter dialog
+                    mFilterDialog = new FilterDialogFragment();
+                    mFilterDialog.filters = filters;
+                    mFilterDialog.delegate = new WeakReference<FilterDialogFragment.Delegate>(MainActivity.this);
+                    mFilterDialog.show(getSupportFragmentManager(), "FilterDialog");
+                    filterItem = item;
+                    // This is needed to refresh the icon, due to peculiarities with floatingsearchview
+                    mSearchView.getBackground().setAlpha(150);
+                }
+            }
+        });
     }
 
     public void loadSearchResults(final String query) {
@@ -312,7 +346,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
             public void perform() {
-                final List<Course> courses = CourseSearchEngine.sharedInstance().searchSubjectsFast(query);
+                final List<Course> courses = CourseSearchEngine.sharedInstance().searchSubjectsFast(query, filters);
                 TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
                     @Override
                     public void perform() {
@@ -514,15 +548,15 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
     }
 
     @Override
-    public void courseNavigatorWantsSearchCourses(Fragment source, String searchTerm) {
+    public void courseNavigatorWantsSearchCourses(Fragment source, String searchTerm, EnumSet<CourseSearchEngine.Filter> filters) {
         detailsStack = null;
         currentDetailsFragment = null;
         searchCoursesFragment = null;
-        showSearchCoursesView(searchTerm);
+        showSearchCoursesView(searchTerm, filters);
     }
 
-    public void showSearchCoursesView(String query) {
-        SearchCoursesFragment fragment = SearchCoursesFragment.newInstance(query);
+    public void showSearchCoursesView(String query, EnumSet<CourseSearchEngine.Filter> filters) {
+        SearchCoursesFragment fragment = SearchCoursesFragment.newInstance(query, filters);
         searchCoursesFragment = fragment;
         if (detailsStack == null) {
             detailsStack = new Stack<>();
@@ -532,6 +566,20 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         fragment.delegate = new WeakReference<BottomSheetNavFragment.Delegate>(this);
         presentBottomSheet(fragment);
     }
+
+    public void showSearchCoursesView(String query) {
+        // Get the current selected filter here
+        showSearchCoursesView(query, filters);
+    }
+
+    // Filter
+
+    @Override
+    public void filterDialogDismissed(FilterDialogFragment fragment) {
+        setFilters(fragment.filters);
+        fragment.dismiss();
+    }
+
 
     // My Road
 
