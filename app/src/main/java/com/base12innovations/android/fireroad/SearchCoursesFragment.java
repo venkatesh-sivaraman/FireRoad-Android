@@ -124,6 +124,7 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
 
         isSearching = true;
         progressIndicator.setVisibility(ProgressBar.VISIBLE);
+        toolbar.setTitle("Searching...");
         TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
             public void perform() {

@@ -24,13 +24,13 @@
         android:textStyle="bold" />
 
     <Button
-        android:id="@+id/buttonFavorites"
+        android:id="@+id/buttonSchedule"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:textColor="@color/colorPrimary"
         android:background="?attr/selectableItemBackground"
-        android:text="Favorites" />
+        android:text="Schedule" />
 
     <Button
         android:id="@+id/button0"

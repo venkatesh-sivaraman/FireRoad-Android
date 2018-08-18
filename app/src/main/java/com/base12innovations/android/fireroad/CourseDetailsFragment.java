@@ -22,6 +22,7 @@ import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.RoadDocument;
+import com.base12innovations.android.fireroad.models.ScheduleDocument;
 import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
@@ -29,6 +30,8 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import static com.base12innovations.android.fireroad.CourseNavigatorDelegate.ADD_TO_SCHEDULE;
 
 public class CourseDetailsFragment extends Fragment implements BottomSheetNavFragment, AddCourseDialog.AddCourseDialogDelegate {
 
@@ -361,13 +364,23 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
     @Override
     public void addCourseDialogAddedToSemester(Course course, int semester) {
-        RoadDocument doc = User.currentUser().getCurrentDocument();
-        if (doc != null) {
-            boolean worked = doc.addCourse(course, semester);
-            if (worked) {
+        if (semester == ADD_TO_SCHEDULE) {
+            ScheduleDocument doc = User.currentUser().getCurrentSchedule();
+            if (doc != null) {
+                doc.addCourse(course);
                 if (delegate.get() != null)
                     delegate.get().courseNavigatorAddedCourse(this, course, semester);
-                Snackbar.make(mContentView, "Added " + course.getSubjectID(), Snackbar.LENGTH_LONG).show();
+                Snackbar.make(mContentView, "Added " + course.getSubjectID() + " to schedule", Snackbar.LENGTH_LONG).show();
+            }
+        } else {
+            RoadDocument doc = User.currentUser().getCurrentDocument();
+            if (doc != null) {
+                boolean worked = doc.addCourse(course, semester);
+                if (worked) {
+                    if (delegate.get() != null)
+                        delegate.get().courseNavigatorAddedCourse(this, course, semester);
+                    Snackbar.make(mContentView, "Added " + course.getSubjectID(), Snackbar.LENGTH_LONG).show();
+                }
             }
         }
         addCourseDialog.dismiss();

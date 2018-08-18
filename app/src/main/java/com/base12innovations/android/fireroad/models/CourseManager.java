@@ -450,10 +450,10 @@ public class CourseManager {
                     break;
                 /*case "Related Subjects":
                     course.relatedSubjects = component;
-                    break;
-                case "Schedule":
-                    course.schedule = component;
                     break;*/
+                case "Schedule":
+                    course.rawSchedule = component;
+                    break;
                 case "URL":
                     course.url = component;
                     break;

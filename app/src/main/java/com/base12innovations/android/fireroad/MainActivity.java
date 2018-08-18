@@ -29,6 +29,8 @@ import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.ScheduleConfiguration;
+import com.base12innovations.android.fireroad.models.ScheduleGenerator;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
@@ -37,10 +39,10 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Stack;
 
-public class MainActivity extends AppCompatActivity implements MyRoadFragment.OnFragmentInteractionListener,
-        RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate,
+public class MainActivity extends AppCompatActivity implements RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate,
         FilterDialogFragment.Delegate {
 
+    private static String CURRENT_FRAGMENT_TAG = "currentlyDisplayedFragment";
     private DrawerLayout mDrawer;
     private Toolbar toolbar;
     private NavigationView navDrawer;
@@ -63,6 +65,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         setupBottomSheet();
         hideBottomSheet();
 
+        restoreFragments();
         if (getSupportFragmentManager().findFragmentById(R.id.fr_content) == null) {
             showContentFragment(getMyRoadFragment());
         }
@@ -124,6 +127,19 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         mDrawer.closeDrawers();
     }
 
+    private void restoreFragments() {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        Fragment currentFragment = fragmentManager.findFragmentByTag(CURRENT_FRAGMENT_TAG);
+        if (currentFragment != null) {
+            if (currentFragment instanceof MyRoadFragment)
+                myRoadFragment = (MyRoadFragment)currentFragment;
+            else if (currentFragment instanceof ScheduleFragment)
+                scheduleFragment = (ScheduleFragment)currentFragment;
+            else if (currentFragment instanceof RequirementsFragment)
+                requirementsFragment = (RequirementsFragment)requirementsFragment;
+        }
+    }
+
     private void showContentFragment(int id) {
         Fragment fragment = null;
         switch(id) {
@@ -136,6 +152,9 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
             case R.id.nav_third_fragment:
                 fragmentClass = ThirdFragment.class;
                 break;*/
+            case R.id.schedule_menu_item:
+                fragment = getScheduleFragment();
+                break;
             case R.id.requirements_menu_item:
                 fragment = getRequirementsFragment();
                 break;
@@ -152,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         if (fragment != null) {
             // Insert the fragment by replacing any existing fragment
             FragmentManager fragmentManager = getSupportFragmentManager();
-            fragmentManager.beginTransaction().replace(R.id.fr_content, fragment).commit();
+            fragmentManager.beginTransaction().replace(R.id.fr_content, fragment, CURRENT_FRAGMENT_TAG).commit();
         }
     }
 
@@ -220,6 +239,8 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
             @Override
             public void onClearSearchClicked() {
                 loadSearchResults("");
+                if (searchCoursesFragment != null)
+                    hideBottomSheet();
             }
         });
         mSearchView.setOnQueryChangeListener(new FloatingSearchView.OnQueryChangeListener() {
@@ -504,6 +525,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         BottomSheetBehavior bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
         currentDetailsFragment = null;
+        searchCoursesFragment = null;
         detailsStack = null;
         dimViewOff();
     }
@@ -540,11 +562,16 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
 
     @Override
     public void courseNavigatorAddedCourse(Fragment source, Course course, int semester) {
-        getMyRoadFragment().roadAddedCourse(course, semester);
-        collapseBottomSheet();
-        if (requirementsFragment != null) {
-            requirementsFragment.notifyRequirementsStatusChanged();
+        if (semester == ADD_TO_SCHEDULE) {
+            if (scheduleFragment != null)
+                scheduleFragment.scheduleAddedCourse(course);
+        } else {
+            getMyRoadFragment().roadAddedCourse(course, semester);
+            if (requirementsFragment != null) {
+                requirementsFragment.notifyRequirementsStatusChanged();
+            }
         }
+        collapseBottomSheet();
     }
 
     @Override
@@ -558,6 +585,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
     public void showSearchCoursesView(String query, EnumSet<CourseSearchEngine.Filter> filters) {
         SearchCoursesFragment fragment = SearchCoursesFragment.newInstance(query, filters);
         searchCoursesFragment = fragment;
+        currentDetailsFragment = null;
         if (detailsStack == null) {
             detailsStack = new Stack<>();
         }
@@ -578,6 +606,11 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
     public void filterDialogDismissed(FilterDialogFragment fragment) {
         setFilters(fragment.filters);
         fragment.dismiss();
+
+        if (searchCoursesFragment != null) {
+            searchCoursesFragment.filters = filters;
+            searchCoursesFragment.loadSearchResults(searchCoursesFragment.searchQuery);
+        }
     }
 
 
@@ -590,7 +623,6 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         return myRoadFragment;
     }
 
-    @Override
     public void onShowCourseDetails(Course course) {
         if (detailsStack != null && detailsStack.size() > 0) {
             Course lastCourse = detailsStack.get(detailsStack.size() - 1).course;
@@ -601,6 +633,7 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         }
         CourseDetailsFragment fragment = CourseDetailsFragment.newInstance(course);
         currentDetailsFragment = fragment;
+        searchCoursesFragment = null;
         if (detailsStack == null) {
             detailsStack = new Stack<>();
         }
@@ -615,5 +648,14 @@ public class MainActivity extends AppCompatActivity implements MyRoadFragment.On
         if (requirementsFragment == null)
             requirementsFragment = RequirementsFragment.newInstance();
         return requirementsFragment;
+    }
+
+    // Schedule
+    private ScheduleFragment scheduleFragment;
+    private ScheduleFragment getScheduleFragment() {
+        if (scheduleFragment == null) {
+            scheduleFragment = ScheduleFragment.newInstance();
+        }
+        return scheduleFragment;
     }
 }

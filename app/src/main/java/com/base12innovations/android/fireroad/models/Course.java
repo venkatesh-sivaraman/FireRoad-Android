@@ -11,6 +11,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -372,9 +373,6 @@ public class Course implements Parcelable {
         return nonemptyComponents(relatedSubjects, ",");
     }
 
-    //var schedule: [String: [[CourseScheduleItem]]]?
-
-
     public Course() {}
 
     // 99.9% of the time you can just ignore this
@@ -517,6 +515,306 @@ public class Course implements Parcelable {
         }
 
         return false;
+    }
+
+    // Scheduling
+
+    public String rawSchedule;
+
+    public static class ScheduleDay {
+        public static int NONE = 0;
+        public static int MON = 1 << 6;
+        public static int TUES = 1 << 5;
+        public static int WED = 1 << 4;
+        public static int THURS = 1 << 3;
+        public static int FRI = 1 << 2;
+        public static int SAT = 1 << 1;
+        public static int SUN = 1 << 0;
+
+        public static int[] ordering = new int[] {
+                MON, TUES, WED, THURS, FRI, SAT, SUN
+        };
+
+        public static int indexOf(int day) {
+            for (int i = 0; i < ordering.length; i++) {
+                if (ordering[i] == day)
+                    return i;
+            }
+            return 0;
+        }
+
+        static Map<Integer, String> stringMappings;
+        static {
+            stringMappings = new HashMap<>();
+            stringMappings.put(MON, "M");
+            stringMappings.put(TUES, "T");
+            stringMappings.put(WED, "W");
+            stringMappings.put(THURS, "R");
+            stringMappings.put(FRI, "F");
+            stringMappings.put(SAT, "S");
+            stringMappings.put(SUN, "S");
+        }
+
+        public static String toString(int val) {
+            String result = "";
+            for (int day: ordering) {
+                if ((val & day) != 0) {
+                    result += stringMappings.get(day);
+                }
+            }
+            return result;
+        }
+
+        public static int fromString(String str) {
+            int result = NONE;
+            for (int i = 0; i < str.length(); i++) {
+                for (int dayIdx: ordering) {
+                    if (stringMappings.get(dayIdx).equals(str.substring(i, i + 1))) {
+                        result |= dayIdx;
+                    }
+                }
+            }
+            return result;
+        }
+
+        public static int minDay(int val) {
+            for (int day : ordering) {
+                if ((val & day) != 0)
+                    return day;
+            }
+            return NONE;
+        }
+
+        public static int maxDay(int val) {
+            for (int i = ordering.length - 1; i >= 0; i--) {
+                if ((val & ordering[i]) != 0)
+                    return ordering[i];
+            }
+            return NONE;
+        }
+    }
+
+    public static class ScheduleTime implements Comparable {
+        public int hour;
+        public int minute;
+        public boolean PM;
+
+        public ScheduleTime(int hour, int minute, boolean PM) {
+            this.hour = hour;
+            this.minute = minute;
+            this.PM = PM;
+        }
+
+        public static ScheduleTime fromString(String time, boolean evening) {
+            List<Integer> comps = new ArrayList<>();
+            for (String comp: time.split("[,.:;]")) {
+                try {
+                    comps.add(Integer.parseInt(comp));
+                } catch (NumberFormatException e) { }
+            }
+            if (comps.size() == 0) {
+                Log.e("Course", "Not enough components in time string " + time);
+                return new ScheduleTime(12, 0, true);
+            }
+
+            boolean pm = ((comps.get(0) <= 7) || evening);
+            if (comps.get(0) == 12) pm = !evening;
+            if (comps.size() == 1)
+                return new ScheduleTime(comps.get(0), 0, pm);
+            return new ScheduleTime(comps.get(0), comps.get(1), pm);
+        }
+
+        @Override
+        public String toString() {
+            return toString((PM && hour > 7 && hour != 12));
+        }
+
+        public String toString(boolean timeOfDay) {
+            return Integer.toString(hour) + (minute != 0 ? String.format(Locale.US, ":%02d", minute) : "") + (timeOfDay ? (PM ? " PM" : " AM") : "");
+        }
+
+        public int hour24() {
+            return hour + (PM && hour != 12 ? 12 : 0);
+        }
+
+        @Override
+        public int compareTo(@NonNull Object o) {
+            if (!(o instanceof ScheduleTime))
+                return 0;
+            ScheduleTime other = (ScheduleTime)o;
+            if (hour24() != other.hour24())
+                return (hour24() < other.hour24()) ? -1 : 1;
+            if (minute != other.minute)
+                return (minute < other.minute ? -1 : 1);
+            return 0;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof ScheduleTime))
+                return false;
+            ScheduleTime other = (ScheduleTime)obj;
+            return hour == other.hour && minute == other.minute && PM == other.PM;
+        }
+
+        public ScheduleTime deltaTo(ScheduleTime other) {
+            if (compareTo(other) > 0) {
+                ScheduleTime res = other.deltaTo(this);
+                return new ScheduleTime(-res.hour, -res.minute, false);
+            }
+            int myHour = hour24();
+            int destinationHour = other.hour24();
+            int minutes = 0;
+            while (myHour < destinationHour) {
+                minutes += 60;
+                myHour += 1;
+            }
+            minutes += other.minute - minute;
+            return new ScheduleTime(minutes / 60, minutes % 60, false);
+        }
+    }
+
+    public class ScheduleItem implements Comparable {
+        public int days;
+        public ScheduleTime startTime;
+        public ScheduleTime endTime;
+        public boolean isEvening;
+        public String location;
+
+        public ScheduleItem(String dayStr, String startTimeStr, String endTimeStr, boolean isEvening, String location) {
+            this.days = ScheduleDay.fromString(dayStr);
+            this.startTime = ScheduleTime.fromString(startTimeStr, isEvening);
+            this.endTime = ScheduleTime.fromString(endTimeStr, isEvening);
+            if (this.startTime.PM && !isEvening) {
+                this.endTime.PM = true;
+            }
+            this.isEvening = isEvening;
+            this.location = location;
+        }
+
+        public String toString(boolean withLocation) {
+            return ScheduleDay.toString(days) + " " + startTime.toString(false) + "-" +
+                    endTime.toString(false) + (location != null && withLocation ? " (" + location + ")" : "");
+        }
+
+        @Override
+        public String toString() {
+            return toString(true);
+        }
+
+        @Override
+        public int compareTo(@NonNull Object o) {
+            if (!(o instanceof ScheduleItem))
+                return 0;
+            ScheduleItem other = (ScheduleItem)o;
+            if (ScheduleDay.minDay(days) != ScheduleDay.minDay(other.days)) {
+                return (ScheduleDay.minDay(days) < ScheduleDay.minDay(other.days)) ? -1 : 1;
+            }
+            return startTime.compareTo(other.startTime);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof ScheduleItem))
+                return false;
+            ScheduleItem other = (ScheduleItem)obj;
+            return days == other.days && startTime.equals(other.startTime) && endTime.equals(other.endTime) && isEvening == other.isEvening && location.equals(other.location);
+        }
+    }
+
+    public static class ScheduleType {
+        public static String LECTURE = "Lecture";
+        public static String RECITATION = "Recitation";
+        public static String LAB = "Lab";
+        public static String DESIGN = "Design";
+
+        public static String[] ordering = new String[] {
+                LECTURE, RECITATION, LAB, DESIGN
+        };
+
+        private static Map<String, String> abbreviations;
+        static {
+            abbreviations = new HashMap<>();
+            abbreviations.put(LECTURE, "Lec");
+            abbreviations.put(RECITATION, "Rec");
+            abbreviations.put(LAB, "Lab");
+            abbreviations.put(DESIGN, "Des");
+        }
+
+        public String abbreviationFor(String type) {
+            if (abbreviations.containsKey(type))
+                return abbreviations.get(type);
+            return "N/A";
+        }
+    }
+
+    @Ignore
+    private Map<String, List<List<ScheduleItem>>> _schedule;
+    private void parseScheduleString() {
+        if (rawSchedule == null) {
+            _schedule = null;
+            return;
+        }
+        _schedule = new HashMap<>();
+        for (String comp : rawSchedule.split(";")) {
+            if (comp.length() == 0) continue;
+            List<String> commaComponents = new ArrayList<>(Arrays.asList(comp.split(",")));
+            if (commaComponents.size() == 0) continue;
+            String groupType = commaComponents.remove(0);
+
+            List<List<ScheduleItem>> items = new ArrayList<>();
+            for (String scheduleOption : commaComponents) {
+                String[] slashComps = scheduleOption.split("[/]");
+                if (slashComps.length <= 1) continue;
+                String location = slashComps[0];
+                items.add(new ArrayList<ScheduleItem>());
+                for (int i = 1; i < slashComps.length; i += 3) {
+                    if (i + 3 > slashComps.length) break;
+                    int eveningInt = Integer.parseInt(slashComps[i + 1]);
+                    String startTime, endTime;
+                    String timeString = slashComps[i + 2].toLowerCase().replaceAll("am|pm", "").trim();
+                    if (timeString.contains("-")) {
+                        String[] comps = timeString.split("-");
+                        startTime = comps[0];
+                        endTime = comps[1];
+                    } else {
+                        startTime = timeString;
+                        try {
+                            int timeInt = Integer.parseInt(startTime);
+                            endTime = Integer.toString((timeInt % 12) + 1);
+                        } catch (NumberFormatException e) {
+                            // It may be a time like 7.30
+                            if (startTime.contains(".")) {
+                                int dotIndex = startTime.indexOf(".");
+                                int hour = Integer.parseInt(startTime.substring(0, dotIndex));
+                                endTime = Integer.toString((hour % 12) + 1) + "." + startTime.substring(dotIndex + 1);
+                            } else {
+                                Log.e("Course", "Can't parse schedule string " + scheduleOption);
+                                endTime = startTime;
+                            }
+                        }
+                    }
+                    items.get(items.size() - 1).add(new ScheduleItem(slashComps[i], startTime, endTime, (eveningInt != 0), location));
+                }
+            }
+
+            if (items.size() > 0) {
+                items.sort(new Comparator<List<ScheduleItem>>() {
+                    @Override
+                    public int compare(List<ScheduleItem> scheduleItems, List<ScheduleItem> t1) {
+                        return scheduleItems.get(0).compareTo(t1.get(0));
+                    }
+                });
+                _schedule.put(groupType, items);
+            }
+        }
+    }
+
+    public Map<String, List<List<ScheduleItem>>> getSchedule() {
+        if (_schedule == null) {
+            parseScheduleString();
+        }
+        return _schedule;
     }
 
 }

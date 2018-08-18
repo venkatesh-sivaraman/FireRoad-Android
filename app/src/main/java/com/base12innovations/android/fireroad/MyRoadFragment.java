@@ -43,13 +43,13 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     private MyRoadCoursesAdapter gridAdapter;
     private ProgressBar loadingIndicator;
 
-    private Course currentlySelectedCourse;
     private int currentlySelectedSemester;
     private int currentlySelectedPosition;
     private RecyclerView recyclerView;
+    private Course currentlySelectedCourse;
     private PopupMenu currentPopupMenu;
 
-    private OnFragmentInteractionListener mListener;
+    private CourseNavigatorDelegate mListener;
 
     public MyRoadFragment() {
         // Required empty public constructor
@@ -239,11 +239,11 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
+        if (context instanceof CourseNavigatorDelegate) {
+            mListener = (CourseNavigatorDelegate) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement CourseNavigatorDelegate");
         }
     }
 
@@ -253,27 +253,12 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         mListener = null;
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onShowCourseDetails(Course course);
-    }
-
     public void showCourseDetails(Course course) {
         /*Intent intent = new Intent(getActivity(), CourseDetailsFragment.class);
         intent.putExtra(CourseDetailsFragment.COURSE_EXTRA, currentlySelectedCourse);
         startActivity(intent);*/
         if (mListener != null) {
-            mListener.onShowCourseDetails(course);
+            mListener.courseNavigatorWantsCourseDetails(this, course);
         }
     }
 

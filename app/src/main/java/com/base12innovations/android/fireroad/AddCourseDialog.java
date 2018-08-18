@@ -23,6 +23,8 @@ import com.base12innovations.android.fireroad.models.User;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.base12innovations.android.fireroad.CourseNavigatorDelegate.ADD_TO_SCHEDULE;
+
 
 /**
  * A simple {@link Fragment} subclass.
@@ -61,6 +63,22 @@ public class AddCourseDialog extends DialogFragment {
         View view = inflater.inflate(R.layout.fragment_add_course_dialog, null);
         builder.setView(view);
 
+        Button scheduleButton = (Button)view.findViewById(R.id.buttonSchedule);
+        if (User.currentUser().getCurrentSchedule() != null &&
+                User.currentUser().getCurrentSchedule().courses.contains(course)) {
+            scheduleButton.setEnabled(false);
+            scheduleButton.setAlpha(0.5f);
+            scheduleButton.setText("Added to Schedule");
+        }
+        else
+            scheduleButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (delegate != null)
+                        delegate.addCourseDialogAddedToSemester(course, ADD_TO_SCHEDULE);
+                }
+            });
+
         buttonSemesters = new HashMap<>();
         buttonSemesters.put(R.id.button0, 0);
         buttonSemesters.put(R.id.button1, 1);
@@ -83,7 +101,6 @@ public class AddCourseDialog extends DialogFragment {
 
         for (final Integer id : buttonSemesters.keySet()) {
             Button button = view.findViewById(id);
-            Log.d("AddCourseDialog", doc.coursesForSemester(buttonSemesters.get(id)).toString());
             if (doc != null && doc.coursesForSemester(buttonSemesters.get(id)).contains(course)) {
                 button.setEnabled(false);
                 button.setAlpha(0.5f);
