@@ -26,15 +26,27 @@
             android:label="@string/title_activity_course_details"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar" />
-        <activity android:name=".SearchCoursesFragment"
+        <activity
+            android:name=".SearchCoursesFragment"
             android:label="SearchCoursesActivity"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.SEARCH" />
             </intent-filter>
-            <meta-data android:name="android.app.searchable"
-                android:resource="@xml/searchable"/>
+
+            <meta-data
+                android:name="android.app.searchable"
+                android:resource="@xml/searchable" />
+        </activity>
+        <activity
+            android:name=".DocumentBrowserActivity"
+            android:label="@string/title_activity_document_browser"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.base12innovations.android.fireroad.MainActivity" />
         </activity>
     </application>
 

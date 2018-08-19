@@ -32,6 +32,7 @@ import android.widget.TextView;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
+import com.base12innovations.android.fireroad.models.Document;
 import com.base12innovations.android.fireroad.models.ScheduleConfiguration;
 import com.base12innovations.android.fireroad.models.ScheduleDocument;
 import com.base12innovations.android.fireroad.models.ScheduleGenerator;
@@ -170,7 +171,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
             return;
 
         if (User.currentUser().getCurrentSchedule() == null) {
-            final ScheduleDocument document = new ScheduleDocument(new File(currentActivity.getFilesDir(), "First Steps.sched"));
+            final ScheduleDocument document = new ScheduleDocument(new File(currentActivity.getFilesDir(), Document.INITIAL_DOCUMENT_TITLE + ".sched"));
             TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
                 @Override
                 public Void perform() {

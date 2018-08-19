@@ -21,6 +21,9 @@
     <dimen name="text_margin">16dp</dimen>
     <dimen name="filter_button_padding">24dp</dimen>
     <dimen name="filter_view_button_margin">2dp</dimen>
+    <dimen name="document_icon_dimension">32dp</dimen>
+    <dimen name="document_icon_elevation">6dp</dimen>
+    <dimen name="dialog_text_box_margin">18dp</dimen>
 
     <!-- Schedule layout values -->
     <dimen name="schedule_hour_col_width">32dp</dimen>

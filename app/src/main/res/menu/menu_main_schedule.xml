@@ -14,4 +14,10 @@
         android:title="Share..."
         android:icon="@drawable/share_icon"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_browse_schedule"
+        android:orderInCategory="4"
+        android:title="Open other schedule..."
+        android:icon="@drawable/browse_icon"
+        app:showAsAction="never" />
 </menu>

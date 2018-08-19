@@ -8,6 +8,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -50,6 +51,15 @@ public class RoadDocument extends Document {
 
     public RoadDocument(File location) {
         super(location);
+    }
+    public RoadDocument(File location, boolean readOnly) {
+        super(location, readOnly);
+    }
+
+    public static RoadDocument newDocument(File location) {
+        RoadDocument doc = new RoadDocument(location);
+        doc.coursesOfStudy = Arrays.asList("girs");
+        return doc;
     }
 
     @Override
@@ -140,6 +150,7 @@ public class RoadDocument extends Document {
         }
     }
 
+    @Override
     public List<Course> getAllCourses() {
         List<Course> allCourses = new ArrayList<>();
         for (int semester : this.courses.keySet()) {

@@ -10,16 +10,34 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Document {
 
+    public static String ROAD_DOCUMENT_TYPE = "RoadDocument";
+    public static String SCHEDULE_DOCUMENT_TYPE = "ScheduleDocument";
+    public static String INITIAL_DOCUMENT_TITLE = "First Steps";
+
     public File file;
+
+    private boolean readOnly;
+    public boolean isReadOnly() { return readOnly; }
 
     public Document(File location) {
         this.file = location;
     }
+    public Document(File location, boolean readOnly) {
+        this.file = location;
+        this.readOnly = readOnly;
+    }
+
+    public List<Course> getAllCourses() {
+        return new ArrayList<>();
+    }
 
     public void save() {
+        if (isReadOnly()) return;
         try {
             this.file.createNewFile();
             String contents = contentsString();

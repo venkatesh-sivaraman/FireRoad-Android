@@ -1,7 +1,11 @@
 package com.base12innovations.android.fireroad;
 
 import android.animation.Animator;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.NavigationView;
 import android.support.v4.widget.DrawerLayout;
@@ -26,9 +30,11 @@ import android.widget.TextView;
 import com.arlib.floatingsearchview.FloatingSearchView;
 import com.arlib.floatingsearchview.suggestions.SearchSuggestionsAdapter;
 import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
+import com.arlib.floatingsearchview.util.view.MenuView;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.Document;
 import com.base12innovations.android.fireroad.models.ScheduleConfiguration;
 import com.base12innovations.android.fireroad.models.ScheduleGenerator;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
@@ -43,6 +49,10 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         FilterDialogFragment.Delegate {
 
     private static String CURRENT_FRAGMENT_TAG = "currentlyDisplayedFragment";
+
+    private static int ROAD_BROWSER_REQUEST = 1234;
+    private static int SCHEDULE_BROWSER_REQUEST = 5678;
+
     private DrawerLayout mDrawer;
     private Toolbar toolbar;
     private NavigationView navDrawer;
@@ -66,8 +76,12 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         hideBottomSheet();
 
         restoreFragments();
-        if (getSupportFragmentManager().findFragmentById(R.id.fr_content) == null) {
-            showContentFragment(getMyRoadFragment());
+        if (getSupportFragmentManager().findFragmentByTag(CURRENT_FRAGMENT_TAG) == null) {
+            int lastShown = lastShownFragmentID();
+            if (lastShown != 0)
+                showContentFragment(lastShown);
+            else
+                showContentFragment(R.id.my_road_menu_item);
         }
         setupDrawerContent(navDrawer);
 
@@ -96,6 +110,17 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
                 }
             });
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (requestCode == ROAD_BROWSER_REQUEST && resultCode == RESULT_OK) {
+            if (myRoadFragment != null)
+                myRoadFragment.reloadView();
+        } else if (requestCode == SCHEDULE_BROWSER_REQUEST && resultCode == RESULT_OK) {
+            if (scheduleFragment != null)
+                scheduleFragment.loadSchedules(true);
         }
     }
 
@@ -154,14 +179,18 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 break;*/
             case R.id.schedule_menu_item:
                 fragment = getScheduleFragment();
+                mSearchView.inflateOverflowMenu(R.menu.menu_main_schedule);
                 break;
             case R.id.requirements_menu_item:
                 fragment = getRequirementsFragment();
+                mSearchView.inflateOverflowMenu(R.menu.menu_main);
                 break;
             default:
                 fragment = getMyRoadFragment();
+                mSearchView.inflateOverflowMenu(R.menu.menu_main_road);
                 break;
         }
+        setLastShownFragmentID(id);
 
         showContentFragment(fragment);
 
@@ -173,33 +202,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             FragmentManager fragmentManager = getSupportFragmentManager();
             fragmentManager.beginTransaction().replace(R.id.fr_content, fragment, CURRENT_FRAGMENT_TAG).commit();
         }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        } else if (id == R.id.action_filter) {
-            /*Intent intent = new Intent(this, SearchCoursesFragment.class);
-            startActivity(intent);*/
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     // Searching
@@ -335,6 +337,14 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     filterItem = item;
                     // This is needed to refresh the icon, due to peculiarities with floatingsearchview
                     mSearchView.getBackground().setAlpha(150);
+                } else if (item.getItemId() == R.id.action_browse_road) {
+                    Intent browseIntent = new Intent(MainActivity.this, DocumentBrowserActivity.class);
+                    browseIntent.putExtra(DocumentBrowserActivity.DOCUMENT_TYPE_EXTRA, Document.ROAD_DOCUMENT_TYPE);
+                    startActivityForResult(browseIntent, ROAD_BROWSER_REQUEST);
+                } else if (item.getItemId() == R.id.action_browse_schedule) {
+                    Intent browseIntent = new Intent(MainActivity.this, DocumentBrowserActivity.class);
+                    browseIntent.putExtra(DocumentBrowserActivity.DOCUMENT_TYPE_EXTRA, Document.SCHEDULE_DOCUMENT_TYPE);
+                    startActivityForResult(browseIntent, SCHEDULE_BROWSER_REQUEST);
                 }
             }
         });
@@ -657,5 +667,21 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             scheduleFragment = ScheduleFragment.newInstance();
         }
         return scheduleFragment;
+    }
+
+    // Preferences
+    private static String PREFERENCES = "com.base12innovations.android.fireroad.MainActivity.Preferences";
+    private static String LAST_SHOWN_FRAGMENT = "lastShownFragment";
+
+    public int lastShownFragmentID() {
+        SharedPreferences prefs = getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        return prefs.getInt(LAST_SHOWN_FRAGMENT, 0);
+    }
+
+    public void setLastShownFragmentID(int id) {
+        SharedPreferences prefs = getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putInt(LAST_SHOWN_FRAGMENT, id);
+        editor.apply();
     }
 }

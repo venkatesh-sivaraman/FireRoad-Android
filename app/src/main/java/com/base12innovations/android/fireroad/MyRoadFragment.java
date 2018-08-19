@@ -21,6 +21,7 @@ import android.widget.ProgressBar;
 
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
+import com.base12innovations.android.fireroad.models.Document;
 import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
@@ -194,7 +195,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             return;
         }
         if (User.currentUser().getCurrentDocument() == null) {
-            final RoadDocument document = new RoadDocument(new File(currentActivity.getFilesDir(), "First Steps.road"));
+            final RoadDocument document = RoadDocument.newDocument(new File(currentActivity.getFilesDir(), Document.INITIAL_DOCUMENT_TITLE + ".road"));
             TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
                 @Override
                 public Void perform() {
@@ -224,6 +225,14 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             document.addCourse(new Course("6.036", "Introduction to Machine Learning"), 3);
         }*/
 
+    }
+
+    public void reloadView() {
+        Log.d("MyRoadFragment","Setting current document to " + User.currentUser().getCurrentDocument().file);
+        Log.d("MyRoadFragment","Curr doc has " + User.currentUser().getCurrentDocument().getAllCourses().toString());
+        if (gridAdapter != null) {
+            gridAdapter.setDocument(User.currentUser().getCurrentDocument());
+        }
     }
 
     public void roadAddedCourse(Course course, int semester) {

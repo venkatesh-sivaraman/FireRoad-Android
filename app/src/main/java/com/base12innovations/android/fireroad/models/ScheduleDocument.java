@@ -43,6 +43,12 @@ public class ScheduleDocument extends Document {
     public ScheduleDocument(File location) {
         super(location);
     }
+    public ScheduleDocument(File location, boolean readOnly) { super(location, readOnly); }
+
+    @Override
+    public List<Course> getAllCourses() {
+        return courses;
+    }
 
     @Override
     public void parse(String contents) {
