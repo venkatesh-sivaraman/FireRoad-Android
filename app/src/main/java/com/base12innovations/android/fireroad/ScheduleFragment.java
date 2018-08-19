@@ -12,6 +12,7 @@ import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.widget.AppCompatImageButton;
 import android.text.TextUtils;
@@ -734,7 +735,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
     @Override
     public boolean onMenuItemClick(MenuItem menuItem) {
         currentPopupMenu = null;
-        Course course = currentlySelectedCourse;
+        final Course course = currentlySelectedCourse;
         currentlySelectedCourse = null;
         switch (menuItem.getItemId()) {
             case R.id.viewCourse:
@@ -746,6 +747,32 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                 return true;
             case R.id.constrainCourse:
                 // Show constrain sections view
+                final ConstrainDialogFragment fragment = new ConstrainDialogFragment();
+                fragment.course = course;
+                if (document.allowedSections == null || !document.allowedSections.containsKey(course))
+                    fragment.sections = new HashMap<>();
+                else
+                    fragment.sections = document.allowedSections.get(course);
+                fragment.delegate = new ConstrainDialogFragment.Delegate() {
+                    @Override
+                    public void constrainDialogDismissed(ConstrainDialogFragment dialog) {
+                        fragment.dismiss();
+                    }
+
+                    @Override
+                    public void constrainDialogFinished(ConstrainDialogFragment dialog, Map<String, List<Integer>> sections) {
+                        fragment.dismiss();
+                        if (document.allowedSections == null)
+                            document.allowedSections = new HashMap<>();
+                        document.allowedSections.put(course, sections);
+                        document.save();
+                        loadSchedules(true);
+                    }
+                };
+                FragmentActivity a = getActivity();
+                if (a != null) {
+                    fragment.show(a.getSupportFragmentManager(), "ConstrainDialogFragment");
+                }
                 break;
             default:
                 break;

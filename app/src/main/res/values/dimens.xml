@@ -24,6 +24,7 @@
     <dimen name="document_icon_dimension">32dp</dimen>
     <dimen name="document_icon_elevation">6dp</dimen>
     <dimen name="dialog_text_box_margin">18dp</dimen>
+    <dimen name="constrain_dialog_height">300dp</dimen>
 
     <!-- Schedule layout values -->
     <dimen name="schedule_hour_col_width">32dp</dimen>

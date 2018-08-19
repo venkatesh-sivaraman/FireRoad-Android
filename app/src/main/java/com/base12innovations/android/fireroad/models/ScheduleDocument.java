@@ -72,8 +72,9 @@ public class ScheduleDocument extends Document {
 
                     if (subjectInfo.has(ScheduleJSON.allowedSections)) {
                         JSONObject allowedInfo = subjectInfo.getJSONObject(ScheduleJSON.allowedSections);
-                        while (allowedInfo.keys().hasNext()) {
-                            String section = allowedInfo.keys().next();
+                        Iterator<String> it = allowedInfo.keys();
+                        while (it.hasNext()) {
+                            String section = it.next();
                             JSONArray allowed = allowedInfo.getJSONArray(section);
                             List<Integer> res = new ArrayList<>();
                             for (int j = 0; j < allowed.length(); j++) {
