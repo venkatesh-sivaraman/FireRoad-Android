@@ -3,6 +3,7 @@ package com.base12innovations.android.fireroad.models;
 import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.Network;
 import android.net.Uri;
 import android.util.Log;
 
@@ -31,8 +32,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -48,8 +51,9 @@ public class CourseManager {
     private static String prefsDatabaseVersionKey = "databaseVersionKey";
     private static String prefsRequirementsVersionKey = "requirementsVersionKey";
     private static String prefsDatabaseSemesterKey = "databaseSemesterKey";
-    private RequestQueue requestQueue;
-    private static int JSON_ERROR = 1001;
+
+    private static String RATINGS_PREFS = "com.base12innovations.android.fireroad.ratingsPreferences";
+    private SharedPreferences ratingsPreferences;
 
     // During debugging, use to force a database update
     private boolean forceUpdate = false;
@@ -87,10 +91,13 @@ public class CourseManager {
                 CourseDatabase.class, DATABASE_NAME).fallbackToDestructiveMigration().build();
 
         dbPreferences = context.getSharedPreferences(COURSE_DATABASE_PREFERENCES, Context.MODE_PRIVATE);
-        requestQueue = Volley.newRequestQueue(context);
+        ratingsPreferences = context.getSharedPreferences(RATINGS_PREFS, Context.MODE_PRIVATE);
 
+        // Initialize other singletons
+        AppSettings.initialize(context);
         CourseSearchEngine.sharedInstance().initialize(context);
         RequirementsListManager.sharedInstance().initialize(context);
+        NetworkManager.sharedInstance().initialize(context);
     }
 
     public interface LoadCoursesListener {
@@ -107,75 +114,71 @@ public class CourseManager {
         TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
             public void perform() {
-                determineURLsToUpdate(new URLsToUpdateCompletion() {
+                final List<URL> urls = determineURLsToUpdate();
+                if (urls == null) {
+                    _isLoading = false;
+                    listener.error();
+                    return;
+                }
+
+                TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
                     @Override
-                    public void completed(final List<URL> urls) {
-                        TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
-                            @Override
-                            public Void perform() {
-                                Log.d("CourseManager", "Updating " + Integer.toString(urls.size()) + " URLs");
-                                if (urls.size() > 0) {
-                                    listener.needsFullLoad();
-                                    courseDatabase.daoAccess().clearCourses();
-                                    loadingProgress = 0.0f;
+                    public Void perform() {
+                        Log.d("CourseManager", "Updating " + Integer.toString(urls.size()) + " URLs");
+                        if (urls.size() > 0) {
+                            listener.needsFullLoad();
+                            courseDatabase.daoAccess().clearCourses();
+                            loadingProgress = 0.0f;
 
-                                    ExecutorService exec = Executors.newFixedThreadPool(3);
-                                    for (int i = 0; i < urls.size(); i++) {
-                                        final int index = i;
-                                        exec.execute(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                loadingProgress += 1.0f / (float) urls.size();
+                            ExecutorService exec = Executors.newFixedThreadPool(3);
+                            for (int i = 0; i < urls.size(); i++) {
+                                final int index = i;
+                                exec.execute(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        loadingProgress += 1.0f / (float) urls.size();
 
-                                                // Determine the type of file and send to the appropriate parser
-                                                if (urls.get(index).getPath().contains(requirementsPrefix)) {
-                                                    downloadRequirementsFile(urls.get(index));
-                                                } else {
-                                                    loadCoursesFromURL(urls.get(index));
-                                                }
-                                            }
-                                        });
+                                        // Determine the type of file and send to the appropriate parser
+                                        if (urls.get(index).getPath().contains(requirementsPrefix)) {
+                                            downloadRequirementsFile(urls.get(index));
+                                        } else {
+                                            loadCoursesFromURL(urls.get(index));
+                                        }
                                     }
-                                    exec.shutdown();
-                                    try {
-                                        exec.awaitTermination(15, TimeUnit.MINUTES);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                        Log.e("CourseManagerUpdate", e.getMessage());
-                                    }
-                                }
-
-                                SharedPreferences.Editor editor = dbPreferences.edit();
-                                if (newDatabaseVersion != 0)
-                                    editor.putInt(prefsDatabaseVersionKey, newDatabaseVersion);
-                                if (newRequirementsVersion != 0)
-                                    editor.putInt(prefsRequirementsVersionKey, newRequirementsVersion);
-                                if (newSemester != null && newSemester.length() > 0)
-                                    editor.putString(prefsDatabaseSemesterKey, newSemester);
-                                editor.apply();
-
-                                return null;
+                                });
                             }
-                        }, new TaskDispatcher.CompletionBlock<Void>() {
-                            @Override
-                            public void completed(Void arg) {
-                                    _isLoading = false;
-                                    _isLoaded = true;
-                                    listener.completion();
-                                    for (Callable<Void> comp : loadingCompletionHandlers) {
-                                        try {
-                                            comp.call();
-                                        } catch (Exception e) { }
-                                    }
-                                    loadingCompletionHandlers = null;
+                            exec.shutdown();
+                            try {
+                                exec.awaitTermination(15, TimeUnit.MINUTES);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                                Log.e("CourseManagerUpdate", e.getMessage());
                             }
-                        });
+                        }
+
+                        SharedPreferences.Editor editor = dbPreferences.edit();
+                        if (newDatabaseVersion != 0)
+                            editor.putInt(prefsDatabaseVersionKey, newDatabaseVersion);
+                        if (newRequirementsVersion != 0)
+                            editor.putInt(prefsRequirementsVersionKey, newRequirementsVersion);
+                        if (newSemester != null && newSemester.length() > 0)
+                            editor.putString(prefsDatabaseSemesterKey, newSemester);
+                        editor.apply();
+
+                        return null;
                     }
-
+                }, new TaskDispatcher.CompletionBlock<Void>() {
                     @Override
-                    public void error(int statusCode) {
+                    public void completed(Void arg) {
                         _isLoading = false;
-                        listener.error();
+                        _isLoaded = true;
+                        listener.completion();
+                        for (Callable<Void> comp : loadingCompletionHandlers) {
+                            try {
+                                comp.call();
+                            } catch (Exception e) { }
+                        }
+                        loadingCompletionHandlers = null;
                     }
                 });
             }
@@ -196,148 +199,78 @@ public class CourseManager {
 
     // Internet
 
-    private interface JSONRequestCompletion <T> {
-        void completed(T response);
-        void error(int statusCode);
-    }
-
-    private static String BASE_URL = "https://venkats.scripts.mit.edu/";
-    private static String databaseSemestersURL = BASE_URL + "fireroad/courseupdater/semesters";
-    private static String databaseVersionURL = BASE_URL + "fireroad/courseupdater/check";
-    private static String catalogDownloadURL = BASE_URL + "catalogs/";
+    private static String catalogDownloadURL = NetworkManager.CATALOG_BASE_URL + "catalogs/";
     private static String requirementsPrefix = "requirements/";
-
-    private void determineCurrentSemester(final JSONRequestCompletion<String> completion) {
-        String url = databaseSemestersURL;
-        JsonArrayRequest jsonObjectRequest = new JsonArrayRequest
-                (Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
-                    @Override
-                    public void onResponse(JSONArray response) {
-                        try {
-                            JSONObject element = response.getJSONObject(response.length() - 1);
-                            String currentSemester = element.getString("sem");
-
-                            newSemester = currentSemester;
-                            completion.completed(currentSemester);
-
-                        } catch (JSONException e) {
-                            completion.error(JSON_ERROR);
-                        }
-                    }
-                }, new Response.ErrorListener() {
-
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        NetworkResponse networkResponse = error.networkResponse;
-                        if (networkResponse == null) {
-                            error.printStackTrace();
-                            completion.error(500);
-                        } else {
-                            completion.error(networkResponse.statusCode);
-                        }
-                    }
-                });
-
-        requestQueue.add(jsonObjectRequest);
-    }
 
     /*
     This function saves the current version to the preferences, and the completion block is passed
     a list of paths to update.
      */
-    private void determineDatabaseVersion(String semester, final JSONRequestCompletion<List<String>> completion) {
+    private List<String> determineDatabaseVersion(String semester) {
         // We always use version 0, because this implementation needs to rebuild the entire database every time
         // there is an update.
         int version = 0; //dbPreferences.getInt(prefsDatabaseVersionKey, 0);
         int reqVersion = dbPreferences.getInt(prefsRequirementsVersionKey, 0);
-        String url = databaseVersionURL + String.format(Locale.US, "?sem=%s&v=%d&rv=%d", Uri.encode(semester), version, reqVersion);
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
-                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+        NetworkManager.Response<JSONObject> resp = NetworkManager.sharedInstance().determineDatabaseVersion(semester, version, reqVersion);
+        if (resp.result == null) {
+            return null;
+        }
 
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            int currentVersion = response.getInt("v");
-                            JSONArray delta = response.getJSONArray("delta");
-                            List<String> deltaList = new ArrayList<>();
-                            for (int i = 0; i < delta.length(); i++) {
-                                String item = delta.getString(i);
-                                deltaList.add(item);
-                            }
-
-                            int reqVersion = response.getInt("rv");
-                            if (reqVersion != 0) {
-                                delta = response.getJSONArray("r_delta");
-                                for (int i = 0; i < delta.length(); i++) {
-                                    String item = delta.getString(i);
-                                    deltaList.add(item);
-                                }
-                                newRequirementsVersion = reqVersion;
-                            }
-
-                            newDatabaseVersion = currentVersion;
-                            completion.completed(deltaList);
-                        } catch (JSONException e) {
-                            completion.error(JSON_ERROR);
-                        }
-                    }
-                }, new Response.ErrorListener() {
-
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        NetworkResponse networkResponse = error.networkResponse;
-                        completion.error(networkResponse.statusCode);
-                    }
-                });
-
-        requestQueue.add(jsonObjectRequest);
-    }
-
-    private interface URLsToUpdateCompletion {
-        void completed(List<URL> urls);
-        void error(int statusCode);
-    }
-
-    private void determineURLsToUpdate(final URLsToUpdateCompletion completion) {
-        determineCurrentSemester(new JSONRequestCompletion<String>() {
-            @Override
-            public void completed(String semester) {
-                determineDatabaseVersion(semester.replace("-", ","), new JSONRequestCompletion<List<String>>() {
-                    @Override
-                    public void completed(List<String> response) {
-                        int currentDBVersion = forceUpdate ? 0 : dbPreferences.getInt(prefsDatabaseVersionKey, 0);
-                        int currentReqVersion = forceUpdate ? 0 : dbPreferences.getInt(prefsRequirementsVersionKey, 0);
-                        List<URL> urls = new ArrayList();
-                        if (newDatabaseVersion != currentDBVersion || newRequirementsVersion != currentReqVersion) {
-                            for (String path : response) {
-                                if (newDatabaseVersion == currentDBVersion && !path.contains(requirementsPrefix)) {
-                                    continue;
-                                }
-                                try {
-                                    urls.add(new URL(catalogDownloadURL + path));
-                                } catch (MalformedURLException e) {
-                                    Log.e("CourseManager", "Malformed URL, " + catalogDownloadURL + path);
-                                }
-                            }
-                        }
-                        completion.completed(urls);
-                    }
-
-                    @Override
-                    public void error(int statusCode) {
-                        Log.e("CourseManager", String.format(Locale.US, "Error %d determining version", statusCode));
-                        completion.error(statusCode);
-                    }
-                });
+        JSONObject response = resp.result;
+        try {
+            int currentVersion = response.getInt("v");
+            JSONArray delta = response.getJSONArray("delta");
+            List<String> deltaList = new ArrayList<>();
+            for (int i = 0; i < delta.length(); i++) {
+                String item = delta.getString(i);
+                deltaList.add(item);
             }
 
-            @Override
-            public void error(int statusCode) {
-                completion.completed(new ArrayList<URL>());
-                //Log.e("CourseManager", String.format(Locale.US, "Error %d determining semester", statusCode));
-                //completion.error(statusCode);
+            reqVersion = response.getInt("rv");
+            if (reqVersion != 0) {
+                delta = response.getJSONArray("r_delta");
+                for (int i = 0; i < delta.length(); i++) {
+                    String item = delta.getString(i);
+                    deltaList.add(item);
+                }
+                newRequirementsVersion = reqVersion;
             }
-        });
+
+            newDatabaseVersion = currentVersion;
+            Log.d("CourseManager", "New versions: " + Integer.toString(newDatabaseVersion) + ", " + Integer.toString(newRequirementsVersion));
+            return deltaList;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private List<URL> determineURLsToUpdate() {
+        newSemester = NetworkManager.sharedInstance().determineCurrentSemester().result;
+        if (newSemester == null)
+            return new ArrayList<>();
+
+        List<String> delta = determineDatabaseVersion(newSemester.replace("-", ","));
+        if (delta == null)
+            return new ArrayList<>();
+
+        int currentDBVersion = forceUpdate ? 0 : dbPreferences.getInt(prefsDatabaseVersionKey, 0);
+        int currentReqVersion = forceUpdate ? 0 : dbPreferences.getInt(prefsRequirementsVersionKey, 0);
+        List<URL> urls = new ArrayList<>();
+        if (newDatabaseVersion != currentDBVersion || newRequirementsVersion != currentReqVersion) {
+            for (String path : delta) {
+                if (newDatabaseVersion == currentDBVersion && !path.contains(requirementsPrefix)) {
+                    continue;
+                }
+                try {
+                    urls.add(new URL(catalogDownloadURL + path));
+                } catch (MalformedURLException e) {
+                    Log.e("CourseManager", "Malformed URL, " + catalogDownloadURL + path);
+                }
+            }
+        }
+        return urls;
+
     }
 
     // Loading courses from URL
@@ -548,5 +481,20 @@ public class CourseManager {
 
     public Course getSubjectByID(final String id) {
         return courseDatabase.daoAccess().findCourseWithSubjectID(id);
+    }
+
+    // Ratings
+
+    public static int NO_RATING = 123;
+
+    public void setRatingForCourse(Course course, int rating) {
+        ratingsPreferences.edit().putInt(course.getSubjectID(), rating).apply();
+        Map<String, Integer> ratingMap = new HashMap<>();
+        ratingMap.put(course.getSubjectID(), rating);
+        NetworkManager.sharedInstance().submitUserRatings(ratingMap);
+    }
+
+    public int getRatingForCourse(Course course) {
+        return ratingsPreferences.getInt(course.getSubjectID(), NO_RATING);
     }
 }

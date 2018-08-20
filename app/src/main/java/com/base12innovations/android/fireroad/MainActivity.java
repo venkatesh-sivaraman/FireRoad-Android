@@ -35,9 +35,13 @@ import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.Document;
+import com.base12innovations.android.fireroad.models.NetworkManager;
 import com.base12innovations.android.fireroad.models.ScheduleConfiguration;
 import com.base12innovations.android.fireroad.models.ScheduleGenerator;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -52,6 +56,9 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
     private static int ROAD_BROWSER_REQUEST = 1234;
     private static int SCHEDULE_BROWSER_REQUEST = 5678;
+
+    private static int AUTHENTICATION_INTENT_TAG = 1425;
+    private NetworkManager.AsyncResponse<JSONObject> authenticationCompletion;
 
     private DrawerLayout mDrawer;
     private Toolbar toolbar;
@@ -69,6 +76,9 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        if (!CourseManager.sharedInstance().isLoaded())
+            CourseManager.sharedInstance().initializeDatabase(this);
+
         mDrawer = (DrawerLayout) findViewById(R.id.main_content);
         navDrawer = (NavigationView)findViewById(R.id.nav_view);
         setupSearchView();
@@ -85,9 +95,17 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         }
         setupDrawerContent(navDrawer);
 
-        if (!CourseManager.sharedInstance().isLoaded()) {
-            CourseManager.sharedInstance().initializeDatabase(this);
+        NetworkManager.sharedInstance().authenticationListener = new NetworkManager.AuthenticationListener() {
+            @Override
+            public void showAuthenticationView(String url, NetworkManager.AsyncResponse<JSONObject> completion) {
+                authenticationCompletion = completion;
+                Intent i = new Intent(MainActivity.this, AuthenticationActivity.class);
+                i.putExtra(AuthenticationActivity.AUTH_URL_EXTRA, url);
+                startActivityForResult(i, AUTHENTICATION_INTENT_TAG);
+            }
+        };
 
+        if (!CourseManager.sharedInstance().isLoaded()) {
             CourseManager.sharedInstance().loadCourses(new CourseManager.LoadCoursesListener() {
                 @Override
                 public void completion() {
@@ -111,6 +129,18 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 }
             });
         }
+
+        NetworkManager.sharedInstance().loginIfNeeded(new NetworkManager.AsyncResponse<Boolean>() {
+            @Override
+            public void success(Boolean result) {
+                Log.d("MainActivity", "Logged in");
+            }
+
+            @Override
+            public void failure() {
+                Log.d("MainActivity", "Failed");
+            }
+        });
     }
 
     @Override
@@ -121,6 +151,23 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         } else if (requestCode == SCHEDULE_BROWSER_REQUEST && resultCode == RESULT_OK) {
             if (scheduleFragment != null)
                 scheduleFragment.loadSchedules(true);
+        } else if (requestCode == AUTHENTICATION_INTENT_TAG && authenticationCompletion != null) {
+            if (resultCode == RESULT_OK && data != null) {
+                try {
+                    String json = data.getStringExtra(AuthenticationActivity.AUTH_RESULT_EXTRA);
+                    json = json.substring(json.indexOf('{'), json.lastIndexOf('}') + 1);
+                    json = json.replaceAll("\\\\[\"]", "\"");
+                    Log.d("MainActivity", json);
+                    JSONObject result = new JSONObject(json);
+                    Log.d("MainActivity", "Success with " + result.toString());
+                    authenticationCompletion.success(result);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    authenticationCompletion.failure();
+                }
+            } else {
+                authenticationCompletion.failure();
+            }
         }
     }
 

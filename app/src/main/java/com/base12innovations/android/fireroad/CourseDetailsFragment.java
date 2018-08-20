@@ -16,12 +16,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.ScaleAnimation;
 import android.widget.LinearLayout;
+import android.widget.RatingBar;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.NetworkManager;
 import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.ScheduleDocument;
 import com.base12innovations.android.fireroad.models.User;
@@ -30,9 +32,11 @@ import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import static com.base12innovations.android.fireroad.CourseNavigatorDelegate.ADD_TO_SCHEDULE;
@@ -184,7 +188,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         if (course.inClassHours != 0.0 || course.outOfClassHours != 0.0) {
             addMetadataItem(layout, "Hours", String.format(Locale.US, "%.2g in class\n%.2g out of class", course.inClassHours, course.outOfClassHours));
         }
-        addMetadataItem(layout, "My Rating", "Rating widget should go here");
+        addRatingItem(layout, "My Rating");
 
         List<String> subjectList = course.getEquivalentSubjectsList();
         if (subjectList.size() > 0) {
@@ -335,6 +339,26 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
         ((TextView)metadataView.findViewById(R.id.metadataTitle)).setText(title);
         ((TextView)metadataView.findViewById(R.id.metadataValue)).setText(value);
+    }
+
+    private void addRatingItem(LinearLayout layout, String title) {
+        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_rating, null);
+        layout.addView(metadataView);
+
+        ((TextView)metadataView.findViewById(R.id.metadataTitle)).setText(title);
+        RatingBar ratingBar = metadataView.findViewById(R.id.ratingBar);
+        int rating = CourseManager.sharedInstance().getRatingForCourse(course);
+        if (rating != CourseManager.NO_RATING)
+            ratingBar.setRating((float)(rating + 5) / 2.0f);
+        else
+            ratingBar.setRating(0.0f);
+        ratingBar.setOnRatingBarChangeListener(new RatingBar.OnRatingBarChangeListener() {
+            @Override
+            public void onRatingChanged(RatingBar ratingBar, float newValue, boolean b) {
+                Log.d("RatingBar", "Changed to " + Float.toString(newValue));
+                CourseManager.sharedInstance().setRatingForCourse(course, (int)Math.round(newValue * 2.0f - 5.0f));
+            }
+        });
     }
 
     private void addHeaderItem(LinearLayout layout, String title) {
