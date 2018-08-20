@@ -21,6 +21,7 @@ import android.widget.TextView;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
+import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.ScheduleDocument;
 import com.base12innovations.android.fireroad.models.User;
@@ -28,8 +29,11 @@ import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import static com.base12innovations.android.fireroad.CourseNavigatorDelegate.ADD_TO_SCHEDULE;
 
@@ -199,6 +203,20 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             addHeaderItem(layout, "Meets With Subjects");
             addCourseListItem(layout, subjectList);
         }
+
+        List<List<String>> prereqs = course.getPrerequisitesList();
+        if (prereqs != null && prereqs.size() > 0) {
+            addHeaderItem(layout, "Prerequisites");
+            if (course.getEitherPrereqOrCoreq()) {
+                addDescriptionItem(layout, "Fulfill either the prerequisites or the corequisites.\n\nPrereqs: ");
+            }
+            addNestedCourseListItem(layout, prereqs);
+        }
+        List<List<String>> coreqs = course.getCorequisitesList();
+        if (coreqs != null && coreqs.size() > 0) {
+            addHeaderItem(layout, "Corequisites");
+            addNestedCourseListItem(layout, coreqs);
+        }
     }
 
     // Adding information types
@@ -273,6 +291,38 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         }
     }
 
+    private void addNestedCourseListItem(LinearLayout layout, List<List<String>> courses) {
+        boolean containsOrClause = false;
+        int totalCount = 0;
+        for (List<String> group : courses) {
+            totalCount += group.size();
+            if (group.size() > 1) {
+                containsOrClause = true;
+            }
+        }
+        List<List<String>> newCourses = courses;
+
+        if (totalCount > 1) {
+            String command;
+            if (!containsOrClause) {
+                command = "Fulfill all of the following:";
+                newCourses = new ArrayList<>();
+                newCourses.add(new ArrayList<String>());
+                for (List<String> group : courses) {
+                    newCourses.get(0).addAll(group);
+                }
+            } else if (courses.size() == 1)
+                command = "Fulfill any of the following:";
+            else
+                command = "Fulfill one from each row:";
+            addDescriptionItem(layout, command);
+        }
+
+        for (List<String> group : newCourses) {
+            addCourseListItem(layout, group);
+        }
+    }
+
     // Layout
 
     private void addMetadataItem(LinearLayout layout, String title, String value) {
@@ -299,6 +349,18 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         ((TextView)metadataView.findViewById(R.id.headingTitle)).setText(title);
     }
 
+    private void addDescriptionItem(LinearLayout layout, String text) {
+        int margin = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_details_padding);
+        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lparams.setMargins(margin, 0, margin, 0);
+        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_description, null);
+        layout.addView(metadataView);
+        metadataView.setLayoutParams(lparams);
+
+        ((TextView)metadataView.findViewById(R.id.descriptionLabel)).setText(text);
+    }
+
     private void addCourseListItem(LinearLayout layout, final List<String> subjectIDs) {
         View listView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_list, null);
         layout.addView(listView);
@@ -308,9 +370,28 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             @Override
             public void perform() {
                 final List<Course> courses = new ArrayList<>();
+                final Set<Course> realCourses = new HashSet<>();
                 for (String subjectID : subjectIDs) {
                     Course newCourse = CourseManager.sharedInstance().getSubjectByID(subjectID);
                     if (newCourse != null) {
+                        realCourses.add(newCourse);
+                        courses.add(newCourse);
+                    } else if (subjectID.toLowerCase().contains("permission of instructor")) {
+                        Course poi = new Course();
+                        poi.setSubjectID("--");
+                        poi.subjectTitle = "Permission of Instructor";
+                        courses.add(poi);
+                    } else if (Course.GIRAttribute.fromRaw(subjectID) != null) {
+                        Course.GIRAttribute gir = Course.GIRAttribute.fromRaw(subjectID);
+                        newCourse = new Course();
+                        newCourse.setSubjectID("GIR");
+                        newCourse.subjectTitle = gir.toString().replaceAll("GIR", "").trim();
+                        newCourse.girAttribute = gir.rawValue;
+                        courses.add(newCourse);
+                    } else if (subjectID.length() > 0) {
+                        newCourse = new Course();
+                        newCourse.setSubjectID("--");
+                        newCourse.subjectTitle = subjectID;
                         courses.add(newCourse);
                     }
                 }
@@ -333,12 +414,21 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
                             ((TextView) courseThumbnail.findViewById(R.id.subjectIDLabel)).setText(course.getSubjectID());
                             ((TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel)).setText(course.subjectTitle);
 
-                            courseThumbnail.setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View view) {
-                                    showCourseDetails(course);
-                                }
-                            });
+                            if (realCourses.contains(course) || course.getGIRAttribute() != null) {
+                                courseThumbnail.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        if (realCourses.contains(course))
+                                            showCourseDetails(course);
+                                        else if (delegate.get() != null) {
+                                            EnumSet<CourseSearchEngine.Filter> filters = EnumSet.copyOf(CourseSearchEngine.Filter.noFilter);
+                                            CourseSearchEngine.Filter.filterGIR(filters, CourseSearchEngine.Filter.GIR);
+                                            CourseSearchEngine.Filter.filterSearchField(filters, CourseSearchEngine.Filter.SEARCH_REQUIREMENTS);
+                                            delegate.get().courseNavigatorWantsSearchCourses(CourseDetailsFragment.this, course.subjectTitle, filters);
+                                        }
+                                    }
+                                });
+                            }
                         }
                     }
                 });

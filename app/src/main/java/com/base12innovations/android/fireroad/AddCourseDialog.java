@@ -106,6 +106,10 @@ public class AddCourseDialog extends DialogFragment {
                 button.setAlpha(0.5f);
                 button.setText("Added");
             } else {
+                if ((buttonSemesters.get(id) % 3 == 1 && !course.isOfferedFall) ||
+                        (buttonSemesters.get(id) % 3 == 2 && !course.isOfferedIAP) ||
+                        (buttonSemesters.get(id) % 3 == 0 && buttonSemesters.get(id) != 0 && !course.isOfferedSpring))
+                    button.setAlpha(0.5f);
                 button.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {

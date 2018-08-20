@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
@@ -27,6 +28,7 @@ import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 
@@ -122,9 +124,27 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 currentlySelectedCourse = course;
                 currentlySelectedSemester = gridAdapter.semesterForGridPosition(position);
                 currentlySelectedPosition = position;
-                PopupMenu menu = new PopupMenu(getActivity(), view);
+                final PopupMenu menu = new PopupMenu(getActivity(), view);
                 MenuInflater mInflater = menu.getMenuInflater();
                 mInflater.inflate(R.menu.menu_course_cell, menu.getMenu());
+                List<RoadDocument.Warning> warnings = User.currentUser().getCurrentDocument().warningsForCourseCached(currentlySelectedCourse, currentlySelectedSemester);
+                if (warnings == null) {
+                    TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+                        @Override
+                        public void perform() {
+                            final List<RoadDocument.Warning> newWarnings = User.currentUser().getCurrentDocument().warningsForCourse(currentlySelectedCourse, currentlySelectedSemester);
+                            TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                                @Override
+                                public void perform() {
+                                    menu.getMenu().findItem(R.id.courseWarnings).setEnabled(newWarnings.size() > 0);
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    menu.getMenu().findItem(R.id.courseWarnings).setEnabled(warnings.size() > 0);
+                }
+
                 menu.setOnMenuItemClickListener(MyRoadFragment.this);
                 menu.show();
                 currentPopupMenu = menu;
@@ -289,9 +309,33 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 }, 400);
                 return true;
             case R.id.courseWarnings:
+                presentWarningAlert(currentlySelectedCourse, currentlySelectedSemester, currentlySelectedPosition);
                 return false;
             default:
                 return false;
+        }
+    }
+
+    private void presentWarningAlert(Course course, int semester, final int position) {
+        CourseWarningsDialogFragment dialogFragment = new CourseWarningsDialogFragment();
+        dialogFragment.course = course;
+        dialogFragment.warnings = User.currentUser().getCurrentDocument().warningsForCourse(course, semester);
+        dialogFragment.override = User.currentUser().getCurrentDocument().overrideWarningsForCourse(course);
+        dialogFragment.delegate = new CourseWarningsDialogFragment.Delegate() {
+            @Override
+            public void warningsDialogDismissed(CourseWarningsDialogFragment dialog) {
+                dialog.dismiss();
+            }
+
+            @Override
+            public void warningsDialogSetOverride(CourseWarningsDialogFragment dialog, Course course, boolean override) {
+                User.currentUser().getCurrentDocument().setOverrideWarningsForCourse(course, override);
+                gridAdapter.notifyItemChanged(position);
+            }
+        };
+        FragmentActivity a = getActivity();
+        if (a != null) {
+            dialogFragment.show(a.getSupportFragmentManager(), "CourseWarningsFragment");
         }
     }
 

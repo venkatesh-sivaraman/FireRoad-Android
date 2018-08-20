@@ -586,7 +586,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
     @Override
     public void courseNavigatorWantsSearchCourses(Fragment source, String searchTerm, EnumSet<CourseSearchEngine.Filter> filters) {
-        detailsStack = null;
         currentDetailsFragment = null;
         searchCoursesFragment = null;
         showSearchCoursesView(searchTerm, filters);

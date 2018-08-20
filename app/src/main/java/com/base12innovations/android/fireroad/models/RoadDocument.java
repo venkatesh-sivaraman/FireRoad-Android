@@ -47,7 +47,7 @@ public class RoadDocument extends Document {
 
     Map<Integer, List<Course>> courses = new HashMap<>();
     public List<String> coursesOfStudy = new ArrayList<>();
-    Map<Course, Boolean> overrides = new HashMap<>();
+    private Map<Course, Boolean> overrides = new HashMap<>();
 
     public RoadDocument(File location) {
         super(location);
@@ -151,6 +151,12 @@ public class RoadDocument extends Document {
     }
 
     @Override
+    public void save() {
+        warningsCache = null;
+        super.save();
+    }
+
+    @Override
     public List<Course> getAllCourses() {
         List<Course> allCourses = new ArrayList<>();
         for (int semester : this.courses.keySet()) {
@@ -206,5 +212,144 @@ public class RoadDocument extends Document {
             courses.get(endSemester).add(endPos, course);
         }
         save();
+    }
+
+    public boolean overrideWarningsForCourse(Course course) {
+        if (overrides == null || !overrides.containsKey(course))
+            return false;
+        return overrides.get(course);
+    }
+
+    public void setOverrideWarningsForCourse(Course course, boolean flag) {
+        if (overrides == null)
+            overrides = new HashMap<>();
+        overrides.put(course, flag);
+        save();
+    }
+
+    // Warnings
+
+    public enum WarningType {
+        NOT_OFFERED, UNSATISFIED_PREREQ, UNSATISFIED_COREQ;
+
+        @Override
+        public String toString() {
+            switch (this) {
+                case NOT_OFFERED:
+                    return "Not Offered";
+                case UNSATISFIED_COREQ:
+                    return "Unsatisfied Corequisite";
+                case UNSATISFIED_PREREQ:
+                    return "Unsatisfied Prerequisite";
+                default:
+                    return "";
+            }
+        }
+    }
+
+    public static class Warning {
+        public WarningType type;
+        public List<String> courses;
+        public String semester;
+
+        private Warning(WarningType type, List<String> courses, String semester) {
+            this.type = type;
+            this.courses = courses;
+            this.semester = semester;
+        }
+
+        public static Warning notOffered(String semester) {
+            return new Warning(WarningType.NOT_OFFERED, null, semester);
+        }
+
+        public static Warning unsatisfiedPrereq(List<String> courses) {
+            return new Warning(WarningType.UNSATISFIED_PREREQ, courses, null);
+        }
+
+        public static Warning unsatisfiedCoreq(List<String> courses) {
+            return new Warning(WarningType.UNSATISFIED_COREQ, courses, null);
+        }
+    }
+
+    private List<String> unsatisfiedRequirements(Course course, List<List<String>> reqs, int maxSemester, boolean useQuarter) {
+        List<String> unsatisfiedReqs = new ArrayList<>();
+        for (List<String> reqList : reqs) {
+            boolean satisfied = false, satisfiedByNonAuto = false, containsNonAuto = false;
+
+            for (String prereq : reqList) {
+                Log.d("RoadDocument", prereq);
+                for (int i = 0; i <= maxSemester + 1; i++) {
+                    for (Course otherCourse : coursesForSemester(i)) {
+                        if (otherCourse.satisfiesRequirement(prereq, null) &&
+                                (i <= maxSemester ||
+                                        (useQuarter && course.getQuarterOffered() != Course.QuarterOffered.BeginningOnly &&
+                                                otherCourse.getQuarterOffered() == Course.QuarterOffered.BeginningOnly))) {
+                            Log.d("RoadDocument", otherCourse.getSubjectID() + " satisfies");
+                            satisfied = true;
+                            break;
+                        }
+                    }
+                    if (satisfied)
+                        break;
+                }
+                boolean auto = Course.isRequirementAutomaticallySatisfied(prereq);
+                if (!auto) {
+                    if (satisfied)
+                        satisfiedByNonAuto = true;
+                    containsNonAuto = true;
+                }
+                if (!satisfied) {
+                    Log.d("RoadDocument", "Not satisfied, " + Boolean.toString(auto));
+                    satisfied = auto;
+                }
+                if (satisfied)
+                    break;
+            }
+            if (!satisfied || (satisfied && !satisfiedByNonAuto && containsNonAuto)) {
+                unsatisfiedReqs.addAll(reqList);
+            }
+        }
+        return unsatisfiedReqs;
+    }
+
+    private Map<Course, Map<Integer, List<Warning>>> warningsCache;
+
+    public List<Warning> warningsForCourseCached(Course course, int semester) {
+        if (warningsCache != null && warningsCache.containsKey(course) && warningsCache.get(course).containsKey(semester))
+            return warningsCache.get(course).get(semester);
+        return null;
+    }
+
+    public List<Warning> warningsForCourse(Course course, int semester) {
+        if (semester == 0) return new ArrayList<>();
+        if (warningsCache != null && warningsCache.containsKey(course) && warningsCache.get(course).containsKey(semester))
+            return warningsCache.get(course).get(semester);
+
+        List<String> unsatisfiedPrereqs = unsatisfiedRequirements(course, course.getPrerequisitesList(), semester - 1, true);
+        List<String> unsatisfiedCoreqs = unsatisfiedRequirements(course, course.getCorequisitesList(), semester, false);
+
+        List<Warning> result = new ArrayList<>();
+        if (semester % 3 == 1 && !course.isOfferedFall) {
+            result.add(Warning.notOffered("fall"));
+        } else if (semester % 3 == 2 && !course.isOfferedIAP) {
+            result.add(Warning.notOffered("IAP"));
+        } else if (semester % 3 == 0 && !course.isOfferedSpring) {
+            result.add(Warning.notOffered("spring"));
+        }
+        Log.d("RoadDocument", "For course " + course.getSubjectID() + ", warnings " + result.toString() + ", " + unsatisfiedCoreqs.toString() + unsatisfiedPrereqs.toString());
+        if (!course.getEitherPrereqOrCoreq() || (unsatisfiedPrereqs.size() != 0 && unsatisfiedCoreqs.size() != 0)) {
+            if (unsatisfiedPrereqs.size() > 0)
+                result.add(Warning.unsatisfiedPrereq(unsatisfiedPrereqs));
+            if (unsatisfiedCoreqs.size() > 0)
+                result.add(Warning.unsatisfiedCoreq(unsatisfiedCoreqs));
+        }
+
+        if (warningsCache == null)
+            warningsCache = new HashMap<>();
+        if (!warningsCache.containsKey(course))
+            warningsCache.put(course, new HashMap<Integer, List<Warning>>());
+        warningsCache.get(course).put(semester, result);
+
+        return result;
     }
 }

@@ -13,6 +13,7 @@ import android.widget.TextView;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.RoadDocument;
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.util.List;
 
@@ -233,6 +234,24 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
                         itemLongClickListener.onClick(course, newPos, view);
                     }
                     return true;
+                }
+            });
+
+            final View warningView = view.findViewById(R.id.warningView);
+            TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+                @Override
+                public void perform() {
+                    int pos = viewHolder.getAdapterPosition();
+                    final boolean showWarnings = document.warningsForCourse(course, semesterForGridPosition(pos)).size() > 0 && !document.overrideWarningsForCourse(course);
+                    TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                        @Override
+                        public void perform() {
+                            if (showWarnings)
+                                warningView.setVisibility(View.VISIBLE);
+                            else
+                                warningView.setVisibility(View.GONE);
+                        }
+                    });
                 }
             });
         }

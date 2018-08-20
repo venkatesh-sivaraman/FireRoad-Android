@@ -7,6 +7,7 @@ import android.arch.persistence.room.PrimaryKey;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
+import android.support.v4.util.CircularIntArray;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -229,7 +230,7 @@ public class Course implements Parcelable {
             String trimmed = raw.toLowerCase().replaceAll("gir:", "").trim();
             if (lowercasedNames.containsKey(trimmed)) {
                 return lowercasedNames.get(trimmed);
-            } else if (lowercasedDescriptions.containsValue(trimmed)) {
+            } else if (lowercasedDescriptions.containsKey(trimmed)) {
                 return lowercasedDescriptions.get(trimmed);
             }
             return null;
@@ -817,4 +818,12 @@ public class Course implements Parcelable {
         return _schedule;
     }
 
+    public static boolean isRequirementAutomaticallySatisfied(String requirement) {
+        String req = requirement.replaceAll("GIR:", "");
+        if (CourseManager.sharedInstance().getSubjectByID(req) != null)
+            return false;
+        if (GIRAttribute.fromRaw(req) != null || HASSAttribute.fromRaw(req) != null || CommunicationAttribute.fromRaw(req) != null)
+            return false;
+        return true;
+    }
 }
