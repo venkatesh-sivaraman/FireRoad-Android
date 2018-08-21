@@ -52,7 +52,7 @@ import java.util.Stack;
 import java.util.concurrent.Callable;
 
 public class MainActivity extends AppCompatActivity implements RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate,
-        FilterDialogFragment.Delegate {
+        FilterDialogFragment.Delegate, ForYouFragment.Delegate {
 
     private static String CURRENT_FRAGMENT_TAG = "currentlyDisplayedFragment";
 
@@ -231,22 +231,19 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             else if (currentFragment instanceof ScheduleFragment)
                 scheduleFragment = (ScheduleFragment)currentFragment;
             else if (currentFragment instanceof RequirementsFragment)
-                requirementsFragment = (RequirementsFragment)requirementsFragment;
+                requirementsFragment = (RequirementsFragment)currentFragment;
+            else if (currentFragment instanceof ForYouFragment)
+                forYouFragment = (ForYouFragment)currentFragment;
         }
     }
 
     private void showContentFragment(int id) {
-        Fragment fragment = null;
+        Fragment fragment;
         switch(id) {
-            /*case R.id.browse_menu_item:
-                fragmentClass = FirstFragment.class;
+            case R.id.for_you_menu_item:
+                fragment = getForYouFragment();
+                mSearchView.inflateOverflowMenu(R.menu.menu_main);
                 break;
-            case R.id.nav_second_fragment:
-                fragmentClass = SecondFragment.class;
-                break;
-            case R.id.nav_third_fragment:
-                fragmentClass = ThirdFragment.class;
-                break;*/
             case R.id.schedule_menu_item:
                 fragment = getScheduleFragment();
                 mSearchView.inflateOverflowMenu(R.menu.menu_main_schedule);
@@ -728,6 +725,14 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         if (requirementsFragment == null)
             requirementsFragment = RequirementsFragment.newInstance();
         return requirementsFragment;
+    }
+
+    // Requirements
+    private ForYouFragment forYouFragment;
+    private ForYouFragment getForYouFragment() {
+        if (forYouFragment == null)
+            forYouFragment = ForYouFragment.newInstance();
+        return forYouFragment;
     }
 
     // Schedule

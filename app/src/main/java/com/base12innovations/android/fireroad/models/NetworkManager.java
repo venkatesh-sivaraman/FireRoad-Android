@@ -324,6 +324,9 @@ public class NetworkManager {
     interface RatingAPI {
         @POST("recommend/rate")
         Call<HashMap<String, Object>> submitRatings(@Header("Authorization") String auth, @Body List<Object> body);
+
+        @GET("recommend/get")
+        Call<Map<String, Object>> getRecommendations(@Header("Authorization") String auth);
     }
 
     private Map<String, Integer> userRatingsToSubmit;
@@ -347,8 +350,10 @@ public class NetworkManager {
         req.enqueue(new Callback<HashMap<String, Object>>() {
             @Override
             public void onResponse(Call<HashMap<String, Object>> call, retrofit2.Response<HashMap<String, Object>> response) {
-                HashMap<String, Object> val = response.body();
-                Log.d("NetworkManager", "Succeeded at rating submission: " + val.toString());
+                if (response.isSuccessful() && response.body() != null) {
+                    HashMap<String, Object> val = response.body();
+                    Log.d("NetworkManager", "Succeeded at rating submission: " + val.toString());
+                }
             }
 
             @Override
@@ -379,6 +384,37 @@ public class NetworkManager {
                 submitUserRatingsImmediately(ratingsToSubmit);
             }
         }, 500);
+    }
+
+    public interface RecommendationsFetchCompletion {
+        void completed(Map<String, Object> result);
+        void error(int code);
+    }
+
+    public void fetchRecommendations(final RecommendationsFetchCompletion completion) {
+        if (AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) != AppSettings.RECOMMENDATIONS_ALLOWED ||
+                !isLoggedIn) {
+            completion.error(0);
+            return;
+        }
+
+        RatingAPI api = retrofit.create(RatingAPI.class);
+        Call<Map<String, Object>> req = api.getRecommendations(getAuthorizationString());
+        req.enqueue(new Callback<Map<String, Object>>() {
+            @Override
+            public void onResponse(Call<Map<String, Object>> call, retrofit2.Response<Map<String, Object>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Map<String, Object> val = response.body();
+                    completion.completed(val);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                Log.d("NetworkManager","Failed to get recommendations");
+                completion.error(0);
+            }
+        });
     }
 
     // Synced preferences

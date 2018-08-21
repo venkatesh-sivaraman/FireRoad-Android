@@ -501,6 +501,53 @@ public class CourseManager {
         return ratingsPreferences.getInt(course.getSubjectID(), NO_RATING);
     }
 
+    private Map<String, Map<Course, Double>> subjectRecommendations;
+    public static String RECOMMENDATION_KEY_FOR_YOU = "for-you";
+
+    public interface RecommendationsFetchCompletion {
+        void completed(Map<String, Map<Course, Double>> result);
+        void error(int code);
+    }
+
+    public Map<String, Map<Course, Double>> getSubjectRecommendations() {
+        return subjectRecommendations;
+    }
+
+    public void fetchRecommendations(final RecommendationsFetchCompletion completion) {
+        NetworkManager.sharedInstance().fetchRecommendations(new NetworkManager.RecommendationsFetchCompletion() {
+            @Override
+            public void completed(final Map<String, Object> result) {
+                // Parse out the map and get courses
+                TaskDispatcher.perform(new TaskDispatcher.Task<Map<String, Map<Course, Double>>>() {
+                    @Override
+                    public Map<String, Map<Course, Double>> perform() {
+                        subjectRecommendations = new HashMap<>();
+                        for (String key : result.keySet()) {
+                            Map<String, Double> recSet = (Map<String, Double>) result.get(key);
+                            subjectRecommendations.put(key, new HashMap<Course, Double>());
+                            for (String subj : recSet.keySet()) {
+                                Course course = getSubjectByID(subj);
+                                subjectRecommendations.get(key).put(course, recSet.get(subj));
+                            }
+                        }
+                        return subjectRecommendations;
+                    }
+                }, new TaskDispatcher.CompletionBlock<Map<String, Map<Course, Double>>>() {
+                    @Override
+                    public void completed(Map<String, Map<Course, Double>> arg) {
+                        completion.completed(arg);
+                    }
+                });
+
+            }
+
+            @Override
+            public void error(int code) {
+                completion.error(code);
+            }
+        });
+    }
+
     // Synced Preferences
 
     public void syncPreferences() {
@@ -510,6 +557,8 @@ public class CourseManager {
                 NetworkManager.Response<List<String>> resp = NetworkManager.sharedInstance().getFavorites();
                 if (resp.result != null && resp.result.size() > 0) {
                     favoriteCourses = resp.result;
+                    if (favoritesChangedListener != null)
+                        favoritesChangedListener.changed(favoriteCourses);
                 } else if (favoriteCourses != null && favoriteCourses.size() > 0) {
                     NetworkManager.sharedInstance().setFavorites(new ArrayList<>(favoriteCourses));
                 }
@@ -553,6 +602,12 @@ public class CourseManager {
     private Map<String, String> notes;
     private Map<String, Integer> progressOverrides;
 
+    public interface FavoritesChangedListener {
+        void changed(List<String> newCourses);
+    }
+
+    private FavoritesChangedListener favoritesChangedListener;
+
     public List<String> getFavoriteCourses() {
         if (favoriteCourses == null) {
             String raw = dbPreferences.getString(FAVORITE_COURSES_KEY, "");
@@ -572,6 +627,8 @@ public class CourseManager {
             favoriteCourses.add(course.getSubjectID());
         dbPreferences.edit().putString(FAVORITE_COURSES_KEY, TextUtils.join(",", favoriteCourses)).apply();
         NetworkManager.sharedInstance().setFavorites(new ArrayList<>(favoriteCourses));
+        if (favoritesChangedListener != null)
+            favoritesChangedListener.changed(favoriteCourses);
     }
 
     public void removeCourseFromFavorites(Course course) {
@@ -581,6 +638,12 @@ public class CourseManager {
             favoriteCourses.remove(course.getSubjectID());
         dbPreferences.edit().putString(FAVORITE_COURSES_KEY, TextUtils.join(",", favoriteCourses)).apply();
         NetworkManager.sharedInstance().setFavorites(new ArrayList<>(favoriteCourses));
+        if (favoritesChangedListener != null)
+            favoritesChangedListener.changed(favoriteCourses);
+    }
+
+    public void setFavoritesChangedListener(FavoritesChangedListener listener) {
+        favoritesChangedListener = listener;
     }
 
     public String getNotes(Course course) {

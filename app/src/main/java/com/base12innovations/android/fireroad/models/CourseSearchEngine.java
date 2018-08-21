@@ -309,11 +309,20 @@ public class CourseSearchEngine {
     private static String COURSE_SEARCH_PREFERENCES = "com.base12innovations.android.fireroad.courseSearchPreferences";
     private SharedPreferences preferences;
     private static String recentCoursesKey = "recentlySearchedCourses";
-    private static int NUM_RECENT_COURSES = 5;
+    private static int NUM_RECENT_COURSES = 15;
     private List<Course> recentCourses;
 
     public interface RecentCoursesCallback {
         void result(List<Course> courses);
+    }
+
+    public interface RecentCoursesListener {
+        void changed(List<Course> courses);
+    }
+
+    private RecentCoursesListener recentsListener;
+    public void setRecentCoursesChangedListener(RecentCoursesListener listener) {
+        recentsListener = listener;
     }
 
     public void getRecentCourses(final RecentCoursesCallback callback) {
@@ -361,6 +370,14 @@ public class CourseSearchEngine {
         recentCourses.add(0, course);
         if (recentCourses.size() > NUM_RECENT_COURSES) {
             recentCourses.remove(recentCourses.size() - 1);
+        }
+        if (recentsListener != null) {
+            TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                @Override
+                public void perform() {
+                    recentsListener.changed(recentCourses);
+                }
+            });
         }
         TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override

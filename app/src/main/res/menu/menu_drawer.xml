@@ -2,9 +2,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/browse_menu_item"
-            android:icon="@drawable/browse_icon"
-            android:title="Browse" />
+            android:id="@+id/for_you_menu_item"
+            android:icon="@drawable/user_icon"
+            android:title="For You" />
         <item
             android:id="@+id/my_road_menu_item"
             android:checked="true"
