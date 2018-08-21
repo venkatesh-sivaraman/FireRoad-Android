@@ -50,6 +50,10 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate,
         FilterDialogFragment.Delegate, ForYouFragment.Delegate {
@@ -67,6 +71,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     private NavigationView navDrawer;
     private FloatingSearchView mSearchView;
     private MenuItem filterItem;
+    private ScheduledExecutorService syncExecutor;
+    private ScheduledFuture syncFuture;
 
     private MyRoadFragment myRoadFragment;
     private RequirementsFragment requirementsFragment;
@@ -152,6 +158,12 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         NetworkManager.sharedInstance().loginIfNeeded(new NetworkManager.AsyncResponse<Boolean>() {
             @Override
             public void success(Boolean result) {
+                syncExecutor = Executors.newScheduledThreadPool(1);
+                syncFuture = syncExecutor.scheduleAtFixedRate(new Runnable() {
+                    public void run() {
+                        performSync();
+                    }
+                }, 0, 30, TimeUnit.SECONDS);
                 Log.d("MainActivity", "Logged in");
             }
 
@@ -212,6 +224,11 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     public void selectDrawerItem(MenuItem menuItem) {
+        if (menuItem.getItemId() == R.id.settings_menu_item) {
+            Intent i = new Intent(this, SettingsActivity.class);
+            startActivity(i);
+            return;
+        }
         // Create a new fragment and specify the fragment to show based on nav item clicked
         showContentFragment(menuItem.getItemId());
         // Highlight the selected item has been done by NavigationView
@@ -269,6 +286,18 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             FragmentManager fragmentManager = getSupportFragmentManager();
             fragmentManager.beginTransaction().replace(R.id.fr_content, fragment, CURRENT_FRAGMENT_TAG).commit();
         }
+    }
+
+    public void performSync() {
+        Log.d("MainActivity", "Syncing");
+        CourseManager.sharedInstance().syncPreferences();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        syncFuture.cancel(false);
+        syncExecutor = null;
     }
 
     // Searching

@@ -340,7 +340,8 @@ public class RoadDocument extends Document {
             return warningsCache.get(course).get(semester);
 
         List<String> unsatisfiedPrereqs = unsatisfiedRequirements(course, course.getPrerequisitesList(), semester - 1, true);
-        List<String> unsatisfiedCoreqs = unsatisfiedRequirements(course, course.getCorequisitesList(), semester, false);
+        int coreqCutoff = AppSettings.shared().getBoolean(AppSettings.ALLOW_COREQUISITES_TOGETHER, true) ? semester : semester - 1;
+        List<String> unsatisfiedCoreqs = unsatisfiedRequirements(course, course.getCorequisitesList(), coreqCutoff, false);
 
         List<Warning> result = new ArrayList<>();
         if (semester % 3 == 1 && !course.isOfferedFall) {

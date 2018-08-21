@@ -34,6 +34,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -701,4 +702,24 @@ public class CourseManager {
         dbPreferences.edit().putString(PROGRESS_OVERRIDES_KEY, TextUtils.join(";", comps)).apply();
         NetworkManager.sharedInstance().setProgressOverrides(new HashMap<>(progressOverrides));
     }
+
+    // Current semester
+
+    public void updateCurrentSemester(String newClassYear) {
+        int month = Calendar.getInstance().get(Calendar.MONTH);
+        int yearNumber = Integer.parseInt(newClassYear);
+        int oldSemester = AppSettings.shared().getInt(AppSettings.CURRENT_SEMESTER, 1);
+        int newSemester;
+        if (month >= 4 && month <= 10) {
+            newSemester = 1 + (yearNumber - 1) * 3;
+        } else {
+            newSemester = yearNumber * 3;
+        }
+
+        if (newSemester != oldSemester) {
+            AppSettings.shared().edit().putInt(AppSettings.CURRENT_SEMESTER, newSemester).apply();
+            NetworkManager.sharedInstance().updateCurrentSemester(newSemester);
+        }
+    }
+
 }

@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.RoadDocument;
@@ -238,22 +239,25 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
             });
 
             final View warningView = view.findViewById(R.id.warningView);
-            TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
-                @Override
-                public void perform() {
-                    int pos = viewHolder.getAdapterPosition();
-                    final boolean showWarnings = document.warningsForCourse(course, semesterForGridPosition(pos)).size() > 0 && !document.overrideWarningsForCourse(course);
-                    TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
-                        @Override
-                        public void perform() {
-                            if (showWarnings)
-                                warningView.setVisibility(View.VISIBLE);
-                            else
-                                warningView.setVisibility(View.GONE);
-                        }
-                    });
-                }
-            });
+            if (AppSettings.shared().getBoolean(AppSettings.HIDE_ALL_WARNINGS, false))
+                warningView.setVisibility(View.GONE);
+            else
+                TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+                    @Override
+                    public void perform() {
+                        int pos = viewHolder.getAdapterPosition();
+                        final boolean showWarnings = document.warningsForCourse(course, semesterForGridPosition(pos)).size() > 0 && !document.overrideWarningsForCourse(course);
+                        TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                            @Override
+                            public void perform() {
+                                if (showWarnings)
+                                    warningView.setVisibility(View.VISIBLE);
+                                else
+                                    warningView.setVisibility(View.GONE);
+                            }
+                        });
+                    }
+                });
         }
     }
 
@@ -264,118 +268,4 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
         }
         return document.getAllCourses().size() + RoadDocument.semesterNames.length;
     }
-
-    /*private final Context context;
-
-    public MyRoadCoursesAdapter(Context context, RoadDocument document, int numColumns) {
-        this.document = document;
-        this.context = context;
-        this.numColumns = numColumns;
-        computeCellTypes(numColumns);
-    }
-
-    @Override
-    public void notifyDataSetChanged() {
-        computeCellTypes(this.numColumns);
-        super.notifyDataSetChanged();
-    }
-
-    @Override
-    public void notifyDataSetInvalidated() {
-        computeCellTypes(this.numColumns);
-        super.notifyDataSetInvalidated();
-    }
-
-    @Override
-    public int getCount() {
-        return cellTypes.size();
-    }
-
-    // 3
-    @Override
-    public long getItemId(int position) {
-        return 0;
-    }
-
-    // 4
-    @Override
-    public Object getItem(int position) {
-        return null;
-    }
-
-    @Override
-    public int getViewTypeCount() {
-        return 3;
-    }
-
-    @Override
-    public int getItemViewType(int position) {
-        int cellType = cellTypes.get(position);
-        if (cellType == SECTION_SPACING || cellType == SECTION_END_SPACE) {
-            // Empty view
-            return 2;
-        } else if (cellType < 0) {
-            // Header
-            return 1;
-        }
-        // Normal cell
-        return 0;
-    }
-
-    @Override
-    public boolean isEnabled(int position) {
-        int cellType = cellTypes.get(position);
-        return cellType >= 0;
-    }
-
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        int cellType = cellTypes.get(position);
-        if (cellType == SECTION_SPACING || cellType == SECTION_END_SPACE) {
-            // Empty view
-            if (convertView == null) {
-                convertView = new View(context);
-            }
-            int height;
-            if (cellType == SECTION_END_SPACE) {
-                height = (int) context.getResources().getDimension(R.dimen.course_cell_height);
-            } else {
-                height = (int) context.getResources().getDimension(R.dimen.my_road_header_height);
-            }
-            ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height);
-            convertView.setLayoutParams(layoutParams);
-            return convertView;
-        } else if (cellType < 0) {
-            // Header
-            if (convertView == null) {
-                final LayoutInflater layoutInflater = LayoutInflater.from(context);
-                convertView = layoutInflater.inflate(R.layout.header_myroad, null);
-            }
-            final TextView textView = (TextView)convertView.findViewById(R.id.headerTextView);
-            textView.setText(RoadDocument.semesterNames[sectionHeaderIndex(cellType)]);
-            return convertView;
-        }
-        // Normal cell
-
-        final Course course = courseForGridPosition(position);
-
-        // 2
-        if (convertView == null) {
-            final LayoutInflater layoutInflater = LayoutInflater.from(context);
-            convertView = layoutInflater.inflate(R.layout.linearlayout_course, null);
-        }
-        ((GradientDrawable)convertView.getBackground()).setColor(ColorManager.colorForCourse(course));
-
-        // 3
-        final TextView idTextView = (TextView)convertView.findViewById(R.id.subjectIDLabel);
-        final TextView titleTextView = (TextView)convertView.findViewById(R.id.subjectTitleLabel);
-
-        // 4
-        idTextView.setText(course.getSubjectID());
-        titleTextView.setText(course.getSubjectTitle());
-
-        return convertView;
-    }
-
-    */
 }

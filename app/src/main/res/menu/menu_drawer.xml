@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <group android:checkableBehavior="single">
+    <group android:checkableBehavior="single"
+        android:id="@+id/main_navigation">
         <item
             android:id="@+id/for_you_menu_item"
             android:icon="@drawable/user_icon"
@@ -19,5 +20,11 @@
             android:icon="@drawable/schedule_icon"
             android:title="Schedule" />
     </group>
-
+    <group android:checkableBehavior="none"
+        android:id="@+id/secondary_navigation">
+        <item
+            android:id="@+id/settings_menu_item"
+            android:icon="@drawable/settings_icon"
+            android:title="Settings" />
+    </group>
 </menu>

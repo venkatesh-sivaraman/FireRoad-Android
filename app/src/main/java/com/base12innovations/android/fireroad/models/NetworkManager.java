@@ -115,6 +115,9 @@ public class NetworkManager {
     interface LoginAPI {
         @GET("verify")
         Call<HashMap<String, Object>> verifyLogin(@Header("Authorization") String authorization);
+
+        @POST("set_semester")
+        Call<Map<String, Object>> setSemester(@Header("Authorization") String auth, @Body HashMap<String, Object> semBody);
     }
 
     public interface AuthenticationListener {
@@ -180,14 +183,14 @@ public class NetworkManager {
             public void success(JSONObject response) {
                 boolean worked = extractAccessInfo(response);
                 isLoggedIn = worked;
-                AppSettings.shared().edit().putInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_ALLOWED).apply();
+                AppSettings.setAllowsRecommendations(AppSettings.RECOMMENDATIONS_ALLOWED);
                 setHasShownSignup(worked);
                 completion.success(true);
             }
 
             @Override
             public void failure() {
-                AppSettings.shared().edit().putInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_DISALLOWED).apply();
+                AppSettings.setAllowsRecommendations(AppSettings.RECOMMENDATIONS_DISALLOWED);
                 completion.failure();
             }
         };
@@ -221,7 +224,7 @@ public class NetworkManager {
                             else if (semObj instanceof Double)
                                 sem = (int)Math.round((Double)semObj);
                             if (sem != 0)
-                                AppSettings.shared().edit().putInt(AppSettings.CURRENT_SEMESTER, sem).apply();
+                                AppSettings.setCurrentSemester(sem);
                         }
                         Log.d("NetworkManager", "Successfully logged in");
                         isLoggedIn = true;
@@ -270,6 +273,32 @@ public class NetworkManager {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public void updateCurrentSemester(int semester) {
+        if (!isLoggedIn)
+            return;
+
+        LoginAPI api = retrofit.create(LoginAPI.class);
+
+        HashMap<String, Object> body = new HashMap<>();
+        body.put("semester", semester);
+        Call<Map<String, Object>> req = api.setSemester(getAuthorizationString(), body);
+        req.enqueue(new Callback<Map<String, Object>>() {
+            @Override
+            public void onResponse(Call<Map<String, Object>> call, retrofit2.Response<Map<String, Object>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Log.d("NetworkManager", "Successfully updated user semester");
+                } else {
+                    Log.d("NetworkManager", "Failed to update user semester");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                Log.d("NetworkManager", "Failed to update user semester");
+            }
+        });
     }
 
     // Course updater

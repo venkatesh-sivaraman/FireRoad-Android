@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="Account">
+        <CheckBoxPreference
+            android:key="allows_recommendations_bool"
+            android:summary="Your course selections will be synced across your devices and securely used to generate helpful recommendations. MIT login is required."
+            android:title="Sync and Recommendations"
+            android:defaultValue="false" />
+        <ListPreference
+            android:key="class_year_str"
+            android:summary="Choose your current or upcoming class year."
+            android:title="Class Year"
+            android:dialogTitle="Class Year"
+            android:entries="@array/class_year_titles"
+            android:entryValues="@array/class_year_values"
+            android:defaultValue="1" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="My Road">
+        <CheckBoxPreference
+            android:key="hide_all_warnings"
+            android:title="Hide All Warnings"
+            android:defaultValue="false" />
+        <CheckBoxPreference
+            android:key="allow_corequisites_together"
+            android:summary="Turn off Allow Corequisites Together to display a warning when corequisites are taken in the same semester."
+            android:title="Allow Corequisites Together"
+            android:defaultValue="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="About">
+        <Preference
+            android:key="about_dummy_key"
+            android:selectable="false"
+            android:persistent="false"
+            android:title=""
+            android:summary="Created by Venkatesh Sivaraman. Course evaluation data courtesy of Edward Fan; additional major/minor requirements contributed by Tanya Smith, Maia Hannahs, and Cindy Shi. In-app icons courtesy of icons8.com.\n\nAll subject descriptions, evaluations, and course requirements © Massachusetts Institute of Technology. FireRoad is not intended to be your sole source of course information - please be sure to check your department's website to make sure you have the most up-to-date information."/>
+        <Preference android:title="Contact"
+            android:summary="Please contact us to give feedback, ask questions, or report bugs or out-of-date information.">
+            <intent android:action="android.intent.action.VIEW"
+                android:data="mailto:base12apps@gmail.com">
+                <extra android:name="android.intent.extra.SUBJECT" android:value="FireRoad for Android Feedback" />
+            </intent>
+        </Preference>
+    </PreferenceCategory>
+</PreferenceScreen>
