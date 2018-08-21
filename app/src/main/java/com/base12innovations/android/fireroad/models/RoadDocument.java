@@ -72,7 +72,7 @@ public class RoadDocument extends Document {
             JSONArray majors = json.getJSONArray(RoadJSON.coursesOfStudy);
             coursesOfStudy = new ArrayList<>();
             for (int i = 0; i < majors.length(); i++) {
-                coursesOfStudy.add(majors.getJSONObject(i).toString());
+                coursesOfStudy.add(majors.getString(i));
             }
 
             // load selected subjects
@@ -225,6 +225,20 @@ public class RoadDocument extends Document {
             overrides = new HashMap<>();
         overrides.put(course, flag);
         save();
+    }
+
+    public void addCourseOfStudy(String listID) {
+        if (!coursesOfStudy.contains(listID)) {
+            coursesOfStudy.add(listID);
+            save();
+        }
+    }
+
+    public void removeCourseOfStudy(String listID) {
+        if (coursesOfStudy.contains(listID)) {
+            coursesOfStudy.remove(listID);
+            save();
+        }
     }
 
     // Warnings

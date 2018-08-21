@@ -12,9 +12,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 
 import com.base12innovations.android.fireroad.models.Course;
+import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.RequirementsList;
 import com.base12innovations.android.fireroad.models.RequirementsListManager;
@@ -22,6 +24,7 @@ import com.base12innovations.android.fireroad.models.RequirementsListManager;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 
 /**
@@ -41,6 +44,7 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
     private int currentSelection;
     private RequirementsListFragment currentListFragment;
     RequirementsBrowserAdapter spinnerAdapter;
+    private ProgressBar loadingIndicator;
 
     public RequirementsListFragment getCurrentListFragment() {
         return currentListFragment;
@@ -80,9 +84,20 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
 
         listEmbedView = layout.findViewById(R.id.requirementsList);
         courseSelector = layout.findViewById(R.id.courseSelector);
-        setupRequirementsListSelector();
-        if (savedInstanceState == null) {
-            courseSelector.setSelection(1);
+        loadingIndicator = layout.findViewById(R.id.loadingIndicator);
+        if (CourseManager.sharedInstance().isLoaded()) {
+            loadingIndicator.setVisibility(View.GONE);
+            setupRequirementsListSelector();
+        } else {
+            loadingIndicator.setVisibility(View.VISIBLE);
+            CourseManager.sharedInstance().waitForLoad(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    loadingIndicator.setVisibility(View.GONE);
+                    setupRequirementsListSelector();
+                    return null;
+                }
+            });
         }
         return layout;
     }
@@ -108,6 +123,7 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
                 currentSelection = 1;
             }
         });
+        courseSelector.setSelection(1);
     }
 
     @Override
@@ -183,5 +199,13 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
         if (mListener != null) {
             mListener.courseNavigatorWantsSearchCourses(this, searchTerm, filters);
         }
+    }
+
+    @Override
+    public void fragmentUpdatedCoursesOfStudy(RequirementsListFragment fragment) {
+        int newSelection = spinnerAdapter.setRequirementsLists(RequirementsListManager.sharedInstance().getAllRequirementsLists(),
+                courseSelector.getSelectedItemPosition());
+        courseSelector.setSelection(newSelection);
+        spinnerAdapter.notifyDataSetChanged();
     }
 }

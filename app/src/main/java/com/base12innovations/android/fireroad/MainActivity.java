@@ -38,6 +38,7 @@ import com.base12innovations.android.fireroad.models.Document;
 import com.base12innovations.android.fireroad.models.NetworkManager;
 import com.base12innovations.android.fireroad.models.ScheduleConfiguration;
 import com.base12innovations.android.fireroad.models.ScheduleGenerator;
+import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import org.json.JSONException;
@@ -48,6 +49,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.Callable;
 
 public class MainActivity extends AppCompatActivity implements RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate,
         FilterDialogFragment.Delegate {
@@ -76,8 +78,10 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (!CourseManager.sharedInstance().isLoaded())
+        if (!CourseManager.sharedInstance().isLoaded()) {
             CourseManager.sharedInstance().initializeDatabase(this);
+            User.currentUser().initialize(this);
+        }
 
         mDrawer = (DrawerLayout) findViewById(R.id.main_content);
         navDrawer = (NavigationView)findViewById(R.id.nav_view);
@@ -88,9 +92,9 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         restoreFragments();
         if (getSupportFragmentManager().findFragmentByTag(CURRENT_FRAGMENT_TAG) == null) {
             int lastShown = lastShownFragmentID();
-            if (lastShown != 0)
+            if (lastShown != 0) {
                 showContentFragment(lastShown);
-            else
+            } else
                 showContentFragment(R.id.my_road_menu_item);
         }
         setupDrawerContent(navDrawer);
@@ -106,12 +110,26 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         };
 
         if (!CourseManager.sharedInstance().isLoaded()) {
+            CourseManager.sharedInstance().postLoadBlock = new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    User.currentUser().loadRecentDocuments();
+                    if (User.currentUser().getCurrentDocument() == null) {
+                        MyRoadFragment.createInitialDocument(MainActivity.this, null);
+                    }
+                    if (User.currentUser().getCurrentSchedule() == null) {
+                        ScheduleFragment.createInitialDocument(MainActivity.this, null);
+                    }
+                    return null;
+                }
+            };
             CourseManager.sharedInstance().loadCourses(new CourseManager.LoadCoursesListener() {
                 @Override
                 public void completion() {
                     if (loadingDialogFragment != null) {
                         loadingDialogFragment.dismiss();
                     }
+                    CourseManager.sharedInstance().syncPreferences();
                 }
 
                 @Override
@@ -186,6 +204,10 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                         return true;
                     }
                 });
+        int lastShown = lastShownFragmentID();
+        if (lastShown != 0 && navigationView.getMenu().findItem(lastShown) != null) {
+            navigationView.getMenu().findItem(lastShown).setChecked(true);
+        }
     }
 
     public void selectDrawerItem(MenuItem menuItem) {

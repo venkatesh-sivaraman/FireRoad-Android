@@ -15,9 +15,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.ScaleAnimation;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
@@ -189,6 +191,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             addMetadataItem(layout, "Hours", String.format(Locale.US, "%.2g in class\n%.2g out of class", course.inClassHours, course.outOfClassHours));
         }
         addRatingItem(layout, "My Rating");
+        addFavoritesItem(layout);   
 
         List<String> subjectList = course.getEquivalentSubjectsList();
         if (subjectList.size() > 0) {
@@ -357,6 +360,23 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             public void onRatingChanged(RatingBar ratingBar, float newValue, boolean b) {
                 Log.d("RatingBar", "Changed to " + Float.toString(newValue));
                 CourseManager.sharedInstance().setRatingForCourse(course, (int)Math.round(newValue * 2.0f - 5.0f));
+            }
+        });
+    }
+
+    private void addFavoritesItem(LinearLayout layout) {
+        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_toggle_button, null);
+        layout.addView(metadataView);
+
+        ToggleButton button = metadataView.findViewById(R.id.toggleButton);
+        button.setChecked(CourseManager.sharedInstance().getFavoriteCourses().contains(course.getSubjectID()));
+        button.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (b)
+                    CourseManager.sharedInstance().addCourseToFavorites(course);
+                else
+                    CourseManager.sharedInstance().removeCourseFromFavorites(course);
             }
         });
     }

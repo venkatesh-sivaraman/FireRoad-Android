@@ -164,6 +164,26 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         return view;
     }
 
+    public static void createInitialDocument(Context context, final TaskDispatcher.TaskNoReturn completion) {
+        Log.d("ScheduleFragment", "Creating initial document");
+        final ScheduleDocument document = new ScheduleDocument(new File(context.getFilesDir(), Document.INITIAL_DOCUMENT_TITLE + ".sched"));
+        TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
+            @Override
+            public Void perform() {
+                if (document.file.exists()) {
+                    document.read();
+                }
+                return null;
+            }
+        }, new TaskDispatcher.CompletionBlock<Void>() {
+            @Override
+            public void completed(Void arg) {
+                User.currentUser().setCurrentSchedule(document);
+                if (completion != null)
+                    completion.perform();
+            }
+        });
+    }
     private void finishLoadingView() {
         setupScheduleDisplay();
 
@@ -172,19 +192,9 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
             return;
 
         if (User.currentUser().getCurrentSchedule() == null) {
-            final ScheduleDocument document = new ScheduleDocument(new File(currentActivity.getFilesDir(), Document.INITIAL_DOCUMENT_TITLE + ".sched"));
-            TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
+            ScheduleFragment.createInitialDocument(currentActivity, new TaskDispatcher.TaskNoReturn() {
                 @Override
-                public Void perform() {
-                    if (document.file.exists()) {
-                        document.read();
-                    }
-                    return null;
-                }
-            }, new TaskDispatcher.CompletionBlock<Void>() {
-                @Override
-                public void completed(Void arg) {
-                    User.currentUser().setCurrentSchedule(document);
+                public void perform() {
                     ScheduleFragment.this.document = document;
                     loadSchedules(true);
                 }

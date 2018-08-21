@@ -2,6 +2,7 @@ package com.base12innovations.android.fireroad.models;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.media.Rating;
 import android.net.Uri;
 import android.os.Handler;
@@ -106,17 +107,15 @@ public class NetworkManager {
 
     public static String CATALOG_BASE_URL = "https://venkats.scripts.mit.edu";
     public static String BASE_URL = "https://venkats.scripts.mit.edu/fireroad/";
-    private static String databaseSemestersURL = BASE_URL + "courseupdater/semesters";
-    private static String databaseVersionURL = BASE_URL + "courseupdater/check";
     private static String recommenderLoginURL = BASE_URL + "login/";
     private static String recommenderSignupURL = BASE_URL + "signup/";
+
+    // Log in
 
     interface LoginAPI {
         @GET("verify")
         Call<HashMap<String, Object>> verifyLogin(@Header("Authorization") String authorization);
     }
-
-    // Log in
 
     public interface AuthenticationListener {
         void showAuthenticationView(String url, AsyncResponse<JSONObject> completion);
@@ -149,36 +148,6 @@ public class NetworkManager {
         if (getAccessToken() == null)
             return null;
         return "Bearer " + getAccessToken();
-    }
-
-    private JsonObjectRequest authorizedObjectRequest(int method, String url, JSONObject body, RequestFuture<JSONObject> future) {
-        JsonObjectRequest request = new JsonObjectRequest(method, url, body, future, future) {
-            @Override
-            public Map<String, String> getHeaders() throws AuthFailureError {
-                Map<String, String> myMap = new HashMap<>();
-                String auth = getAuthorizationString();
-                if (auth != null) {
-                    myMap.put("Authorization", auth);
-                }
-                return myMap;
-            }
-        };
-        return request;
-    }
-
-    private JsonArrayRequest authorizedArrayRequest(int method, String url, JSONArray body, RequestFuture<JSONArray> future) {
-        JsonArrayRequest request = new JsonArrayRequest(method, url, body, future, future) {
-            @Override
-            public Map<String, String> getHeaders() throws AuthFailureError {
-                Map<String, String> myMap = new HashMap<>();
-                String auth = getAuthorizationString();
-                if (auth != null) {
-                    myMap.put("Authorization", auth);
-                }
-                return myMap;
-            }
-        };
-        return request;
     }
 
     private String loginURL(boolean signup) {
@@ -305,60 +274,49 @@ public class NetworkManager {
 
     // Course updater
 
+    interface CourseUpdaterAPI {
+        @GET("courseupdater/semesters")
+        Call<List<HashMap<String, Object>>> getSemesters();
+
+        @GET("courseupdater/check")
+        Call<HashMap<String, Object>> getCurrentSemesterInfo(@Query("sem") String semester, @Query("v") int v, @Query("rv") int rv);
+    }
+
     /*
     This function saves the current version to the preferences, and the completion block is passed
     a list of paths to update.
      */
-    public Response<JSONObject> determineDatabaseVersion(String semester, int version, int reqVersion) {
-        String url = databaseVersionURL + String.format(Locale.US, "?sem=%s&v=%d&rv=%d", Uri.encode(semester), version, reqVersion);
+    public Response<HashMap<String, Object>> determineDatabaseVersion(String semester, int version, int reqVersion) {
+        CourseUpdaterAPI api = retrofit.create(CourseUpdaterAPI.class);
 
-        RequestFuture<JSONObject> requestFuture=RequestFuture.newFuture();
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET,
-                url,new JSONObject(),requestFuture,requestFuture);
-
-        requestQueue.add(request);
+        Call<HashMap<String, Object>> req = api.getCurrentSemesterInfo(semester, version, reqVersion);
         try {
-            JSONObject object = requestFuture.get(10, TimeUnit.SECONDS);
-            return Response.success(object);
-        } catch (InterruptedException | ExecutionException e ) {
-            if (e.getCause() instanceof VolleyError) {
-                //grab the volley error from the throwable
-                VolleyError volleyError = (VolleyError)e.getCause();
-                NetworkResponse resp = volleyError.networkResponse;
-                return Response.error(resp.statusCode, null, false);
+            retrofit2.Response<HashMap<String, Object>> resp = req.execute();
+            if (resp.isSuccessful() && resp.body() != null) {
+                HashMap<String, Object> result = resp.body();
+                return Response.success(result);
+            } else {
+                return Response.error(resp.code(), null, false);
             }
-        } catch (TimeoutException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            return Response.error(JSON_ERROR, null, false);
         }
-        return Response.error(0, null, false);
     }
 
     public Response<String> determineCurrentSemester() {
-        String url = databaseSemestersURL;
-        RequestFuture<JSONArray> requestFuture=RequestFuture.newFuture();
-        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET,
-                url,new JSONArray(),requestFuture,requestFuture);
+        CourseUpdaterAPI api = retrofit.create(CourseUpdaterAPI.class);
 
-        requestQueue.add(request);
+        Call<List<HashMap<String, Object>>> req = api.getSemesters();
         try {
-            JSONArray object = requestFuture.get(10, TimeUnit.SECONDS);
-            JSONObject element = object.getJSONObject(object.length() - 1);
-            String currentSemester = element.getString("sem");
-
-            return Response.success(currentSemester);
-        } catch (JSONException e) {
-            return Response.error(JSON_ERROR, null, false);
-        } catch (InterruptedException | ExecutionException e ) {
-            if (e.getCause() instanceof VolleyError) {
-                //grab the volley error from the throwable
-                VolleyError volleyError = (VolleyError)e.getCause();
-                NetworkResponse resp = volleyError.networkResponse;
-                return Response.error(resp.statusCode, null, false);
+            retrofit2.Response<List<HashMap<String, Object>>> resp = req.execute();
+            if (resp.isSuccessful() && resp.body() != null && resp.body().size() > 0) {
+                return Response.success((String)resp.body().get(resp.body().size() - 1).get("sem"));
+            } else {
+                return Response.error(resp.code(), null, false);
             }
-        } catch (TimeoutException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            return Response.error(JSON_ERROR, null, false);
         }
-        return Response.error(0, null, false);
     }
 
     // Ratings
@@ -422,55 +380,53 @@ public class NetworkManager {
             }
         }, 500);
     }
-    /*
 
+    // Synced preferences
 
-    func submitUserRatingsImmediately(ratings: [String: Int], completion: ((Bool) -> Void)? = nil, tryOnce: Bool = false) {
-        guard AppSettings.shared.allowsRecommendations == true, ratings.count > 0,
-                let url = URL(string: CourseManager.recommenderSubmitURL) else {
-            return
-        }
-
-        let parameters: [[String: Any]] = ratings.map {
-            ["s": $0.key,
-                    "v": $0.value]
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: parameters)
-        } catch {
-            print(error.localizedDescription)
-        }
-
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue("application/json", forHTTPHeaderField: "Accept")
-        applyBasicAuthentication(to: &request)
-
-        loginAndSendDataTask(with: request, errorHandler: {
-            completion?(false)
-        }, successHandler: { _ in
-            completion?(true)
-        })
+    interface SyncedPreferenceAPI {
+        @GET("prefs/favorites")
+        Call<HashMap<String, Object>> getFavorites(@Header("Authorization") String authorization);
+        @POST("prefs/set_favorites")
+        Call<HashMap<String, Object>> setFavorites(@Header("Authorization") String authorization, @Body ArrayList<String> subjectIDs);
     }
 
-    func submitUserRatings(ratings: [String: Int], completion: ((Bool) -> Void)? = nil, tryOnce: Bool = false) {
-        guard AppSettings.shared.allowsRecommendations == true, ratings.count > 0 else {
-            return
-        }
-        if userRatingsToSubmit != nil {
-            userRatingsToSubmit?.merge(ratings, uniquingKeysWith: { $1 })
-        } else {
-            userRatingsToSubmit = ratings
-            DispatchQueue.global().asyncAfter(deadline: .now() + 0.5, execute: {
-                guard let toSubmit = self.userRatingsToSubmit else {
-                    return
-                }
-                self.userRatingsToSubmit = nil
-                self.submitUserRatingsImmediately(ratings: toSubmit, completion: completion, tryOnce: tryOnce)
-            })
-        }
-    }*/
+    public Response<List<String>> getFavorites() {
+        if (AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) != AppSettings.RECOMMENDATIONS_ALLOWED ||
+                !isLoggedIn)
+            return Response.error(0, null, false);
 
+        SyncedPreferenceAPI api = retrofit.create(SyncedPreferenceAPI.class);
+        Call<HashMap<String, Object>> req = api.getFavorites(getAuthorizationString());
+        try {
+            retrofit2.Response<HashMap<String, Object>> resp = req.execute();
+            if (resp.isSuccessful() && resp.body() != null &&
+                    (Boolean)resp.body().get("success")) {
+                return Response.success((List<String>)resp.body().get("favorites"));
+            } else {
+                return Response.error(resp.code(), null, false);
+            }
+        } catch (IOException | ClassCastException e) {
+            return Response.error(JSON_ERROR, null, false);
+        }
+    }
+
+    public void setFavorites(ArrayList<String> subjectIDs) {
+        if (AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) != AppSettings.RECOMMENDATIONS_ALLOWED ||
+                !isLoggedIn)
+            return;
+
+        SyncedPreferenceAPI api = retrofit.create(SyncedPreferenceAPI.class);
+        Call<HashMap<String, Object>> req = api.setFavorites(getAuthorizationString(), subjectIDs);
+        req.enqueue(new Callback<HashMap<String, Object>>() {
+            @Override
+            public void onResponse(Call<HashMap<String, Object>> call, retrofit2.Response<HashMap<String, Object>> response) {
+                Log.d("NetworkManager", "Successfully set favorites");
+            }
+
+            @Override
+            public void onFailure(Call<HashMap<String, Object>> call, Throwable t) {
+                Log.d("NetworkManager", "Failed to set favorites");
+            }
+        });
+    }
 }

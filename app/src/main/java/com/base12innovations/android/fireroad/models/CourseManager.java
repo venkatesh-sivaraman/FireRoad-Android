@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Network;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.volley.NetworkResponse;
@@ -70,6 +71,7 @@ public class CourseManager {
     public boolean isLoaded() { return _isLoaded; }
     public float getLoadingProgress() { return loadingProgress; }
     private List<Callable<Void>> loadingCompletionHandlers;
+    public Callable<Void> postLoadBlock; // Called after loading but before posting notifications
 
     private static final String DATABASE_NAME = "course_db";
     public CourseDatabase courseDatabase;
@@ -172,6 +174,11 @@ public class CourseManager {
                     public void completed(Void arg) {
                         _isLoading = false;
                         _isLoaded = true;
+                        if (postLoadBlock != null) {
+                            try {
+                                postLoadBlock.call();
+                            } catch (Exception e) { }
+                        }
                         listener.completion();
                         for (Callable<Void> comp : loadingCompletionHandlers) {
                             try {
@@ -211,38 +218,33 @@ public class CourseManager {
         // there is an update.
         int version = 0; //dbPreferences.getInt(prefsDatabaseVersionKey, 0);
         int reqVersion = dbPreferences.getInt(prefsRequirementsVersionKey, 0);
-        NetworkManager.Response<JSONObject> resp = NetworkManager.sharedInstance().determineDatabaseVersion(semester, version, reqVersion);
+        NetworkManager.Response<HashMap<String, Object>> resp = NetworkManager.sharedInstance().determineDatabaseVersion(semester, version, reqVersion);
         if (resp.result == null) {
             return null;
         }
 
-        JSONObject response = resp.result;
-        try {
-            int currentVersion = response.getInt("v");
-            JSONArray delta = response.getJSONArray("delta");
-            List<String> deltaList = new ArrayList<>();
-            for (int i = 0; i < delta.length(); i++) {
-                String item = delta.getString(i);
-                deltaList.add(item);
-            }
+        HashMap<String, Object> response = resp.result;
 
-            reqVersion = response.getInt("rv");
-            if (reqVersion != 0) {
-                delta = response.getJSONArray("r_delta");
-                for (int i = 0; i < delta.length(); i++) {
-                    String item = delta.getString(i);
-                    deltaList.add(item);
-                }
-                newRequirementsVersion = reqVersion;
-            }
-
-            newDatabaseVersion = currentVersion;
-            Log.d("CourseManager", "New versions: " + Integer.toString(newDatabaseVersion) + ", " + Integer.toString(newRequirementsVersion));
-            return deltaList;
-        } catch (JSONException e) {
-            e.printStackTrace();
+        int currentVersion = (int)Math.round((Double)response.get("v"));
+        List<String> delta = new ArrayList<>();
+        if (response.containsKey("delta") && response.get("delta") instanceof List) {
+            delta.addAll((List<String>) response.get("delta"));
         }
-        return null;
+        List<String> deltaList = new ArrayList<>();
+        deltaList.addAll(delta);
+
+        reqVersion = (int)Math.round((Double)response.get("rv"));
+        if (reqVersion != 0) {
+            delta = new ArrayList<>();
+            if (response.containsKey("r_delta") && response.get("r_delta") instanceof List) {
+                delta.addAll((List<String>) response.get("r_delta"));
+            }
+            deltaList.addAll(delta);
+            newRequirementsVersion = reqVersion;
+        }
+
+        newDatabaseVersion = currentVersion;
+        return deltaList;
     }
 
     private List<URL> determineURLsToUpdate() {
@@ -496,5 +498,48 @@ public class CourseManager {
 
     public int getRatingForCourse(Course course) {
         return ratingsPreferences.getInt(course.getSubjectID(), NO_RATING);
+    }
+
+    // Synced Preferences
+
+    public void syncPreferences() {
+        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                NetworkManager.Response<List<String>> resp = NetworkManager.sharedInstance().getFavorites();
+                if (resp.result != null && resp.result.size() > 0) {
+                    favoriteCourses = resp.result;
+                } else if (favoriteCourses.size() > 0) {
+                    NetworkManager.sharedInstance().setFavorites(new ArrayList<>(favoriteCourses));
+                }
+            }
+        });
+    }
+
+    private static String FAVORITE_COURSES_KEY = "favoriteCourses";
+    private List<String> favoriteCourses;
+
+    public List<String> getFavoriteCourses() {
+        if (favoriteCourses == null)
+            favoriteCourses = new ArrayList<>();
+        return favoriteCourses;
+    }
+
+    public void addCourseToFavorites(Course course) {
+        if (favoriteCourses == null)
+            favoriteCourses = new ArrayList<>();
+        if (!favoriteCourses.contains(course.getSubjectID()))
+            favoriteCourses.add(course.getSubjectID());
+        dbPreferences.edit().putString(FAVORITE_COURSES_KEY, TextUtils.join(",", favoriteCourses)).apply();
+        NetworkManager.sharedInstance().setFavorites(new ArrayList<>(favoriteCourses));
+    }
+
+    public void removeCourseFromFavorites(Course course) {
+        if (favoriteCourses == null)
+            favoriteCourses = new ArrayList<>();
+        if (favoriteCourses.contains(course.getSubjectID()))
+            favoriteCourses.remove(course.getSubjectID());
+        dbPreferences.edit().putString(FAVORITE_COURSES_KEY, TextUtils.join(",", favoriteCourses)).apply();
+        NetworkManager.sharedInstance().setFavorites(new ArrayList<>(favoriteCourses));
     }
 }

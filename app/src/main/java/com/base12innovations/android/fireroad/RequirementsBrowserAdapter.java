@@ -40,6 +40,12 @@ public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAd
     private static int HEADER_VIEW = 0;
     private static int REQ_LIST_VIEW = 1;
 
+    public int setRequirementsLists(List<RequirementsList> reqLists, int currentSelection) {
+        RequirementsList currentReq = (RequirementsList)getItem(currentSelection);
+        requirementsLists = sortRequirementsLists(reqLists);
+        return indexOf(currentReq);
+    }
+
     public RequirementsBrowserAdapter(Activity context, List<RequirementsList> requirementsLists) {
         this.requirementsLists = sortRequirementsLists(requirementsLists);
         inflater = context.getLayoutInflater();
@@ -83,6 +89,20 @@ public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAd
             cursor += sublist.size();
         }
         return null;
+    }
+
+    public int indexOf(RequirementsList item) {
+        int cursor = 0;
+        for (int k = 0; k < headers.length; k++) {
+            List<RequirementsList> sublist = requirementsLists.get(k);
+            if (sublist.size() == 0)
+                continue;
+            cursor += 1;
+            if (sublist.contains(item))
+                return cursor + sublist.indexOf(item);
+            cursor += sublist.size();
+        }
+        return -1;
     }
 
     @Override
@@ -206,7 +226,6 @@ public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAd
             TextView progressLabel = metadataView.findViewById(R.id.progressLabel);
             progressLabel.setVisibility(View.VISIBLE);
             progressLabel.setText(String.format(Locale.US, "%d%%", (int)Math.round(progress)));
-            Log.d("RequirementsBrowserAdapter", "Setting text " + progressLabel.getText().toString());
             int color = Color.HSVToColor(new float[] { 1.8f * progress, 0.5f, 0.8f });
             ((GradientDrawable)progressLabel.getBackground()).setColor(color);
         }

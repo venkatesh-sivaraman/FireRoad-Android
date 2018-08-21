@@ -207,6 +207,27 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         return layout;
     }
 
+    public static void createInitialDocument(Context context, final TaskDispatcher.TaskNoReturn completion) {
+        Log.d("MyRoadFragment", "Creating initial document");
+        final RoadDocument document = RoadDocument.newDocument(new File(context.getFilesDir(), Document.INITIAL_DOCUMENT_TITLE + ".road"));
+        TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
+            @Override
+            public Void perform() {
+                if (document.file.exists()) {
+                    document.read();
+                }
+                return null;
+            }
+        }, new TaskDispatcher.CompletionBlock<Void>() {
+            @Override
+            public void completed(Void arg) {
+                User.currentUser().setCurrentDocument(document);
+                if (completion != null)
+                    completion.perform();
+            }
+        });
+    }
+
     public void finishLoadingView() {
 
         // Set up model
@@ -215,19 +236,9 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             return;
         }
         if (User.currentUser().getCurrentDocument() == null) {
-            final RoadDocument document = RoadDocument.newDocument(new File(currentActivity.getFilesDir(), Document.INITIAL_DOCUMENT_TITLE + ".road"));
-            TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
+            MyRoadFragment.createInitialDocument(getActivity(), new TaskDispatcher.TaskNoReturn() {
                 @Override
-                public Void perform() {
-                    if (document.file.exists()) {
-                        document.read();
-                    }
-                    return null;
-                }
-            }, new TaskDispatcher.CompletionBlock<Void>() {
-                @Override
-                public void completed(Void arg) {
-                    User.currentUser().setCurrentDocument(document);
+                public void perform() {
                     loadingIndicator.setVisibility(ProgressBar.GONE);
                 }
             });

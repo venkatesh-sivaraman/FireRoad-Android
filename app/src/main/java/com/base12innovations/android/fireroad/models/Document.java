@@ -3,6 +3,8 @@ package com.base12innovations.android.fireroad.models;
 import android.net.Uri;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -58,6 +60,15 @@ public class Document {
     public void read() {
         String contents = readTextFile(this.file);
         parse(contents);
+    }
+
+    public void readInBackground() {
+        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                read();
+            }
+        });
     }
 
     private String readTextFile(File mFile){

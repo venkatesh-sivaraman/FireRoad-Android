@@ -5,16 +5,19 @@ import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
@@ -194,6 +197,7 @@ public class RequirementsListFragment extends Fragment {
         if (requirementsList.contentDescription != null && requirementsList.contentDescription.length() > 0) {
             addDescriptionItem(layout, requirementsList.contentDescription);
         }
+        addToggleCourseItem(layout);
 
         if (requirementsList.getRequirements() == null)
             return;
@@ -332,6 +336,39 @@ public class RequirementsListFragment extends Fragment {
 
         TextView titleView = (TextView)metadataView.findViewById(R.id.headingTitle);
         titleView.setText(title);
+    }
+
+    private void addToggleCourseItem(LinearLayout layout) {
+        int margin = (int) getResources().getDimension(R.dimen.requirements_card_padding);
+        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lparams.setMargins(margin, 0, margin, 0);
+        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_toggle_button, null);
+        layout.addView(metadataView);
+        metadataView.setLayoutParams(lparams);
+
+        ToggleButton button = metadataView.findViewById(R.id.toggleButton);
+        button.setTextOff("Add to My Courses");
+        button.setTextOn("Remove from My Courses");
+        if (User.currentUser().getCurrentDocument() != null) {
+            button.setChecked(User.currentUser().getCurrentDocument().coursesOfStudy.contains(requirementsListID));
+            button.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    String titleToShow = requirementsList.mediumTitle != null ? requirementsList.mediumTitle : requirementsList.shortTitle;
+                    if (b) {
+                        User.currentUser().getCurrentDocument().addCourseOfStudy(requirementsListID);
+                        Snackbar.make(mLayout, "Added " + titleToShow + " to my courses", Snackbar.LENGTH_SHORT).show();
+                    } else {
+                        User.currentUser().getCurrentDocument().removeCourseOfStudy(requirementsListID);
+                        Snackbar.make(mLayout, "Removed " + titleToShow + " from my courses", Snackbar.LENGTH_SHORT).show();
+                    }
+                    if (delegate != null)
+                        delegate.fragmentUpdatedCoursesOfStudy(RequirementsListFragment.this);
+                }
+            });
+        } else
+            button.setChecked(false);
     }
 
     private View addSubHeaderItem(LinearLayout layout, String title, float progress, float textSize) {
@@ -555,6 +592,6 @@ public class RequirementsListFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener extends CourseNavigatorDelegate {
-
+        void fragmentUpdatedCoursesOfStudy(RequirementsListFragment fragment);
     }
 }
