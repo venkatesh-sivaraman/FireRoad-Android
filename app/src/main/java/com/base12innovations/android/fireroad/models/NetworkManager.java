@@ -388,6 +388,16 @@ public class NetworkManager {
         Call<HashMap<String, Object>> getFavorites(@Header("Authorization") String authorization);
         @POST("prefs/set_favorites")
         Call<HashMap<String, Object>> setFavorites(@Header("Authorization") String authorization, @Body ArrayList<String> subjectIDs);
+
+        @GET("prefs/notes")
+        Call<HashMap<String, Object>> getNotes(@Header("Authorization") String authorization);
+        @POST("prefs/set_notes")
+        Call<HashMap<String, Object>> setNotes(@Header("Authorization") String authorization, @Body HashMap<String, String> subjectIDs);
+
+        @GET("prefs/progress_overrides")
+        Call<HashMap<String, Object>> getProgressOverrides(@Header("Authorization") String authorization);
+        @POST("prefs/set_progress_overrides")
+        Call<HashMap<String, Object>> setProgressOverrides(@Header("Authorization") String authorization, @Body HashMap<String, Integer> overrides);
     }
 
     public Response<List<String>> getFavorites() {
@@ -406,6 +416,7 @@ public class NetworkManager {
                 return Response.error(resp.code(), null, false);
             }
         } catch (IOException | ClassCastException e) {
+            e.printStackTrace();
             return Response.error(JSON_ERROR, null, false);
         }
     }
@@ -426,6 +437,86 @@ public class NetworkManager {
             @Override
             public void onFailure(Call<HashMap<String, Object>> call, Throwable t) {
                 Log.d("NetworkManager", "Failed to set favorites");
+            }
+        });
+    }
+
+    public Response<Map<String, Object>> getNotes() {
+        if (AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) != AppSettings.RECOMMENDATIONS_ALLOWED ||
+                !isLoggedIn)
+            return Response.error(0, null, false);
+
+        SyncedPreferenceAPI api = retrofit.create(SyncedPreferenceAPI.class);
+        Call<HashMap<String, Object>> req = api.getNotes(getAuthorizationString());
+        try {
+            retrofit2.Response<HashMap<String, Object>> resp = req.execute();
+            if (resp.isSuccessful() && resp.body() != null &&
+                    (Boolean)resp.body().get("success")) {
+                return Response.success((Map<String, Object>)resp.body().get("notes"));
+            } else {
+                return Response.error(resp.code(), null, false);
+            }
+        } catch (IOException | ClassCastException e) {
+            return Response.error(JSON_ERROR, null, false);
+        }
+    }
+
+    public void setNotes(HashMap<String, String> notes) {
+        if (AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) != AppSettings.RECOMMENDATIONS_ALLOWED ||
+                !isLoggedIn)
+            return;
+
+        SyncedPreferenceAPI api = retrofit.create(SyncedPreferenceAPI.class);
+        Call<HashMap<String, Object>> req = api.setNotes(getAuthorizationString(), notes);
+        req.enqueue(new Callback<HashMap<String, Object>>() {
+            @Override
+            public void onResponse(Call<HashMap<String, Object>> call, retrofit2.Response<HashMap<String, Object>> response) {
+                Log.d("NetworkManager", "Successfully set notes");
+            }
+
+            @Override
+            public void onFailure(Call<HashMap<String, Object>> call, Throwable t) {
+                Log.d("NetworkManager", "Failed to set notes");
+            }
+        });
+    }
+
+    public Response<Map<String, Object>> getProgressOverrides() {
+        if (AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) != AppSettings.RECOMMENDATIONS_ALLOWED ||
+                !isLoggedIn)
+            return Response.error(0, null, false);
+
+        SyncedPreferenceAPI api = retrofit.create(SyncedPreferenceAPI.class);
+        Call<HashMap<String, Object>> req = api.getProgressOverrides(getAuthorizationString());
+        try {
+            retrofit2.Response<HashMap<String, Object>> resp = req.execute();
+            if (resp.isSuccessful() && resp.body() != null &&
+                    (Boolean)resp.body().get("success")) {
+                return Response.success((Map<String, Object>)resp.body().get("progress_overrides"));
+            } else {
+                return Response.error(resp.code(), null, false);
+            }
+        } catch (IOException | ClassCastException e) {
+            return Response.error(JSON_ERROR, null, false);
+        }
+    }
+
+    public void setProgressOverrides(HashMap<String, Integer> overrides) {
+        if (AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) != AppSettings.RECOMMENDATIONS_ALLOWED ||
+                !isLoggedIn)
+            return;
+
+        SyncedPreferenceAPI api = retrofit.create(SyncedPreferenceAPI.class);
+        Call<HashMap<String, Object>> req = api.setProgressOverrides(getAuthorizationString(), overrides);
+        req.enqueue(new Callback<HashMap<String, Object>>() {
+            @Override
+            public void onResponse(Call<HashMap<String, Object>> call, retrofit2.Response<HashMap<String, Object>> response) {
+                Log.d("NetworkManager", "Successfully set progress overrides");
+            }
+
+            @Override
+            public void onFailure(Call<HashMap<String, Object>> call, Throwable t) {
+                Log.d("NetworkManager", "Failed to set progress overrides");
             }
         });
     }

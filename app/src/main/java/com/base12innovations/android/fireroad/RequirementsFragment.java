@@ -1,6 +1,7 @@
 package com.base12innovations.android.fireroad;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -45,6 +46,9 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
     private RequirementsListFragment currentListFragment;
     RequirementsBrowserAdapter spinnerAdapter;
     private ProgressBar loadingIndicator;
+
+    private static String PREFERENCES = "com.base12innovations.android.fireroad.requirementsFragmentPrefs";
+    private static String LAST_REQ_LIST_KEY = "lastRequirementsListID";
 
     public RequirementsListFragment getCurrentListFragment() {
         return currentListFragment;
@@ -114,7 +118,9 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 if (currentSelection != i) {
                     currentSelection = i;
-                    showRequirementsList((RequirementsList) adapter.getItem(i));
+                    RequirementsList list = (RequirementsList) adapter.getItem(i);
+                    setLastShownRequirementsListID(list.listID);
+                    showRequirementsList(list);
                 }
             }
 
@@ -123,7 +129,11 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
                 currentSelection = 1;
             }
         });
-        courseSelector.setSelection(1);
+        String lastShown = lastShownRequirementsListID();
+        if (lastShown != null)
+            courseSelector.setSelection(spinnerAdapter.indexOf(RequirementsListManager.sharedInstance().getRequirementsList(lastShown)));
+        else
+            courseSelector.setSelection(1);
     }
 
     @Override
@@ -207,5 +217,19 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
                 courseSelector.getSelectedItemPosition());
         courseSelector.setSelection(newSelection);
         spinnerAdapter.notifyDataSetChanged();
+    }
+
+    // Recent list
+
+    public String lastShownRequirementsListID() {
+        SharedPreferences prefs = getContext().getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        return prefs.getString(LAST_REQ_LIST_KEY, null);
+    }
+
+    public void setLastShownRequirementsListID(String id) {
+        SharedPreferences prefs = getContext().getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(LAST_REQ_LIST_KEY, id);
+        editor.apply();
     }
 }

@@ -58,9 +58,9 @@ public class RequirementsListStatement {
     static int DEFAULT_UNIT_COUNT = 12;
 
     public class Threshold {
-        ThresholdType type;
-        int cutoff;
-        ThresholdCriterion criterion;
+        public ThresholdType type;
+        public int cutoff;
+        public ThresholdCriterion criterion;
 
         Threshold(ThresholdType type, int number, ThresholdCriterion criterion) {
             this.type = type;
@@ -553,6 +553,7 @@ public class RequirementsListStatement {
         if (requirement != null) {
             // It's a basic requirement
             Set<Course> satisfiedCourses = new HashSet<>();
+            int manualProgress = getManualProgress();
             if (isPlainString && manualProgress != 0 && threshold != null) {
                 // Use manual progress
                 isFulfilled = manualProgress == threshold.cutoff;
@@ -721,11 +722,10 @@ public class RequirementsListStatement {
         return Math.min(1.0f, (float)fulfillmentProgress.progress / (float)fulfillmentProgress.max) * 100.0f;
     }
 
-    private int manualProgress = 0;
     public int getManualProgress() {
-        return manualProgress;
+        return CourseManager.sharedInstance().getProgressOverrides(keyPath());
     }
     public void setManualProgress(int newValue) {
-        manualProgress = newValue;
+        CourseManager.sharedInstance().setProgressOverride(keyPath(), newValue);
     }
 }

@@ -19,13 +19,18 @@ public class User {
         return currentDocument;
     }
 
-    public void setCurrentDocument(RoadDocument newDocument) {
+    public void setCurrentDocument(final RoadDocument newDocument) {
         this.currentDocument = newDocument;
         setRecentRoad(newDocument.file.getPath());
         if (roadChangedListeners != null) {
-            for (RoadChangedListener listener : roadChangedListeners) {
-                listener.roadChanged(newDocument);
-            }
+            TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                @Override
+                public void perform() {
+                    for (RoadChangedListener listener : roadChangedListeners) {
+                        listener.roadChanged(newDocument);
+                    }
+                }
+            });
         }
     }
 
@@ -62,13 +67,18 @@ public class User {
         return currentSchedule;
     }
 
-    public void setCurrentSchedule(ScheduleDocument currentSchedule) {
+    public void setCurrentSchedule(final ScheduleDocument currentSchedule) {
         this.currentSchedule = currentSchedule;
         setRecentSchedule(currentSchedule.file.getPath());
         if (scheduleChangedListeners != null) {
-            for (ScheduleChangedListener listener : scheduleChangedListeners) {
-                listener.scheduleChanged(currentSchedule);
-            }
+            TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                @Override
+                public void perform() {
+                    for (ScheduleChangedListener listener : scheduleChangedListeners) {
+                        listener.scheduleChanged(currentSchedule);
+                    }
+                }
+            });
         }
     }
 

@@ -120,6 +120,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     if (User.currentUser().getCurrentSchedule() == null) {
                         ScheduleFragment.createInitialDocument(MainActivity.this, null);
                     }
+                    Log.d("MainActivity", "Finishing post load block");
                     return null;
                 }
             };
@@ -206,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 });
         int lastShown = lastShownFragmentID();
         if (lastShown != 0 && navigationView.getMenu().findItem(lastShown) != null) {
-            navigationView.getMenu().findItem(lastShown).setChecked(true);
+            navigationView.setCheckedItem(lastShown);
         }
     }
 
@@ -642,6 +643,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     @Override
     public void courseNavigatorAddedCourse(Fragment source, Course course, int semester) {
         if (semester == ADD_TO_SCHEDULE) {
+            showContentFragment(R.id.schedule_menu_item);
             if (scheduleFragment != null)
                 scheduleFragment.scheduleAddedCourse(course);
         } else {

@@ -102,7 +102,6 @@ public class ScheduleDocument extends Document {
                                 newPreloadSections.put(course, new HashMap<String, Integer>());
                             newPreloadSections.get(course).put(section, selectedSect);
                         }
-                        Log.d("ScheduleDocument","Restoring selected schedule " + newPreloadSections);
                     }
 
                 } else {
@@ -110,7 +109,6 @@ public class ScheduleDocument extends Document {
                 }
             }
 
-            Log.d("ScheduleDocument", "Loaded");
 
             courses = newCourses;
             allowedSections = newAllowedSections;
@@ -155,7 +153,6 @@ public class ScheduleDocument extends Document {
                             jSelected.put(unit.sectionType, course.getSchedule().get(unit.sectionType).indexOf(unit.scheduleItems));
                         }
                     }
-                    Log.d("ScheduleDocument","Saving selected schedule " + selectedSchedule);
                     courseObj.put(ScheduleJSON.selectedSections, jSelected);
                 }
 

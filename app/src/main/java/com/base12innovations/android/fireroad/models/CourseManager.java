@@ -33,6 +33,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -167,6 +168,11 @@ public class CourseManager {
                             editor.putString(prefsDatabaseSemesterKey, newSemester);
                         editor.apply();
 
+                        if (postLoadBlock != null) {
+                            try {
+                                postLoadBlock.call();
+                            } catch (Exception e) { }
+                        }
                         return null;
                     }
                 }, new TaskDispatcher.CompletionBlock<Void>() {
@@ -174,11 +180,6 @@ public class CourseManager {
                     public void completed(Void arg) {
                         _isLoading = false;
                         _isLoaded = true;
-                        if (postLoadBlock != null) {
-                            try {
-                                postLoadBlock.call();
-                            } catch (Exception e) { }
-                        }
                         listener.completion();
                         for (Callable<Void> comp : loadingCompletionHandlers) {
                             try {
@@ -509,19 +510,58 @@ public class CourseManager {
                 NetworkManager.Response<List<String>> resp = NetworkManager.sharedInstance().getFavorites();
                 if (resp.result != null && resp.result.size() > 0) {
                     favoriteCourses = resp.result;
-                } else if (favoriteCourses.size() > 0) {
+                } else if (favoriteCourses != null && favoriteCourses.size() > 0) {
                     NetworkManager.sharedInstance().setFavorites(new ArrayList<>(favoriteCourses));
+                }
+            }
+        });
+        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                NetworkManager.Response<Map<String, Object>> resp = NetworkManager.sharedInstance().getNotes();
+                if (resp.result != null && resp.result.size() > 0) {
+                    notes = new HashMap<>();
+                    for (String key : resp.result.keySet()) {
+                        if (resp.result.get(key) instanceof String)
+                            notes.put(key, (String)resp.result.get(key));
+                    }
+                } else if (notes != null && notes.size() > 0) {
+                    NetworkManager.sharedInstance().setNotes(new HashMap<>(notes));
+                }
+            }
+        });
+        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                NetworkManager.Response<Map<String, Object>> resp = NetworkManager.sharedInstance().getProgressOverrides();
+                if (resp.result != null && resp.result.size() > 0) {
+                    progressOverrides = new HashMap<>();
+                    for (String key : resp.result.keySet()) {
+                        progressOverrides.put(key, (int)Math.round((Double)resp.result.get(key)));
+                    }
+                } else if (progressOverrides != null && progressOverrides.size() > 0) {
+                    NetworkManager.sharedInstance().setProgressOverrides(new HashMap<>(progressOverrides));
                 }
             }
         });
     }
 
     private static String FAVORITE_COURSES_KEY = "favoriteCourses";
+    private static String NOTES_KEY = "notes";
+    private static String PROGRESS_OVERRIDES_KEY = "progressOverrides";
     private List<String> favoriteCourses;
+    private Map<String, String> notes;
+    private Map<String, Integer> progressOverrides;
 
     public List<String> getFavoriteCourses() {
-        if (favoriteCourses == null)
-            favoriteCourses = new ArrayList<>();
+        if (favoriteCourses == null) {
+            String raw = dbPreferences.getString(FAVORITE_COURSES_KEY, "");
+            if (raw.length() == 0) {
+                favoriteCourses = new ArrayList<>();
+            } else {
+                favoriteCourses = Arrays.asList(raw.split(","));
+            }
+        }
         return favoriteCourses;
     }
 
@@ -541,5 +581,61 @@ public class CourseManager {
             favoriteCourses.remove(course.getSubjectID());
         dbPreferences.edit().putString(FAVORITE_COURSES_KEY, TextUtils.join(",", favoriteCourses)).apply();
         NetworkManager.sharedInstance().setFavorites(new ArrayList<>(favoriteCourses));
+    }
+
+    public String getNotes(Course course) {
+        if (notes == null) {
+            String raw = dbPreferences.getString(NOTES_KEY, "");
+            if (raw.length() == 0) {
+                notes = new HashMap<>();
+            } else {
+                notes = new HashMap<>();
+                for (String comp : raw.split(";")) {
+                    String[] subcomps = comp.split(",");
+                    notes.put(subcomps[0], subcomps[1]);
+                }
+            }
+        }
+        if (!notes.containsKey(course.getSubjectID()))
+            return "";
+        return notes.get(course.getSubjectID());
+    }
+
+    public void setNotes(Course course, String note) {
+        notes.put(course.getSubjectID(), note);
+        List<String> comps = new ArrayList<>();
+        for (String key : notes.keySet()) {
+            comps.add(key + "," + notes.get(key));
+        }
+        dbPreferences.edit().putString(NOTES_KEY, TextUtils.join(";", comps)).apply();
+        NetworkManager.sharedInstance().setNotes(new HashMap<>(notes));
+    }
+
+    public int getProgressOverrides(String keyPath) {
+        if (progressOverrides == null) {
+            String raw = dbPreferences.getString(PROGRESS_OVERRIDES_KEY, "");
+            if (raw.length() == 0) {
+                progressOverrides = new HashMap<>();
+            } else {
+                progressOverrides = new HashMap<>();
+                for (String comp : raw.split(";")) {
+                    String[] subcomps = comp.split(",");
+                    progressOverrides.put(subcomps[0], Integer.parseInt(subcomps[1]));
+                }
+            }
+        }
+        if (!progressOverrides.containsKey(keyPath))
+            return 0;
+        return progressOverrides.get(keyPath);
+    }
+
+    public void setProgressOverride(String keyPath, int value) {
+        progressOverrides.put(keyPath, value);
+        List<String> comps = new ArrayList<>();
+        for (String key : progressOverrides.keySet()) {
+            comps.add(key + "," + Integer.toString(progressOverrides.get(key)));
+        }
+        dbPreferences.edit().putString(PROGRESS_OVERRIDES_KEY, TextUtils.join(";", comps)).apply();
+        NetworkManager.sharedInstance().setProgressOverrides(new HashMap<>(progressOverrides));
     }
 }

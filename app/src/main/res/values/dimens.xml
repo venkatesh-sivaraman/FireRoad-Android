@@ -11,6 +11,7 @@
     <dimen name="course_cell_default_width">128dp</dimen>
     <dimen name="course_cell_spacing">8dp</dimen>
     <dimen name="course_details_padding">16dp</dimen>
+    <dimen name="course_details_edittext_height">84dp</dimen>
 
     <dimen name="requirements_card_padding">16dp</dimen>
     <dimen name="requirements_card_elevation">4dp</dimen>

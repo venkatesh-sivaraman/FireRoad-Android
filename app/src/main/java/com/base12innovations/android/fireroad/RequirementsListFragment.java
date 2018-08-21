@@ -1,6 +1,8 @@
 package com.base12innovations.android.fireroad;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
@@ -16,6 +18,7 @@ import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
@@ -533,6 +536,7 @@ public class RequirementsListFragment extends Fragment {
                     }
                 } else if (req.isPlainString) {
                     // Show progress selector
+                    showManualProgressSelector(req);
                 } else if (req.requirement != null) {
                     // Search
                     String reqString = req.requirement.replaceAll("GIR:", "");
@@ -579,6 +583,59 @@ public class RequirementsListFragment extends Fragment {
             }
         });
         //addCard(layout, Arrays.asList(new PresentationItem(CellType.COURSE_LIST, req, null)), true);
+    }
+
+    private void showManualProgressSelector(final RequirementsListStatement req) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle("Set progress");
+        LayoutInflater inflater = getLayoutInflater();
+        View customView = inflater.inflate(R.layout.dialog_manual_progress, null, false);
+        builder.setView(customView);
+
+        final SeekBar seekBar = customView.findViewById(R.id.seekBar);
+        final TextView label = customView.findViewById(R.id.progressTextView);
+        seekBar.setMax(req.threshold.cutoff);
+        seekBar.setMin(0);
+        seekBar.setProgress(req.getManualProgress());
+        label.setText(String.format(Locale.US, "%d/%d %s", req.getManualProgress(), req.threshold.cutoff,
+                req.threshold.criterion == RequirementsListStatement.ThresholdCriterion.UNITS ? "units" : "subjects"));
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (req.threshold.criterion == RequirementsListStatement.ThresholdCriterion.UNITS &&
+                        progress % 3 != 0) {
+                    seekBar.setProgress((int)(Math.round((float)progress / 3.0f) * 3));
+                } else {
+                    label.setText(String.format(Locale.US, "%d/%d %s", progress, req.threshold.cutoff,
+                            req.threshold.criterion == RequirementsListStatement.ThresholdCriterion.UNITS ? "units" : "subjects"));
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) { }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) { }
+        });
+
+        builder.setPositiveButton("Apply", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                int newValue = seekBar.getProgress();
+                if (newValue != req.getManualProgress()) {
+                    req.setManualProgress(newValue);
+                    updateRequirementStatus();
+                }
+                dialogInterface.dismiss();
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+            }
+        });
+        builder.create().show();
     }
 
     /**

@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.ScaleAnimation;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.TextView;
@@ -191,7 +192,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             addMetadataItem(layout, "Hours", String.format(Locale.US, "%.2g in class\n%.2g out of class", course.inClassHours, course.outOfClassHours));
         }
         addRatingItem(layout, "My Rating");
-        addFavoritesItem(layout);   
+        addFavoritesItem(layout);
 
         List<String> subjectList = course.getEquivalentSubjectsList();
         if (subjectList.size() > 0) {
@@ -224,6 +225,10 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             addHeaderItem(layout, "Corequisites");
             addNestedCourseListItem(layout, coreqs);
         }
+
+        String notes = CourseManager.sharedInstance().getNotes(course);
+        addHeaderItem(layout, "Notes");
+        addEditTextItem(layout, notes);
     }
 
     // Adding information types
@@ -403,6 +408,28 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         metadataView.setLayoutParams(lparams);
 
         ((TextView)metadataView.findViewById(R.id.descriptionLabel)).setText(text);
+    }
+
+    private void addEditTextItem(LinearLayout layout, String text) {
+        int margin = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_details_padding);
+        int height = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_details_edittext_height);
+        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, height);
+        lparams.setMargins(margin, 0, margin, 0);
+        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_edittext, null);
+        layout.addView(metadataView);
+        metadataView.setLayoutParams(lparams);
+
+        final EditText textView = metadataView.findViewById(R.id.editText);
+        textView.setText(text);
+        textView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean focused) {
+                if (!focused) {
+                    CourseManager.sharedInstance().setNotes(course, textView.getText().toString());
+                }
+            }
+        });
     }
 
     private void addCourseListItem(LinearLayout layout, final List<String> subjectIDs) {
