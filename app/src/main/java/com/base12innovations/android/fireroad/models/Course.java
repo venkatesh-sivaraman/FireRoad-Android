@@ -745,7 +745,7 @@ public class Course implements Parcelable {
             abbreviations.put(DESIGN, "Des");
         }
 
-        public String abbreviationFor(String type) {
+        public static String abbreviationFor(String type) {
             if (abbreviations.containsKey(type))
                 return abbreviations.get(type);
             return "N/A";

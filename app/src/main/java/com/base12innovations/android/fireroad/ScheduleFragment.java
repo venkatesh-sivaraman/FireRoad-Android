@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.widget.AppCompatImageButton;
+import android.text.Html;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
@@ -62,7 +63,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
 
 
     private View mView;
-    private View configView, noResultsView;
+    private View configView, noResultsView, noCoursesView;
     private LinearLayout columnView;
     private ProgressBar loadingIndicator;
     private AppCompatImageButton nextButton, previousButton;
@@ -122,6 +123,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         configView = view.findViewById(R.id.scheduleConfiguration);
         columnView = configView.findViewById(R.id.scheduleColumnView);
         noResultsView = mView.findViewById(R.id.noResultsView);
+        noCoursesView = mView.findViewById(R.id.noCoursesView);
 
         loadingIndicator = view.findViewById(R.id.loadingIndicator);
         loadingIndicator.setVisibility(View.VISIBLE);
@@ -432,7 +434,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         }
     }
 
-    private View createCell(RelativeLayout parentView, final Course course, Course.ScheduleItem item) {
+    private View createCell(RelativeLayout parentView, final Course course, Course.ScheduleItem item, String sectionType) {
         View courseThumbnail = LayoutInflater.from(getContext()).inflate(R.layout.linearlayout_course, null);
         parentView.addView(courseThumbnail);
 
@@ -444,7 +446,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         TextView subjectTitleLabel = courseThumbnail.findViewById(R.id.subjectTitleLabel);
         subjectIDLabel.setText(course.getSubjectID());
         subjectIDLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.0f);
-        subjectTitleLabel.setText(item.location);
+        subjectTitleLabel.setText(sectionType + " (" + item.location + ")");
         subjectTitleLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.0f);
 
         courseThumbnail.setOnClickListener(new View.OnClickListener() {
@@ -500,6 +502,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
     private void resetAndLoadScheduleDisplay() {
         if (noResultsView != null)
             noResultsView.setVisibility(View.INVISIBLE);
+        updateNoCoursesView();
         updateConfigurationButtons();
 
         // Present the schedule
@@ -614,7 +617,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                 for (ScheduleConfiguration.ChronologicalElement element : slot) {
                     Course.ScheduleTime classDuration = element.item.startTime.deltaTo(element.item.endTime);
 
-                    View cell = createCell(dayLayouts.get(i), element.course, element.item);
+                    View cell = createCell(dayLayouts.get(i), element.course, element.item, Course.ScheduleType.abbreviationFor(element.type).toLowerCase());
 
                     // Positioning
                     RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
@@ -729,6 +732,20 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         }
         return ret;
     }
+
+    private void updateNoCoursesView() {
+        if (User.currentUser().getCurrentSchedule() != null &&
+                User.currentUser().getCurrentSchedule().getAllCourses().size() > 0) {
+            noCoursesView.setVisibility(View.GONE);
+            configView.setVisibility(View.VISIBLE);
+        } else {
+            if (noCoursesView instanceof TextView)
+                ((TextView)noCoursesView).setText(Html.fromHtml("<b>No subjects in your schedule yet!</b><br/>Add one by searching above or by browsing the Requirements page.", Html.FROM_HTML_MODE_LEGACY));
+            configView.setVisibility(View.INVISIBLE);
+            noCoursesView.setVisibility(View.VISIBLE);
+        }
+    }
+
 
     // Handling clicks
 

@@ -17,6 +17,7 @@ import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.util.List;
+import java.util.Locale;
 
 public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdapter.ViewHolder> { //BaseAdapter {
 
@@ -208,7 +209,22 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
         final View view = viewHolder.cellView;
         if (isSectionHeader(position)) {
             final TextView textView = (TextView)view.findViewById(R.id.headerTextView);
-            textView.setText(RoadDocument.semesterNames[semesterForGridPosition(position)]);
+            int semester = semesterForGridPosition(position);
+            textView.setText(RoadDocument.semesterNames[semester]);
+            List<Course> courses = document.coursesForSemester(semester);
+            TextView hoursView = view.findViewById(R.id.hoursTextView);
+            if (courses.size() > 0) {
+                int units = 0;
+                double hours = 0.0;
+                for (Course course : courses) {
+                    units += course.totalUnits;
+                    double courseHours = course.inClassHours + course.outOfClassHours;
+                    hours += (course.getQuarterOffered() != null && course.getQuarterOffered() != Course.QuarterOffered.WholeSemester) ? courseHours * 0.5 : courseHours;
+                }
+                hoursView.setText(String.format(Locale.US, "%d units, %.1f hours", units, hours));
+            } else {
+                hoursView.setText("");
+            }
         } else {
             final Course course = courseForGridPosition(position);
             ((GradientDrawable)view.getBackground()).setColor(ColorManager.colorForCourse(course));

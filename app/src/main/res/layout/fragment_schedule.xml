@@ -93,6 +93,18 @@
             android:text="Add subjects by searching above or browsing the other tabs."
             android:textSize="16sp"/>
     </LinearLayout>
+    <TextView
+        android:id="@+id/noCoursesView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        android:maxWidth="280dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:textSize="18dp"
+        android:textAlignment="center" />
 
     <ProgressBar
         android:id="@+id/loadingIndicator"
