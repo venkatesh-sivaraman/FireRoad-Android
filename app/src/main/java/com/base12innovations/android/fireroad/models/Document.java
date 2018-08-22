@@ -53,6 +53,8 @@ public class Document {
         return "";
     }
 
+    public String plainTextRepresentation() { return ""; }
+
     public void parse(String contents) {
 
     }

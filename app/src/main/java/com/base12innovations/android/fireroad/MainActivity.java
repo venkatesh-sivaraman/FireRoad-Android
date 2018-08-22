@@ -4,10 +4,12 @@ import android.animation.Animator;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.NavigationView;
+import android.support.v4.content.FileProvider;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -26,6 +28,7 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.arlib.floatingsearchview.FloatingSearchView;
 import com.arlib.floatingsearchview.suggestions.SearchSuggestionsAdapter;
@@ -35,8 +38,11 @@ import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.Document;
+import com.base12innovations.android.fireroad.models.DocumentManager;
 import com.base12innovations.android.fireroad.models.NetworkManager;
+import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.ScheduleConfiguration;
+import com.base12innovations.android.fireroad.models.ScheduleDocument;
 import com.base12innovations.android.fireroad.models.ScheduleGenerator;
 import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
@@ -44,6 +50,10 @@ import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -441,6 +451,23 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     Intent browseIntent = new Intent(MainActivity.this, DocumentBrowserActivity.class);
                     browseIntent.putExtra(DocumentBrowserActivity.DOCUMENT_TYPE_EXTRA, Document.SCHEDULE_DOCUMENT_TYPE);
                     startActivityForResult(browseIntent, SCHEDULE_BROWSER_REQUEST);
+                } else if (item.getItemId() == R.id.action_share_road_file) {
+
+                    shareFile(User.currentUser().getCurrentDocument().file);
+                } else if (item.getItemId() == R.id.action_share_road_text) {
+
+                    RoadDocument doc = User.currentUser().getCurrentDocument();
+                    String base = doc.file.getName();
+                    String fileName = base.substring(0, base.lastIndexOf('.'));
+                    String text = doc.plainTextRepresentation();
+                    shareText(text, fileName);
+                } else if (item.getItemId() == R.id.action_share_sched_text) {
+
+                    ScheduleDocument doc = User.currentUser().getCurrentSchedule();
+                    String base = doc.file.getName();
+                    String fileName = base.substring(0, base.lastIndexOf('.'));
+                    String text = doc.plainTextRepresentation();
+                    shareText(text, fileName);
                 }
             }
         });
@@ -787,5 +814,34 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         SharedPreferences.Editor editor = prefs.edit();
         editor.putInt(LAST_SHOWN_FRAGMENT, id);
         editor.apply();
+    }
+
+    // Sharing
+
+    public void shareText(String text, String fileName) {
+        Intent sharingIntent = new Intent(Intent.ACTION_SEND);
+        sharingIntent.setType("text/plain");
+        sharingIntent.putExtra(Intent.EXTRA_SUBJECT, fileName);
+        sharingIntent.putExtra(Intent.EXTRA_TEXT, text);
+        startActivity(Intent.createChooser(sharingIntent, "Share \"" + fileName + "\""));
+    }
+
+    public void shareFile(File location) {
+        String base = location.getName();
+        String fileName = base.substring(0, base.lastIndexOf('.'));
+
+        Intent intentShareFile = new Intent(Intent.ACTION_SEND);
+
+        if (!location.exists()) {
+            Toast.makeText(this, "Could not share file - try again later", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        intentShareFile.setType("application/json");
+        Uri fileURI = FileProvider.getUriForFile(this, "com.base12innovations.android.fireroad.myFileProviderAuthority", location);
+        intentShareFile.putExtra(Intent.EXTRA_STREAM, fileURI);
+        intentShareFile.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intentShareFile.putExtra(Intent.EXTRA_SUBJECT, fileName);
+        startActivity(Intent.createChooser(intentShareFile, "Share \"" + fileName + "\""));
     }
 }

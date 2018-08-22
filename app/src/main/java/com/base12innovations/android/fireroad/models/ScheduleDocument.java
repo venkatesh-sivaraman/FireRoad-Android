@@ -1,5 +1,6 @@
 package com.base12innovations.android.fireroad.models;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -168,6 +169,40 @@ public class ScheduleDocument extends Document {
 
             return "";
         }
+    }
+
+    @Override
+    public String plainTextRepresentation() {
+        StringBuilder builder = new StringBuilder();
+        String base = file.getName();
+        builder.append(base.substring(0, base.lastIndexOf('.')));
+        builder.append("\n");
+        for (Course course: courses) {
+            builder.append(course.getSubjectID()).append(" - ").append(course.subjectTitle).append("\n");
+            if (selectedSchedule != null) {
+                for (String sectionType : Course.ScheduleType.ordering) {
+                    for (ScheduleUnit unit : selectedSchedule.scheduleItems) {
+                        if (unit.course.equals(course) && unit.sectionType.equals(sectionType)) {
+                            builder.append("\t").append(sectionType).append(": ");
+                            List<String> comps = new ArrayList<>();
+                            String location = null;
+                            for (Course.ScheduleItem item : unit.scheduleItems) {
+                                comps.add(item.toString());
+                                if (item.location != null)
+                                    location = item.location;
+                            }
+                            builder.append(TextUtils.join(", ", comps));
+                            if (location != null) {
+                                builder.append(" (").append(location).append(")");
+                            }
+                            builder.append("\n");
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return builder.toString();
     }
 
     public void addCourse(Course course) {

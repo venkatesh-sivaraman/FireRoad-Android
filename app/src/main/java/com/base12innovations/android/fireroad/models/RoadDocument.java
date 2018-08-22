@@ -151,6 +151,31 @@ public class RoadDocument extends Document {
     }
 
     @Override
+    public String plainTextRepresentation() {
+        StringBuilder builder = new StringBuilder();
+        String base = file.getName();
+        builder.append(base.substring(0, base.lastIndexOf('.')));
+        builder.append("\n");
+        for (int i = 0; i < semesterNames.length; i++) {
+            builder.append(semesterNames[i]);
+            List<Course> semCourses = coursesForSemester(i);
+            if (semCourses.size() == 0) {
+                builder.append(" (no subjects)\n");
+            } else {
+                builder.append("\n");
+                for (Course course: semCourses) {
+                    builder.append("\t");
+                    builder.append(course.getSubjectID());
+                    builder.append(" - ");
+                    builder.append(course.subjectTitle);
+                    builder.append("\n");
+                }
+            }
+        }
+        return builder.toString();
+    }
+
+    @Override
     public void save() {
         warningsCache = null;
         super.save();
