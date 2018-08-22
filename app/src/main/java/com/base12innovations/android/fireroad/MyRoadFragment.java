@@ -11,6 +11,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
@@ -19,6 +20,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
@@ -26,6 +28,8 @@ import com.base12innovations.android.fireroad.models.Document;
 import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
+
+import org.w3c.dom.Text;
 
 import java.io.File;
 import java.util.List;
@@ -51,6 +55,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     private RecyclerView recyclerView;
     private Course currentlySelectedCourse;
     private PopupMenu currentPopupMenu;
+    private View noCoursesView;
 
     private CourseNavigatorDelegate mListener;
 
@@ -87,27 +92,17 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         // Get view elements
         loadingIndicator = layout.findViewById(R.id.loadingIndicator);
         loadingIndicator.setVisibility(ProgressBar.VISIBLE);
+        noCoursesView = layout.findViewById(R.id.noCoursesView);
 
         // Set up grid view
+        int numColumns = 3;
+        if (!getActivity().getResources().getBoolean(R.bool.portrait_only))
+            numColumns = 6;
+        gridAdapter = new MyRoadCoursesAdapter(null, numColumns);
 
-        gridAdapter = new MyRoadCoursesAdapter(null, 3);
-        /*GridView grid = layout.findViewById(R.id.gridView);
-        grid.setAdapter(gridAdapter);
-        grid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                currentlySelectedCourse = gridAdapter.courseForGridPosition(i);
-                currentlySelectedSemester = gridAdapter.semesterForGridPosition(i);
-                PopupMenu menu = new PopupMenu(getActivity(), view);
-                MenuInflater mInflater = menu.getMenuInflater();
-                mInflater.inflate(R.menu.menu_course_cell, menu.getMenu());
-                menu.setOnMenuItemClickListener(MyRoadFragment.this);
-                menu.show();
-            }
-        });*/
         recyclerView = layout.findViewById(R.id.coursesRecyclerView);
         recyclerView.setHasFixedSize(false);
-        GridLayoutManager layoutManager = new GridLayoutManager(getActivity(), 3);
+        GridLayoutManager layoutManager = new GridLayoutManager(getActivity(), numColumns);
         recyclerView.setAdapter(gridAdapter);
         recyclerView.setLayoutManager(layoutManager);
         int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.course_cell_spacing);
@@ -193,6 +188,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 if (gridAdapter != null) {
                     gridAdapter.setDocument(newDocument);
                 }
+                updateNoCoursesView();
             }
         });
 
@@ -215,6 +211,8 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             public Void perform() {
                 if (document.file.exists()) {
                     document.read();
+                } else {
+                    document.addCourseOfStudy("girs");
                 }
                 return null;
             }
@@ -240,6 +238,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 @Override
                 public void perform() {
                     loadingIndicator.setVisibility(ProgressBar.GONE);
+                    updateNoCoursesView();
                 }
             });
         } else {
@@ -247,6 +246,8 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 gridAdapter.setDocument(User.currentUser().getCurrentDocument());
             }
             loadingIndicator.setVisibility(ProgressBar.GONE);
+            updateNoCoursesView();
+
         }
 
         /*if (document.getAllCourses().size() == 0) {
@@ -264,6 +265,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         if (gridAdapter != null) {
             gridAdapter.setDocument(User.currentUser().getCurrentDocument());
         }
+        updateNoCoursesView();
     }
 
     public void roadAddedCourse(Course course, int semester) {
@@ -273,6 +275,20 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             if (recyclerView != null) {
                 recyclerView.scrollToPosition(position);
             }
+        }
+        updateNoCoursesView();
+    }
+
+    private void updateNoCoursesView() {
+        if (User.currentUser().getCurrentDocument() != null &&
+                User.currentUser().getCurrentDocument().getAllCourses().size() > 0) {
+            noCoursesView.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+        } else {
+            if (noCoursesView instanceof TextView)
+                ((TextView)noCoursesView).setText(Html.fromHtml("<b>No subjects in your road yet!</b><br/>Add one by searching above or by browsing the Requirements page.", Html.FROM_HTML_MODE_LEGACY));
+            recyclerView.setVisibility(View.INVISIBLE);
+            noCoursesView.setVisibility(View.VISIBLE);
         }
     }
 
@@ -316,6 +332,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                     public void run() {
                         User.currentUser().getCurrentDocument().removeCourse(currentlySelectedCourse, currentlySelectedSemester);
                         gridAdapter.notifyItemRemoved(currentlySelectedPosition);
+                        updateNoCoursesView();
                     }
                 }, 400);
                 return true;

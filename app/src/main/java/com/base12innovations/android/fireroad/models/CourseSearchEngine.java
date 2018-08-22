@@ -148,6 +148,7 @@ public class CourseSearchEngine {
         String[] queryComps = query.toLowerCase().split("[ ;:,]");
         searchProgress = 0.0f;
         List<Course> allCourses = CourseManager.sharedInstance().courseDatabase.daoAccess().allCourses();
+        allCourses.addAll(CourseManager.genericCourses.values());
         float interval = 1.0f / (float)allCourses.size();
         List<SearchItem> searchItems = new ArrayList<>();
         for (Course course : allCourses) {
@@ -175,6 +176,8 @@ public class CourseSearchEngine {
             }
 
             if (relevance > 0.0f) {
+                if (course.isGeneric)
+                    relevance = 1000.0f;
                 if (course.enrollmentNumber > 0) {
                     relevance *= Math.log(Math.min((double)course.enrollmentNumber, 2.0));
                 }

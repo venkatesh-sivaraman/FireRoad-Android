@@ -36,9 +36,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -67,7 +69,9 @@ public class CourseManager {
     private int newRequirementsVersion;
 
     private boolean _isLoading = false;
+    private boolean _isUpdatingDB = false;
     public boolean isLoading() { return _isLoading; }
+    public boolean isUpdatingDatabase() { return _isUpdatingDB; }
     private float loadingProgress = 0.0f;
     private boolean _isLoaded = false;
     public boolean isLoaded() { return _isLoaded; }
@@ -104,6 +108,49 @@ public class CourseManager {
         NetworkManager.sharedInstance().initialize(context);
     }
 
+    // Generic courses
+
+    public static Map<String, Course> genericCourses;
+    static {
+        genericCourses = new HashMap<>();
+        for (Course.GIRAttribute gir : Course.GIRAttribute.values())
+            genericCourses.put(gir.rawValue, createGenericCourse(gir.rawValue, gir, null, null));
+        for (Course.HASSAttribute hass : Course.HASSAttribute.values()) {
+            if (hass == Course.HASSAttribute.ANY) continue;
+            genericCourses.put(hass.rawValue, createGenericCourse(hass.rawValue, null, hass, null));
+            String hassID = Course.CommunicationAttribute.CI_H.rawValue + " " + hass.rawValue;
+            genericCourses.put(hassID, createGenericCourse(hassID, null, hass, Course.CommunicationAttribute.CI_H));
+        }
+        for (Course.CommunicationAttribute ci : Course.CommunicationAttribute.values())
+            genericCourses.put(ci.rawValue, createGenericCourse(ci.rawValue, null, Course.HASSAttribute.ANY, ci));
+    }
+
+    private static Course createGenericCourse(String id, Course.GIRAttribute gir, Course.HASSAttribute hass, Course.CommunicationAttribute ci) {
+        Course course = new Course();
+        course.setSubjectID(id);
+        StringBuilder b = new StringBuilder();
+        b.append("Generic");
+        if (ci != null)
+            b.append(" ").append(ci.rawValue);
+        if (hass != null && (ci == null || hass != Course.HASSAttribute.ANY))
+            b.append(" ").append(hass.rawValue);
+        if (gir != null)
+            b.append(" ").append(gir.toString());
+        course.subjectTitle = b.toString();
+        course.girAttribute = gir != null ? gir.rawValue : "";
+        course.hassAttribute = hass != null ? hass.rawValue : "";
+        course.communicationRequirement = ci != null ? ci.rawValue : "";
+        course.subjectDescription = "Use this generic subject to indicate that you are fulfilling a requirement, but do not yet have a specific subject selected.";
+        course.isOfferedFall = true;
+        course.isOfferedIAP = true;
+        course.isOfferedSpring = true;
+        course.isGeneric = true;
+        return course;
+
+    }
+
+    // Loading the database
+
     public interface LoadCoursesListener {
         void completion();
         void error();
@@ -133,6 +180,7 @@ public class CourseManager {
                             listener.needsFullLoad();
                             courseDatabase.daoAccess().clearCourses();
                             loadingProgress = 0.0f;
+                            _isUpdatingDB = true;
 
                             ExecutorService exec = Executors.newFixedThreadPool(3);
                             for (int i = 0; i < urls.size(); i++) {
@@ -169,6 +217,7 @@ public class CourseManager {
                             editor.putString(prefsDatabaseSemesterKey, newSemester);
                         editor.apply();
 
+                        _isUpdatingDB = false;
                         if (postLoadBlock != null) {
                             try {
                                 postLoadBlock.call();
@@ -273,6 +322,7 @@ public class CourseManager {
                 }
             }
         }
+        Log.d("CourseManager", "updating urls " + urls.toString());
         return urls;
 
     }
@@ -484,7 +534,11 @@ public class CourseManager {
     // Serving courses
 
     public Course getSubjectByID(final String id) {
-        return courseDatabase.daoAccess().findCourseWithSubjectID(id);
+        Course result = courseDatabase.daoAccess().findCourseWithSubjectID(id);
+        if (result == null && genericCourses.containsKey(id)) {
+            result = genericCourses.get(id);
+        }
+        return result;
     }
 
     // Ratings

@@ -7,62 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ColorManager {
-    /*
-        static let departmentNumbers = [
-        "1", "2", "3", "4",
-                "5", "6", "7", "8",
-                "9", "10", "11", "12",
-                "14", "15", "16", "17",
-                "18", "20", "21", "21A",
-                "21W", "CMS", "21G", "21H",
-                "21L", "21M", "WGS", "22",
-                "24", "CC", "CSB", "EC",
-                "EM", "ES", "HST", "IDS",
-                "MAS", "SCM", "STS", "SWE", "SP"
-                ]
-    static let colorMapping: [String: UIColor] = {
-        let baseValues: [(s: CGFloat, v: CGFloat)] = [
-        (0.7, 0.87),
-        (0.52, 0.71),
-        (0.88, 0.71)
-        ]
-        let directive: [String: (h: CGFloat, base: Int)] = [
-        "1": (0.0, 0), "2": (20.0, 0),
-        "3": (225.0, 0), "4": (128.0, 1),
-        "5": (162.0, 0), "6": (210.0, 0),
-        "7": (218.0, 2), "8": (267.0, 2),
-        "9": (264.0, 0), "10": (0.0, 2),
-        "11": (342.0, 1), "12": (125.0, 0),
-        "14": (30.0, 0), "15": (3.0, 1),
-        "16": (197.0, 0), "17": (315.0, 0),
-        "18": (236.0, 1), "20": (135.0, 2),
-        "21": (130.0, 2), "21A": (138.0, 2),
-        "21W": (146.0, 2), "CMS": (154.0, 2),
-        "21G": (162.0, 2), "21H": (170.0, 2),
-        "21L": (178.0, 2), "21M": (186.0, 2),
-        "WGS": (194.0, 2), "22": (0.0, 1),
-        "24": (260.0, 1), "CC": (115.0, 0),
-        "CSB": (197.0, 2), "EC": (100.0, 1),
-        "EM": (225.0, 1), "ES": (242.0, 1),
-        "HST": (218.0, 1), "IDS": (150.0, 1),
-        "MAS": (122.0, 2), "SCM": (138.0, 1),
-        "STS": (276.0, 2), "SWE": (13.0, 2),
-        "SP": (240.0, 0)
-        ]
-        var ret = directive.mapValues({ UIColor(hue: $0.h / 360.0, saturation: baseValues[$0.base].s, brightness: baseValues[$0.base].v, alpha: 1.0) })
-        let saturation = CGFloat(0.7)
-        let brightness = CGFloat(0.87)
-        ret["GIR"] = UIColor(hue: 0.05, saturation: saturation * 0.75, brightness: brightness, alpha: 1.0)
-        ret["HASS"] = UIColor(hue: 0.45, saturation: saturation * 0.75, brightness: brightness, alpha: 1.0)
-        ret["HASS-A"] = UIColor(hue: 0.55, saturation: saturation * 0.75, brightness: brightness, alpha: 1.0)
-        ret["HASS-H"] = UIColor(hue: 0.65, saturation: saturation * 0.75, brightness: brightness, alpha: 1.0)
-        ret["HASS-S"] = UIColor(hue: 0.75, saturation: saturation * 0.75, brightness: brightness, alpha: 1.0)
-        ret["CI-H"] = UIColor(hue: 0.85, saturation: saturation * 0.75, brightness: brightness, alpha: 1.0)
-        ret["CI-HW"] = UIColor(hue: 0.95, saturation: saturation * 0.75, brightness: brightness, alpha: 1.0)
-        return ret
-    }()
 
-            */
     private static String[] departmentNumbers = new String[] {
             "1", "2", "3", "4",
             "5", "6", "7", "8",
@@ -172,7 +117,7 @@ public class ColorManager {
     private static Map<String, Integer> specialColors;
     static {
         float saturation = 0.7f;
-        float brightness = 0.6525f;
+        float brightness = 0.75f;
         specialColors = new HashMap<>();
         specialColors.put("GIR", Color.HSVToColor(new float[] { 18.0f, saturation, brightness }));
         specialColors.put("HASS", Color.HSVToColor(new float[] { 162.0f, saturation, brightness }));
@@ -191,8 +136,11 @@ public class ColorManager {
     }
 
     public static int colorForCourse(Course course, int alpha) {
-        if (course.getSubjectID() != null && specialColors.containsKey(course.getSubjectID())) {
-            return specialColors.get(course.getSubjectID());
+        if (course.getSubjectID() != null) {
+            if (specialColors.containsKey(course.getSubjectID()))
+                return specialColors.get(course.getSubjectID());
+            else if (course.isGeneric)
+                return specialColors.get("GIR");
         }
         if (course.getSubjectID() == null || !course.getSubjectID().contains("."))
             return Color.parseColor("#FFBBBBBB");

@@ -183,7 +183,7 @@ public class ScheduleDocument extends Document {
                 for (String sectionType : Course.ScheduleType.ordering) {
                     for (ScheduleUnit unit : selectedSchedule.scheduleItems) {
                         if (unit.course.equals(course) && unit.sectionType.equals(sectionType)) {
-                            builder.append("\t").append(sectionType).append(": ");
+                            builder.append("\t").append(sectionType).append(":");
                             List<String> comps = new ArrayList<>();
                             String location = null;
                             for (Course.ScheduleItem item : unit.scheduleItems) {
@@ -206,6 +206,7 @@ public class ScheduleDocument extends Document {
     }
 
     public void addCourse(Course course) {
+        if (course.isGeneric) return;
         courses.add(course);
         save();
     }

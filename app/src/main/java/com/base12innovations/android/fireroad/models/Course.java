@@ -374,6 +374,9 @@ public class Course implements Parcelable {
         return nonemptyComponents(relatedSubjects, ",");
     }
 
+    @Ignore
+    public boolean isGeneric = false;
+
     public Course() {}
 
     // 99.9% of the time you can just ignore this

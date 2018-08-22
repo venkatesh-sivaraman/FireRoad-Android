@@ -105,7 +105,7 @@ public class NetworkManager {
 
     // URLs
 
-    public static String CATALOG_BASE_URL = "https://venkats.scripts.mit.edu";
+    public static String CATALOG_BASE_URL = "https://venkats.scripts.mit.edu/";
     public static String BASE_URL = "https://venkats.scripts.mit.edu/fireroad/";
     private static String recommenderLoginURL = BASE_URL + "login/";
     private static String recommenderSignupURL = BASE_URL + "signup/";

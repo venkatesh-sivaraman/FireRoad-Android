@@ -171,8 +171,13 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
         LinearLayout layout = contentView.findViewById(R.id.courseDetailsLinearLayout);
 
-        addUnitsItem(layout);
+        if (!course.isGeneric)
+            addUnitsItem(layout);
         addRequirementsItem(layout);
+
+        if (course.isGeneric)
+            return;
+
         addOfferedItem(layout);
 
         List<String> instructors = course.getInstructorsList();

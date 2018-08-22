@@ -140,29 +140,45 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     return null;
                 }
             };
-            CourseManager.sharedInstance().loadCourses(new CourseManager.LoadCoursesListener() {
-                @Override
-                public void completion() {
-                    if (loadingDialogFragment != null) {
-                        loadingDialogFragment.dismiss();
+            if (CourseManager.sharedInstance().isUpdatingDatabase()) {
+                loadingDialogFragment = new CourseLoadingDialogFragment();
+                loadingDialogFragment.setCancelable(false);
+                loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
+                CourseManager.sharedInstance().waitForLoad(new Callable<Void>() {
+                    @Override
+                    public Void call() throws Exception {
+                        if (loadingDialogFragment != null) {
+                            loadingDialogFragment.dismiss();
+                        }
+                        CourseManager.sharedInstance().syncPreferences();
+                        return null;
                     }
-                    CourseManager.sharedInstance().syncPreferences();
-                }
-
-                @Override
-                public void error() {
-                    if (loadingDialogFragment != null) {
-                        loadingDialogFragment.dismiss();
+                });
+            } else {
+                CourseManager.sharedInstance().loadCourses(new CourseManager.LoadCoursesListener() {
+                    @Override
+                    public void completion() {
+                        if (loadingDialogFragment != null) {
+                            loadingDialogFragment.dismiss();
+                        }
+                        CourseManager.sharedInstance().syncPreferences();
                     }
-                }
 
-                @Override
-                public void needsFullLoad() {
-                    loadingDialogFragment = new CourseLoadingDialogFragment();
-                    loadingDialogFragment.setCancelable(false);
-                    loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
-                }
-            });
+                    @Override
+                    public void error() {
+                        if (loadingDialogFragment != null) {
+                            loadingDialogFragment.dismiss();
+                        }
+                    }
+
+                    @Override
+                    public void needsFullLoad() {
+                        loadingDialogFragment = new CourseLoadingDialogFragment();
+                        loadingDialogFragment.setCancelable(false);
+                        loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
+                    }
+                });
+            }
         }
 
         NetworkManager.sharedInstance().loginIfNeeded(new NetworkManager.AsyncResponse<Boolean>() {
@@ -306,7 +322,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        syncFuture.cancel(false);
+        if (syncFuture != null)
+            syncFuture.cancel(false);
         syncExecutor = null;
     }
 
