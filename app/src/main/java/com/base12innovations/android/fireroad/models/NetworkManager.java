@@ -28,6 +28,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -51,7 +52,7 @@ import retrofit2.http.Header;
 import retrofit2.http.POST;
 import retrofit2.http.Query;
 
-public class NetworkManager {
+public class NetworkManager implements DocumentManager.SyncNetworkHandler {
 
     private static NetworkManager _shared;
     private static String NETWORK_MANAGER_PREFS = "com.base12innovations.android.fireroad.networkManagerPreferences";
@@ -584,5 +585,114 @@ public class NetworkManager {
                 Log.d("NetworkManager", "Failed to set progress overrides");
             }
         });
+    }
+
+    // Cloud file sync
+
+    interface CloudSyncAPI {
+        @GET("sync/roads")
+        Call<CloudSyncState> getRoads(@Header("Authorization") String auth, @Query("id") Integer id);
+
+        @POST("sync/sync_road")
+        Call<CloudSyncState> syncRoad(@Header("Authorization") String auth, @Body CloudSyncState input);
+
+        @POST("sync/delete_road")
+        Call<CloudSyncState> deleteRoad(@Header("Authorization") String auth, @Body CloudSyncState input);
+
+        @GET("sync/schedules")
+        Call<CloudSyncState> getSchedules(@Header("Authorization") String auth, @Query("id") Integer id);
+
+        @POST("sync/sync_schedule")
+        Call<CloudSyncState> syncSchedule(@Header("Authorization") String auth, @Body CloudSyncState input);
+
+        @POST("sync/delete_schedule")
+        Call<CloudSyncState> deleteSchedule(@Header("Authorization") String auth, @Body CloudSyncState input);
+    }
+
+    private CloudSyncAPI cloudSyncAPI;
+    private CloudSyncAPI getCloudSyncAPI() {
+        if (cloudSyncAPI == null)
+            cloudSyncAPI = retrofit.create(CloudSyncAPI.class);
+        return cloudSyncAPI;
+    }
+
+    private CloudSyncState executeCloudSyncRequest(Call<CloudSyncState> req) {
+        try {
+            retrofit2.Response<CloudSyncState> resp = req.execute();
+            if (resp.isSuccessful() && resp.body() != null) {
+                return resp.body();
+            } else {
+                return null;
+            }
+        } catch (IOException | ClassCastException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public CloudSyncState cloudSyncFile(DocumentManager docManager, CloudSyncState input) {
+        if (!isLoggedIn)
+            return null;
+        Call<CloudSyncState> req;
+        if (docManager.getDocumentType().equals(Document.ROAD_DOCUMENT_TYPE))
+            req = getCloudSyncAPI().syncRoad(getAuthorizationString(), input);
+        else
+            req = getCloudSyncAPI().syncSchedule(getAuthorizationString(), input);
+        return executeCloudSyncRequest(req);
+    }
+
+    @Override
+    public CloudSyncState cloudDeleteFile(DocumentManager docManager, CloudSyncState input) {
+        if (!isLoggedIn)
+            return null;
+        Call<CloudSyncState> req;
+        if (docManager.getDocumentType().equals(Document.ROAD_DOCUMENT_TYPE))
+            req = getCloudSyncAPI().deleteRoad(getAuthorizationString(), input);
+        else
+            req = getCloudSyncAPI().deleteSchedule(getAuthorizationString(), input);
+        return executeCloudSyncRequest(req);
+    }
+
+    @Override
+    public CloudSyncState cloudDownloadFile(DocumentManager docManager, CloudSyncState input) {
+        if (!isLoggedIn)
+            return null;
+        Call<CloudSyncState> req;
+        if (docManager.getDocumentType().equals(Document.ROAD_DOCUMENT_TYPE))
+            req = getCloudSyncAPI().getRoads(getAuthorizationString(), input.id);
+        else
+            req = getCloudSyncAPI().getSchedules(getAuthorizationString(), input.id);
+        return executeCloudSyncRequest(req);
+    }
+
+    @Override
+    public CloudSyncState cloudGetFiles(DocumentManager docManager) {
+        if (!isLoggedIn)
+            return null;
+        Call<CloudSyncState> req;
+        if (docManager.getDocumentType().equals(Document.ROAD_DOCUMENT_TYPE))
+            req = getCloudSyncAPI().getRoads(getAuthorizationString(), null);
+        else
+            req = getCloudSyncAPI().getSchedules(getAuthorizationString(), null);
+        return executeCloudSyncRequest(req);
+    }
+
+    private DocumentManager roadManager;
+    public DocumentManager getRoadManager() {
+        if (roadManager == null) {
+            roadManager = new DocumentManager(Document.ROAD_DOCUMENT_TYPE, context.getFilesDir(), context);
+            roadManager.networkHelper = new WeakReference<DocumentManager.SyncNetworkHandler>(this);
+        }
+        return roadManager;
+    }
+
+    private DocumentManager scheduleManager;
+    public DocumentManager getScheduleManager() {
+        if (scheduleManager == null) {
+            scheduleManager = new DocumentManager(Document.SCHEDULE_DOCUMENT_TYPE, context.getFilesDir(), context);
+            scheduleManager.networkHelper = new WeakReference<DocumentManager.SyncNetworkHandler>(this);
+        }
+        return scheduleManager;
     }
 }

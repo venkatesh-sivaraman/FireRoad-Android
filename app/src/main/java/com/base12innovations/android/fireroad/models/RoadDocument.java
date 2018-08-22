@@ -1,6 +1,9 @@
 package com.base12innovations.android.fireroad.models;
 
+import android.net.Network;
 import android.util.Log;
+
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -179,6 +182,13 @@ public class RoadDocument extends Document {
     public void save() {
         warningsCache = null;
         super.save();
+
+        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                NetworkManager.sharedInstance().getRoadManager().syncDocument(RoadDocument.this, true, false, true, null);
+            }
+        });
     }
 
     @Override
@@ -316,14 +326,12 @@ public class RoadDocument extends Document {
             boolean satisfied = false, satisfiedByNonAuto = false, containsNonAuto = false;
 
             for (String prereq : reqList) {
-                Log.d("RoadDocument", prereq);
                 for (int i = 0; i <= maxSemester + 1; i++) {
                     for (Course otherCourse : coursesForSemester(i)) {
                         if (otherCourse.satisfiesRequirement(prereq, null) &&
                                 (i <= maxSemester ||
                                         (useQuarter && course.getQuarterOffered() != Course.QuarterOffered.BeginningOnly &&
                                                 otherCourse.getQuarterOffered() == Course.QuarterOffered.BeginningOnly))) {
-                            Log.d("RoadDocument", otherCourse.getSubjectID() + " satisfies");
                             satisfied = true;
                             break;
                         }
@@ -338,7 +346,6 @@ public class RoadDocument extends Document {
                     containsNonAuto = true;
                 }
                 if (!satisfied) {
-                    Log.d("RoadDocument", "Not satisfied, " + Boolean.toString(auto));
                     satisfied = auto;
                 }
                 if (satisfied)
@@ -376,7 +383,6 @@ public class RoadDocument extends Document {
         } else if (semester % 3 == 0 && !course.isOfferedSpring) {
             result.add(Warning.notOffered("spring"));
         }
-        Log.d("RoadDocument", "For course " + course.getSubjectID() + ", warnings " + result.toString() + ", " + unsatisfiedCoreqs.toString() + unsatisfiedPrereqs.toString());
         if (!course.getEitherPrereqOrCoreq() || (unsatisfiedPrereqs.size() != 0 && unsatisfiedCoreqs.size() != 0)) {
             if (unsatisfiedPrereqs.size() > 0)
                 result.add(Warning.unsatisfiedPrereq(unsatisfiedPrereqs));

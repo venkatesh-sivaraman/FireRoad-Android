@@ -3,6 +3,8 @@ package com.base12innovations.android.fireroad.models;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -203,6 +205,18 @@ public class ScheduleDocument extends Document {
             }
         }
         return builder.toString();
+    }
+
+    @Override
+    public void save() {
+        super.save();
+
+        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                NetworkManager.sharedInstance().getScheduleManager().syncDocument(ScheduleDocument.this, true, false, true, null);
+            }
+        });
     }
 
     public void addCourse(Course course) {

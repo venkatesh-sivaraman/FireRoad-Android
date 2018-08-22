@@ -73,6 +73,18 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
         return null;
     }
 
+    public int headerPositionForSemester(int semester) {
+        if (document == null) {
+            return 0;
+        }
+        int cursor = 0;
+        for (int i = 0; i < semester; i++) {
+            List<Course> semCourses = document.coursesForSemester(i);
+            cursor += semCourses.size() + 1;
+        }
+        return cursor;
+    }
+
     /**
      * Returns the index of the last course in the given semester.
      * @param semester the semester number.

@@ -26,6 +26,7 @@ import android.widget.Toast;
 import com.base12innovations.android.fireroad.adapter.DocumentBrowserAdapter;
 import com.base12innovations.android.fireroad.models.Document;
 import com.base12innovations.android.fireroad.models.DocumentManager;
+import com.base12innovations.android.fireroad.models.NetworkManager;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.io.File;
@@ -55,7 +56,10 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
         } else {
             documentType = Document.ROAD_DOCUMENT_TYPE;
         }
-        documentManager = new DocumentManager(documentType, getFilesDir());
+        if (documentType.equals(Document.ROAD_DOCUMENT_TYPE))
+            documentManager = NetworkManager.sharedInstance().getRoadManager();
+        else
+            documentManager = NetworkManager.sharedInstance().getScheduleManager();
         toolbar.setTitle(documentManager.getPluralDocumentTypeName(true));
 
         setupListView();
@@ -194,7 +198,7 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
         Log.d("DocumentBrowser", "Deleting " + documentManager.getFileHandle(pos).getName());
         final File currentFile = documentManager.getCurrent().file;
         final File deletingFile = documentManager.getFileHandle(pos);
-        boolean success = documentManager.deleteDocument(pos);
+        boolean success = documentManager.deleteDocument(pos, false);
         if (success) {
             listAdapter.notifyItemRemoved(pos);
             // Set an appropriate current doc
@@ -273,7 +277,7 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
                     return;
                 }
                 try {
-                    boolean success = documentManager.renameDocument(pos, text);
+                    boolean success = documentManager.renameDocument(pos, text, false);
                     if (success) {
                         Snackbar.make(listView, "Successfully renamed file", Snackbar.LENGTH_LONG).show();
                         listAdapter.notifyDataSetChanged();

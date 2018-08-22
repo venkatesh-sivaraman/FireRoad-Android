@@ -97,7 +97,7 @@ public class ImportActivity extends AppCompatActivity {
             }
             is.close();
 
-            DocumentManager roadDocManager = new DocumentManager(Document.ROAD_DOCUMENT_TYPE, getFilesDir());
+            DocumentManager roadDocManager = new DocumentManager(Document.ROAD_DOCUMENT_TYPE, getFilesDir(), this);
             String baseName = data.getLastPathSegment();
             baseName = baseName.substring(0, baseName.lastIndexOf('.'));
             RoadDocument newDoc = (RoadDocument)roadDocManager.getNewDocument(roadDocManager.noConflictName(baseName));

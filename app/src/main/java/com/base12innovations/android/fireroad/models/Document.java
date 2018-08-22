@@ -34,6 +34,10 @@ public class Document {
         this.readOnly = readOnly;
     }
 
+    public String getFileName() {
+        return file.getName().substring(0, file.getName().lastIndexOf('.'));
+    }
+
     public List<Course> getAllCourses() {
         return new ArrayList<>();
     }
@@ -64,11 +68,13 @@ public class Document {
         parse(contents);
     }
 
-    public void readInBackground() {
+    public void readInBackground(final TaskDispatcher.TaskNoReturn completion) {
         TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
             public void perform() {
                 read();
+                if (completion != null)
+                    TaskDispatcher.onMain(completion);
             }
         });
     }

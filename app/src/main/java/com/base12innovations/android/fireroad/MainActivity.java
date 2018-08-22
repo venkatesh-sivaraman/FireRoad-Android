@@ -2,6 +2,7 @@ package com.base12innovations.android.fireroad;
 
 import android.animation.Animator;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -11,6 +12,7 @@ import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.NavigationView;
 import android.support.v4.content.FileProvider;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -38,6 +40,7 @@ import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.Document;
+import com.base12innovations.android.fireroad.models.DocumentManager;
 import com.base12innovations.android.fireroad.models.NetworkManager;
 import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.ScheduleDocument;
@@ -50,6 +53,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -61,7 +65,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate,
-        FilterDialogFragment.Delegate, ForYouFragment.Delegate {
+        FilterDialogFragment.Delegate, ForYouFragment.Delegate, DocumentManager.SyncResponseHandler, DocumentManager.SyncFileListener {
 
     private static String CURRENT_FRAGMENT_TAG = "currentlyDisplayedFragment";
 
@@ -179,12 +183,14 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         NetworkManager.sharedInstance().loginIfNeeded(new NetworkManager.AsyncResponse<Boolean>() {
             @Override
             public void success(Boolean result) {
+                NetworkManager.sharedInstance().getRoadManager().fileListener = new WeakReference<DocumentManager.SyncFileListener>(MainActivity.this);
+                NetworkManager.sharedInstance().getScheduleManager().fileListener = new WeakReference<DocumentManager.SyncFileListener>(MainActivity.this);
                 syncExecutor = Executors.newScheduledThreadPool(1);
                 syncFuture = syncExecutor.scheduleAtFixedRate(new Runnable() {
                     public void run() {
                         performSync();
                     }
-                }, 0, 30, TimeUnit.SECONDS);
+                }, 0, 60, TimeUnit.SECONDS);
                 Log.d("MainActivity", "Logged in");
             }
 
@@ -309,17 +315,156 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         }
     }
 
-    public void performSync() {
-        Log.d("MainActivity", "Syncing");
-        CourseManager.sharedInstance().syncPreferences();
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (syncFuture != null)
             syncFuture.cancel(false);
         syncExecutor = null;
+    }
+
+    // Sync
+
+    public void performSync() {
+        Log.d("MainActivity", "Syncing");
+        if (!handlingConflict) {
+            NetworkManager.sharedInstance().getRoadManager().syncAllFiles(this);
+            NetworkManager.sharedInstance().getScheduleManager().syncAllFiles(this);
+        }
+        CourseManager.sharedInstance().syncPreferences();
+    }
+
+    @Override
+    public void documentManagerSyncedSuccessfully(DocumentManager manager) {
+        Log.d("MainActivity", "Documents synced successfully");
+    }
+
+    @Override
+    public void documentManagerSyncError(DocumentManager manager, String message) {
+        if (message != null) {
+            AlertDialog.Builder b = new AlertDialog.Builder(this);
+            b.setTitle("Sync Error");
+            b.setMessage(message);
+            b.setNegativeButton("Dismiss", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    dialogInterface.dismiss();
+                }
+            });
+            b.show();
+        } else {
+            Log.d("MainActivity", "Documents sync error");
+        }
+    }
+
+    private boolean handlingConflict = false;
+
+    @Override
+    public void documentManagerSyncConflict(DocumentManager manager, final DocumentManager.SyncConflict conflict, final DocumentManager.SyncConflictResponse response) {
+        handlingConflict = true;
+        AlertDialog.Builder b = new AlertDialog.Builder(this);
+        b.setTitle(conflict.title);
+        b.setMessage(conflict.message);
+        if (conflict.positiveButton != null)
+            b.setPositiveButton(conflict.positiveButton, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    dialogInterface.dismiss();
+                    handlingConflict = false;
+                    response.response(conflict.positiveButton);
+                }
+            });
+        if (conflict.neutralButton != null)
+            b.setNeutralButton(conflict.neutralButton, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    dialogInterface.dismiss();
+                    handlingConflict = false;
+                    response.response(conflict.neutralButton);
+                }
+            });
+        if (conflict.negativeButton != null)
+            b.setNegativeButton(conflict.negativeButton, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    dialogInterface.dismiss();
+                    handlingConflict = false;
+                    response.response(conflict.negativeButton);
+                }
+            });
+        b.show();
+    }
+
+    @Override
+    public void documentManagerModifiedFile(DocumentManager manager, String name) {
+        if (manager.getDocumentType().equals(Document.ROAD_DOCUMENT_TYPE) &&
+                User.currentUser().getCurrentDocument() != null &&
+                name.equals(User.currentUser().getCurrentDocument().getFileName()) &&
+                myRoadFragment != null) {
+            User.currentUser().getCurrentDocument().readInBackground(new TaskDispatcher.TaskNoReturn() {
+                @Override
+                public void perform() {
+                    myRoadFragment.reloadView();
+                }
+            });
+        } else if (manager.getDocumentType().equals(Document.SCHEDULE_DOCUMENT_TYPE) &&
+                User.currentUser().getCurrentSchedule() != null &&
+                name.equals(User.currentUser().getCurrentSchedule().getFileName()) &&
+                scheduleFragment != null) {
+            User.currentUser().getCurrentSchedule().readInBackground(new TaskDispatcher.TaskNoReturn() {
+                @Override
+                public void perform() {
+                    scheduleFragment.loadSchedules(false);
+                }
+            });
+        }
+    }
+
+    @Override
+    public void documentManagerDeletedFile(DocumentManager manager, String name) {
+        Document current = manager.getCurrent();
+        File deletingFile = manager.getFileHandle(name);
+        if (current != null && name.equals(current.getFileName())) {
+
+            boolean hasChangedDocument = false;
+            if (manager.getItemCount() > 0) {
+                for (int i = 0; i < manager.getItemCount(); i++) {
+                    File f = manager.getFileHandle(i);
+                    if (f.equals(current.file) || f.equals(deletingFile)) continue;
+                    final Document doc = manager.getNonTemporaryDocument(i);
+                    manager.setAsCurrent(doc);
+                    hasChangedDocument = true;
+                    break;
+                }
+            }
+
+            if (!hasChangedDocument) {
+                // Create new document
+                try {
+                    final Document doc = manager.getNewDocument(manager.noConflictName(Document.INITIAL_DOCUMENT_TITLE));
+                    manager.setAsCurrent(doc);
+                } catch (FileAlreadyExistsException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    @Override
+    public void documentManagerRenamedFile(final DocumentManager manager, String oldName, String newName) {
+        Document doc = manager.getCurrent();
+        if (doc.getFileName().equals(oldName)) {
+            doc.file = manager.getFileHandle(newName);
+            doc.readInBackground(new TaskDispatcher.TaskNoReturn() {
+                @Override
+                public void perform() {
+                    if (manager.getDocumentType().equals(Document.ROAD_DOCUMENT_TYPE) && myRoadFragment != null)
+                        myRoadFragment.reloadView();
+                    else if (manager.getDocumentType().equals(Document.SCHEDULE_DOCUMENT_TYPE) && scheduleFragment != null)
+                        scheduleFragment.loadSchedules(false);
+                }
+            });
+        }
     }
 
     // Searching

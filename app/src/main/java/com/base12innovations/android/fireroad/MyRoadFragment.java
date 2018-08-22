@@ -155,7 +155,11 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                     currentPopupMenu.dismiss();
                     currentPopupMenu = null;
                 }
-                return gridAdapter.moveCourse(viewHolder.getAdapterPosition(), target.getAdapterPosition());
+                gridAdapter.notifyItemChanged(gridAdapter.headerPositionForSemester(gridAdapter.semesterForGridPosition(viewHolder.getAdapterPosition())));
+                boolean success = gridAdapter.moveCourse(viewHolder.getAdapterPosition(), target.getAdapterPosition());
+                gridAdapter.notifyItemChanged(gridAdapter.headerPositionForSemester(gridAdapter.semesterForGridPosition(target.getAdapterPosition())));
+
+                return success;
             }
 
             @Override
@@ -260,8 +264,6 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     }
 
     public void reloadView() {
-        Log.d("MyRoadFragment","Setting current document to " + User.currentUser().getCurrentDocument().file);
-        Log.d("MyRoadFragment","Curr doc has " + User.currentUser().getCurrentDocument().getAllCourses().toString());
         if (gridAdapter != null) {
             gridAdapter.setDocument(User.currentUser().getCurrentDocument());
         }
@@ -272,6 +274,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         if (gridAdapter != null) {
             int position = gridAdapter.lastPositionForSemester(semester);
             gridAdapter.notifyItemInserted(position);
+            gridAdapter.notifyItemChanged(gridAdapter.headerPositionForSemester(semester));
             if (recyclerView != null) {
                 recyclerView.scrollToPosition(position);
             }
@@ -332,6 +335,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                     public void run() {
                         User.currentUser().getCurrentDocument().removeCourse(currentlySelectedCourse, currentlySelectedSemester);
                         gridAdapter.notifyItemRemoved(currentlySelectedPosition);
+                        gridAdapter.notifyItemChanged(gridAdapter.headerPositionForSemester(currentlySelectedSemester));
                         updateNoCoursesView();
                     }
                 }, 400);
