@@ -22,14 +22,14 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.base12innovations.android.fireroad.adapter.MyRoadCoursesAdapter;
+import com.base12innovations.android.fireroad.dialog.CourseWarningsDialogFragment;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.Document;
 import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
-
-import org.w3c.dom.Text;
 
 import java.io.File;
 import java.util.List;

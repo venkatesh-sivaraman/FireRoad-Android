@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.adapter;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 

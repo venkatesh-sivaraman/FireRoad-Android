@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.dialog;
 
 
 import android.app.AlertDialog;
@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.User;

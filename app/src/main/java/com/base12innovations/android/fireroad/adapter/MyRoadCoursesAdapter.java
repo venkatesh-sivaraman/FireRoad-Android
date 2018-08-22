@@ -1,15 +1,15 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.adapter;
 
 import android.graphics.drawable.GradientDrawable;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;

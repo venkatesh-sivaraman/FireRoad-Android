@@ -1,16 +1,15 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.adapter;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.TextView;
 
+import com.base12innovations.android.fireroad.utils.DocumentIconView;
+import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.Document;

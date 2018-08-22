@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.adapter;
 
 import android.app.Activity;
 import android.content.Context;
@@ -16,6 +16,7 @@ import android.widget.BaseAdapter;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 
+import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.RequirementsList;
 import com.base12innovations.android.fireroad.models.User;

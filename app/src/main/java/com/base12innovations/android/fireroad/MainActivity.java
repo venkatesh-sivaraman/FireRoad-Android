@@ -20,7 +20,6 @@ import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
@@ -33,27 +32,23 @@ import android.widget.Toast;
 import com.arlib.floatingsearchview.FloatingSearchView;
 import com.arlib.floatingsearchview.suggestions.SearchSuggestionsAdapter;
 import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
-import com.arlib.floatingsearchview.util.view.MenuView;
+import com.base12innovations.android.fireroad.dialog.CourseLoadingDialogFragment;
+import com.base12innovations.android.fireroad.dialog.FilterDialogFragment;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.Document;
-import com.base12innovations.android.fireroad.models.DocumentManager;
 import com.base12innovations.android.fireroad.models.NetworkManager;
 import com.base12innovations.android.fireroad.models.RoadDocument;
-import com.base12innovations.android.fireroad.models.ScheduleConfiguration;
 import com.base12innovations.android.fireroad.models.ScheduleDocument;
-import com.base12innovations.android.fireroad.models.ScheduleGenerator;
 import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.utils.BottomSheetNavFragment;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.EnumSet;

@@ -2,27 +2,23 @@ package com.base12innovations.android.fireroad;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.text.Html;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 
+import com.base12innovations.android.fireroad.adapter.RequirementsBrowserAdapter;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.RequirementsList;
 import com.base12innovations.android.fireroad.models.RequirementsListManager;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.Callable;

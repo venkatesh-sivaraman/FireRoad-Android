@@ -22,24 +22,23 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
+import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
-import com.base12innovations.android.fireroad.models.NetworkManager;
 import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.ScheduleDocument;
 import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.utils.BottomSheetNavFragment;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 import static com.base12innovations.android.fireroad.CourseNavigatorDelegate.ADD_TO_SCHEDULE;

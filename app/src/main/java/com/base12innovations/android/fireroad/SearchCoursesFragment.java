@@ -14,10 +14,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
+import com.base12innovations.android.fireroad.adapter.SearchResultsAdapter;
+import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.utils.BottomSheetNavFragment;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.io.Serializable;

@@ -9,7 +9,7 @@
     android:layout_marginLeft="12dp"
     android:gravity="top"
     android:orientation="vertical"
-    tools:context=".AddCourseDialog">
+    tools:context=".dialog.AddCourseDialog">
 
     <TextView
         android:id="@+id/titleLabel"

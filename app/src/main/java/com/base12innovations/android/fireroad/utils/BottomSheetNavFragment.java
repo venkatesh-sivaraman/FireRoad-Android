@@ -1,4 +1,6 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.utils;
+
+import com.base12innovations.android.fireroad.CourseNavigatorDelegate;
 
 import java.lang.ref.WeakReference;
 

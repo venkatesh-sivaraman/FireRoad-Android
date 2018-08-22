@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.dialog;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -12,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ProgressBar;
 
+import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.CourseManager;
 
 

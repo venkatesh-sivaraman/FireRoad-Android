@@ -9,7 +9,7 @@
     android:maxHeight="60dp"
     android:minHeight="60dp">
 
-    <com.base12innovations.android.fireroad.DocumentIconView
+    <com.base12innovations.android.fireroad.utils.DocumentIconView
         android:id="@+id/documentIcon"
         android:layout_marginStart="12dp"
         android:elevation="@dimen/document_icon_elevation"
