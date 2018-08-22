@@ -217,6 +217,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                     document.read();
                 } else {
                     document.addCourseOfStudy("girs");
+                    document.save();
                 }
                 return null;
             }

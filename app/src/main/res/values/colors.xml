@@ -9,4 +9,9 @@
     <color name="ciColor">#de68d2</color>
 
     <color name="scheduleBorderColor">#dddddd</color>
+
+    <color name="intro_1">#cc1d1d</color>
+    <color name="intro_2">#12c49b</color>
+    <color name="intro_3">#e8891c</color>
+    <color name="intro_4">#7a1ff0</color>
 </resources>

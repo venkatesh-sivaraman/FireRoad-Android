@@ -1,11 +1,14 @@
 package com.base12innovations.android.fireroad;
 
 import android.animation.Animator;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
+import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetBehavior;
@@ -36,6 +39,7 @@ import com.arlib.floatingsearchview.suggestions.SearchSuggestionsAdapter;
 import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
 import com.base12innovations.android.fireroad.dialog.CourseLoadingDialogFragment;
 import com.base12innovations.android.fireroad.dialog.FilterDialogFragment;
+import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
@@ -52,6 +56,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.ArrayList;
@@ -74,6 +79,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
     private static int AUTHENTICATION_INTENT_TAG = 1425;
     private NetworkManager.AsyncResponse<JSONObject> authenticationCompletion;
+
+    private static int INTRO_INTENT_TAG = 2514;
 
     private DrawerLayout mDrawer;
     private Toolbar toolbar;
@@ -124,7 +131,9 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             }
         };
 
+        Log.d("MainActivity", "On create");
         if (!CourseManager.sharedInstance().isLoaded()) {
+            Log.d("MainActivity", "Is not loaded");
             CourseManager.sharedInstance().postLoadBlock = new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
@@ -140,12 +149,14 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 }
             };
             if (CourseManager.sharedInstance().isUpdatingDatabase()) {
+                Log.d("MainActivity", "Updating database");
                 loadingDialogFragment = new CourseLoadingDialogFragment();
                 loadingDialogFragment.setCancelable(false);
                 loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
                 CourseManager.sharedInstance().waitForLoad(new Callable<Void>() {
                     @Override
                     public Void call() throws Exception {
+                        Log.d("MainActivity", "Done waiting for load");
                         if (loadingDialogFragment != null) {
                             loadingDialogFragment.dismiss();
                         }
@@ -154,10 +165,13 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     }
                 });
             } else {
+                Log.d("MainActivity", "Loading courses");
                 CourseManager.sharedInstance().loadCourses(new CourseManager.LoadCoursesListener() {
                     @Override
                     public void completion() {
-                        if (loadingDialogFragment != null) {
+                        Log.d("MainActivity", "Completion");
+                        if (loadingDialogFragment != null && loadingDialogFragment.isVisible()) {
+                            Log.d("MainActivity", "Dismissing");
                             loadingDialogFragment.dismiss();
                         }
                         CourseManager.sharedInstance().syncPreferences();
@@ -165,13 +179,14 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
                     @Override
                     public void error() {
-                        if (loadingDialogFragment != null) {
+                        if (loadingDialogFragment != null && loadingDialogFragment.isVisible()) {
                             loadingDialogFragment.dismiss();
                         }
                     }
 
                     @Override
                     public void needsFullLoad() {
+                        Log.d("MainActivity", "Needs full load");
                         loadingDialogFragment = new CourseLoadingDialogFragment();
                         loadingDialogFragment.setCancelable(false);
                         loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
@@ -180,6 +195,15 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             }
         }
 
+        if (!AppSettings.shared().getBoolean(AppSettings.SHOWN_INTRO, false)) {
+            Intent i = new Intent(this, IntroActivity.class);
+            startActivityForResult(i, INTRO_INTENT_TAG);
+        } else {
+            setupLogin();
+        }
+    }
+
+    private void setupLogin() {
         NetworkManager.sharedInstance().loginIfNeeded(new NetworkManager.AsyncResponse<Boolean>() {
             @Override
             public void success(Boolean result) {
@@ -192,6 +216,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     }
                 }, 0, 60, TimeUnit.SECONDS);
                 Log.d("MainActivity", "Logged in");
+                performSync();
             }
 
             @Override
@@ -217,7 +242,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     json = json.replaceAll("\\\\[\"]", "\"");
                     Log.d("MainActivity", json);
                     JSONObject result = new JSONObject(json);
-                    Log.d("MainActivity", "Success with " + result.toString());
                     authenticationCompletion.success(result);
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -226,14 +250,51 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             } else {
                 authenticationCompletion.failure();
             }
+        } else if (requestCode == INTRO_INTENT_TAG && resultCode == RESULT_OK) {
+            AppSettings.shared().edit().putBoolean(AppSettings.SHOWN_INTRO, true).apply();
+            setupLogin();
         }
     }
 
-    /*@Override
+    @Override
+    protected void onPause() {
+        if (loadingDialogFragment != null) {
+            loadingDialogFragment.dismiss();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (loadingDialogFragment != null) {
+            loadingDialogFragment.dismiss();
+        }
+        if (!CourseManager.sharedInstance().isLoaded() && CourseManager.sharedInstance().isUpdatingDatabase()) {
+            loadingDialogFragment = new CourseLoadingDialogFragment();
+            loadingDialogFragment.setCancelable(false);
+            loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
+            CourseManager.sharedInstance().waitForLoad(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    if (loadingDialogFragment != null) {
+                        loadingDialogFragment.dismiss();
+                    }
+                    CourseManager.sharedInstance().syncPreferences();
+                    return null;
+                }
+            });
+        }
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
+        if (loadingDialogFragment != null) {
+            loadingDialogFragment.dismiss();
+        }
         super.onSaveInstanceState(outState, outPersistentState);
-        outState.putInt(CURRENT_VISIBLE_FRAGMENT, currentVisibleFragment);
-    }*/
+    }
+
 
     private void setupDrawerContent(NavigationView navigationView) {
         navigationView.setNavigationItemSelectedListener(
@@ -421,32 +482,46 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     @Override
-    public void documentManagerDeletedFile(DocumentManager manager, String name) {
-        Document current = manager.getCurrent();
-        File deletingFile = manager.getFileHandle(name);
+    public void documentManagerDeletedFile(final DocumentManager manager, String name) {
+        final Document current = manager.getCurrent();
+        final File deletingFile = manager.getFileHandle(name);
         if (current != null && name.equals(current.getFileName())) {
+            TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+                @Override
+                public void perform() {
+                    boolean hasChangedDocument = false;
+                    if (manager.getItemCount() > 0) {
+                        for (int i = 0; i < manager.getItemCount(); i++) {
+                            File f = manager.getFileHandle(i);
+                            if (f.equals(current.file) || f.equals(deletingFile)) continue;
+                            final Document doc = manager.getNonTemporaryDocument(i);
+                            TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                                @Override
+                                public void perform() {
+                                    manager.setAsCurrent(doc);
+                                }
+                            });
+                            hasChangedDocument = true;
+                            break;
+                        }
+                    }
 
-            boolean hasChangedDocument = false;
-            if (manager.getItemCount() > 0) {
-                for (int i = 0; i < manager.getItemCount(); i++) {
-                    File f = manager.getFileHandle(i);
-                    if (f.equals(current.file) || f.equals(deletingFile)) continue;
-                    final Document doc = manager.getNonTemporaryDocument(i);
-                    manager.setAsCurrent(doc);
-                    hasChangedDocument = true;
-                    break;
+                    if (!hasChangedDocument) {
+                        // Create new document
+                        try {
+                            final Document doc = manager.getNewDocument(manager.noConflictName(Document.INITIAL_DOCUMENT_TITLE));
+                            TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                                @Override
+                                public void perform() {
+                                    manager.setAsCurrent(doc);
+                                }
+                            });
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 }
-            }
-
-            if (!hasChangedDocument) {
-                // Create new document
-                try {
-                    final Document doc = manager.getNewDocument(manager.noConflictName(Document.INITIAL_DOCUMENT_TITLE));
-                    manager.setAsCurrent(doc);
-                } catch (FileAlreadyExistsException e) {
-                    e.printStackTrace();
-                }
-            }
+            });
         }
     }
 
@@ -533,7 +608,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     leftIcon.setImageDrawable(null);
                 }
                 textView.setLines(1);
-                textView.setText(Html.fromHtml(item.getBody(), Html.FROM_HTML_MODE_LEGACY));
+                textView.setText(Html.fromHtml(item.getBody()));
             }
         });
 

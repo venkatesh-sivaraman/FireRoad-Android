@@ -612,8 +612,14 @@ public class CourseManager {
                 NetworkManager.Response<List<String>> resp = NetworkManager.sharedInstance().getFavorites();
                 if (resp.result != null && resp.result.size() > 0) {
                     favoriteCourses = resp.result;
-                    if (favoritesChangedListener != null)
-                        favoritesChangedListener.changed(favoriteCourses);
+                    if (favoritesChangedListener != null) {
+                        TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                            @Override
+                            public void perform() {
+                                favoritesChangedListener.changed(favoriteCourses);
+                            }
+                        });
+                    }
                 } else if (favoriteCourses != null && favoriteCourses.size() > 0) {
                     NetworkManager.sharedInstance().setFavorites(new ArrayList<>(favoriteCourses));
                 }
@@ -710,7 +716,8 @@ public class CourseManager {
                 notes = new HashMap<>();
                 for (String comp : raw.split(";")) {
                     String[] subcomps = comp.split(",");
-                    notes.put(subcomps[0], subcomps[1]);
+                    if (subcomps.length >= 2)
+                        notes.put(subcomps[0], subcomps[1]);
                 }
             }
         }

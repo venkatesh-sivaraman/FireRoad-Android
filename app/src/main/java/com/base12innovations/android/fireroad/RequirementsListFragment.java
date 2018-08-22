@@ -6,9 +6,11 @@ import android.content.DialogInterface;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -22,6 +24,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
+import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
@@ -29,6 +32,8 @@ import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.RequirementsList;
 import com.base12innovations.android.fireroad.models.RequirementsListManager;
 import com.base12innovations.android.fireroad.models.RequirementsListStatement;
+import com.base12innovations.android.fireroad.models.RoadDocument;
+import com.base12innovations.android.fireroad.models.ScheduleDocument;
 import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
@@ -42,6 +47,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import static com.base12innovations.android.fireroad.CourseNavigatorDelegate.ADD_TO_SCHEDULE;
+
 
 /**
  * A simple {@link Fragment} subclass.
@@ -51,7 +58,7 @@ import java.util.Map;
  * Use the {@link RequirementsListFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class RequirementsListFragment extends Fragment {
+public class RequirementsListFragment extends Fragment implements AddCourseDialog.AddCourseDialogDelegate {
 
     private static String REQUIREMENTS_LIST_ID = "RequirementsListFragment.requirementsListID";
     private String requirementsListID;
@@ -495,6 +502,13 @@ public class RequirementsListFragment extends Fragment {
                 onClickCourseCell(parentLayout, rowIndex, courseThumbnail, course, statement);
             }
         });
+        courseThumbnail.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                addCourse(course);
+                return true;
+            }
+        });
         return courseThumbnail;
     }
 
@@ -528,7 +542,6 @@ public class RequirementsListFragment extends Fragment {
         }, new TaskDispatcher.CompletionBlock<Boolean>() {
             @Override
             public void completed(Boolean arg) {
-                Log.d("RequirementsListFragment", req.toString() + ", " + Boolean.toString(req.isPlainString));
                 if (arg) {
                     // It's a real course, show details
                     if (delegate != null) {
@@ -595,7 +608,8 @@ public class RequirementsListFragment extends Fragment {
         final SeekBar seekBar = customView.findViewById(R.id.seekBar);
         final TextView label = customView.findViewById(R.id.progressTextView);
         seekBar.setMax(req.threshold.cutoff);
-        seekBar.setMin(0);
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            seekBar.setMin(0);
         seekBar.setProgress(req.getManualProgress());
         label.setText(String.format(Locale.US, "%d/%d %s", req.getManualProgress(), req.threshold.cutoff,
                 req.threshold.criterion == RequirementsListStatement.ThresholdCriterion.UNITS ? "units" : "subjects"));
@@ -650,5 +664,61 @@ public class RequirementsListFragment extends Fragment {
      */
     public interface OnFragmentInteractionListener extends CourseNavigatorDelegate {
         void fragmentUpdatedCoursesOfStudy(RequirementsListFragment fragment);
+    }
+
+    // Add course dialog
+
+    AddCourseDialog addCourseDialog;
+
+    private void addCourse(final Course course) {
+        TaskDispatcher.perform(new TaskDispatcher.Task<Boolean>() {
+            @Override
+            public Boolean perform() {
+                Course realCourse = CourseManager.sharedInstance().getSubjectByID(course.getSubjectID());
+                return realCourse != null && realCourse.equals(course);
+            }
+        }, new TaskDispatcher.CompletionBlock<Boolean>() {
+            @Override
+            public void completed(Boolean arg) {
+                addCourseDialog = new AddCourseDialog();
+                addCourseDialog.course = course;
+                addCourseDialog.delegate = RequirementsListFragment.this;
+                FragmentActivity a = getActivity();
+                if (a != null) {
+                    addCourseDialog.show(a.getSupportFragmentManager(), "AddCourseFragment");
+                }
+            }
+        });
+    }
+
+    @Override
+    public void addCourseDialogDismissed() {
+        addCourseDialog.dismiss();
+        addCourseDialog = null;
+    }
+
+    @Override
+    public void addCourseDialogAddedToSemester(Course course, int semester) {
+        if (semester == ADD_TO_SCHEDULE) {
+            ScheduleDocument doc = User.currentUser().getCurrentSchedule();
+            if (doc != null) {
+                doc.addCourse(course);
+                if (delegate != null)
+                    delegate.courseNavigatorAddedCourse(this, course, semester);
+                Snackbar.make(mLayout, "Added " + course.getSubjectID() + " to schedule", Snackbar.LENGTH_LONG).show();
+            }
+        } else {
+            RoadDocument doc = User.currentUser().getCurrentDocument();
+            if (doc != null) {
+                boolean worked = doc.addCourse(course, semester);
+                if (worked) {
+                    if (delegate != null)
+                        delegate.courseNavigatorAddedCourse(this, course, semester);
+                    Snackbar.make(mLayout, "Added " + course.getSubjectID(), Snackbar.LENGTH_LONG).show();
+                }
+            }
+        }
+        addCourseDialog.dismiss();
+        addCourseDialog = null;
     }
 }

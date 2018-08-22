@@ -206,6 +206,7 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
                 TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
                     @Override
                     public void perform() {
+                        boolean justChanged = false;
                         if (documentManager.getItemCount() > 0) {
                             for (int i = 0; i < documentManager.getItemCount(); i++) {
                                 File f = documentManager.getFileHandle(i);
@@ -218,11 +219,12 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
                                     }
                                 });
                                 hasChangedDocument = true;
+                                justChanged = true;
                                 break;
                             }
                         }
 
-                        if (!hasChangedDocument) {
+                        if (!justChanged) {
                             // Create new document
                             try {
                                 final Document doc = documentManager.getNewDocument(documentManager.noConflictName(Document.INITIAL_DOCUMENT_TITLE));

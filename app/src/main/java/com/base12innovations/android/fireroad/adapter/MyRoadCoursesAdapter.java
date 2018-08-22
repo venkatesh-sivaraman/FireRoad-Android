@@ -225,7 +225,7 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
             textView.setText(RoadDocument.semesterNames[semester]);
             List<Course> courses = document.coursesForSemester(semester);
             TextView hoursView = view.findViewById(R.id.hoursTextView);
-            if (courses.size() > 0) {
+            if (courses.size() > 0 && semester != 0) {
                 int units = 0;
                 double hours = 0.0;
                 for (Course course : courses) {

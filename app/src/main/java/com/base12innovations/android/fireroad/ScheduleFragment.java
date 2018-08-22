@@ -171,6 +171,8 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
             public Void perform() {
                 if (document.file.exists()) {
                     document.read();
+                } else {
+                    document.save();
                 }
                 return null;
             }
@@ -221,6 +223,8 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
     private boolean isLoading = false;
 
     public void loadSchedules(boolean hideView) {
+        if (configView == null || loadingIndicator == null)
+            return;
         if (hideView) {
             configView.setVisibility(View.INVISIBLE);
         }
@@ -601,13 +605,12 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                 int cluster = slotClusterMapping.get(j);
 
                 // Remove elements that end before this time
-                final int timeCutoff = j;
-                occupiedColumns.entrySet().removeIf(new Predicate<Map.Entry<Integer, Integer>>() {
-                    @Override
-                    public boolean test(Map.Entry<Integer, Integer> entry) {
-                        return entry.getValue() > timeCutoff;
-                    }
-                });
+                Map<Integer, Integer> newOccupiedCols = new HashMap<>();
+                for (Integer colKey: occupiedColumns.keySet())
+                    if (occupiedColumns.get(colKey) > j)
+                        newOccupiedCols.put(colKey, occupiedColumns.get(colKey));
+                occupiedColumns = newOccupiedCols;
+                
                 int occupancy = slotOccupancyCounts.get(cluster);
                 int duration = slotSizes.get(cluster);
                 float widthFraction = 1.0f / (float) occupancy;
@@ -631,6 +634,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                     params.addRule(RelativeLayout.ALIGN_PARENT_END);
 
                     // Find the first unoccupied column and position its margins to situate it there
+                    Log.d("ScheduleFragment", "Occupancy "+ Integer.toString(occupancy) + " occupied columns " + occupiedColumns.toString());
                     for (int subcolumn = 0; subcolumn < occupancy; subcolumn++) {
                         if (occupiedColumns.containsKey(subcolumn)) continue;
 

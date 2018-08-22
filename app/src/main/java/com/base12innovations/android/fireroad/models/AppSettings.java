@@ -22,6 +22,8 @@ public class AppSettings {
     public static int RECOMMENDATIONS_DISALLOWED = 1;
     public static int RECOMMENDATIONS_ALLOWED = 2;
 
+    public static String SHOWN_INTRO = "shown_intro";
+
     public static String CLASS_YEAR = "class_year";
     public static String CURRENT_SEMESTER = "current_semester";
     public static String CLASS_YEAR_STRING = "class_year_str";

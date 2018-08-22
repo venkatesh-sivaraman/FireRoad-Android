@@ -103,7 +103,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                addCourse();
+                addCourse(course);
             }
         });
 
@@ -503,6 +503,15 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
                                         }
                                     }
                                 });
+                                if (realCourses.contains(course)) {
+                                    courseThumbnail.setOnLongClickListener(new View.OnLongClickListener() {
+                                        @Override
+                                        public boolean onLongClick(View view) {
+                                            addCourse(course);
+                                            return true;
+                                        }
+                                    });
+                                }
                             }
                         }
                     }
@@ -511,9 +520,9 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         });
     }
 
-    private void addCourse() {
+    private void addCourse(Course myCourse) {
         addCourseDialog = new AddCourseDialog();
-        addCourseDialog.course = course;
+        addCourseDialog.course = myCourse;
         addCourseDialog.delegate = this;
         FragmentActivity a = getActivity();
         if (a != null) {

@@ -110,6 +110,8 @@ public class DocumentManager {
                 return name.toLowerCase().contains(getPathExtension());
             }
         };
+        if (loadedDocuments == null)
+            loadedDocuments = new HashMap<>();
         fileHandles = Arrays.asList(baseDir.listFiles(filter));
         fileHandles.sort(new Comparator<File>() {
             @Override
@@ -274,6 +276,9 @@ public class DocumentManager {
         if (contents != null) {
             String contentsString = new Gson().toJson(contents);
             doc.parse(contentsString);
+        } else {
+            if (getDocumentType().equals(Document.ROAD_DOCUMENT_TYPE))
+                ((RoadDocument)doc).addCourseOfStudy("girs");
         }
         doc.save();
 
@@ -442,12 +447,10 @@ public class DocumentManager {
     private void setDownloadDate(String name, Date date) {
         loadCloudSyncAttributes();
         if (date == null) {
-            Log.d("DocumentManager", "Removing download date for " + name);
             downloadDates.remove(name);
         }
         else {
             downloadDates.put(name, stringFromDate(date));
-            Log.d("DocumentManager", "Setting download date for " + name + " to " + date.toString());
         }
         saveAttributeMap(downloadDates, DOWNLOAD_DATES_KEY);
     }
@@ -557,7 +560,7 @@ public class DocumentManager {
 
                 for (String fileID : state.files.keySet()) {
                     int id = Integer.parseInt(fileID);
-                    if (documentIDs.containsValue(id) &&
+                    if (getDocumentNameByID(id) != null &&
                             getFileHandle(getDocumentNameByID(id)).exists()) {
                         // Sync the file
                         String name = getDocumentNameByID(id);

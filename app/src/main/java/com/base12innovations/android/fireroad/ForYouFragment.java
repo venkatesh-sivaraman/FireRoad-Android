@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -21,6 +22,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
+import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
 import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
@@ -30,6 +32,8 @@ import com.base12innovations.android.fireroad.models.NetworkManager;
 import com.base12innovations.android.fireroad.models.RequirementsList;
 import com.base12innovations.android.fireroad.models.RequirementsListManager;
 import com.base12innovations.android.fireroad.models.RequirementsListStatement;
+import com.base12innovations.android.fireroad.models.RoadDocument;
+import com.base12innovations.android.fireroad.models.ScheduleDocument;
 import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
@@ -44,13 +48,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import static com.base12innovations.android.fireroad.CourseNavigatorDelegate.ADD_TO_SCHEDULE;
+
 
 /**
  * A simple {@link Fragment} subclass.
  * Use the {@link ForYouFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class ForYouFragment extends Fragment {
+public class ForYouFragment extends Fragment implements AddCourseDialog.AddCourseDialogDelegate {
 
     public ForYouFragment() {
         // Required empty public constructor
@@ -67,6 +73,8 @@ public class ForYouFragment extends Fragment {
     private ProgressBar loadingIndicator;
     private LinearLayout faveCard;
     private LinearLayout recentsCard;
+
+    boolean isAttached = false;
 
     public static ForYouFragment newInstance() {
         ForYouFragment fragment = new ForYouFragment();
@@ -107,6 +115,11 @@ public class ForYouFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        isAttached = true;
+        if (faveCard != null)
+            updateFavoritesLayout();
+        if (recentsCard != null)
+            updateRecentsLayout();
         if (context instanceof Delegate) {
             delegate = new WeakReference<>((Delegate) context);
         } else {
@@ -117,7 +130,8 @@ public class ForYouFragment extends Fragment {
 
     @Override
     public void onDetach() {
-        delegate = null;
+        isAttached = false;
+        delegate = new WeakReference<>(null);
         super.onDetach();
     }
 
@@ -194,7 +208,8 @@ public class ForYouFragment extends Fragment {
         CourseManager.sharedInstance().setFavoritesChangedListener(new CourseManager.FavoritesChangedListener() {
             @Override
             public void changed(List<String> newCourses) {
-                updateFavoritesLayout();
+                if (isAttached)
+                    updateFavoritesLayout();
             }
         });
 
@@ -203,7 +218,8 @@ public class ForYouFragment extends Fragment {
         CourseSearchEngine.sharedInstance().setRecentCoursesChangedListener(new CourseSearchEngine.RecentCoursesListener() {
             @Override
             public void changed(List<Course> courses) {
-                updateRecentsLayout();
+                if (isAttached)
+                    updateRecentsLayout();
             }
         });
 
@@ -379,6 +395,57 @@ public class ForYouFragment extends Fragment {
                 }
             }
         });
+        courseThumbnail.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                addCourse(course);
+                return true;
+            }
+        });
         return courseThumbnail;
     }
+
+    AddCourseDialog addCourseDialog;
+
+    private void addCourse(Course course) {
+        addCourseDialog = new AddCourseDialog();
+        addCourseDialog.course = course;
+        addCourseDialog.delegate = this;
+        FragmentActivity a = getActivity();
+        if (a != null) {
+            addCourseDialog.show(a.getSupportFragmentManager(), "AddCourseFragment");
+        }
+    }
+
+    @Override
+    public void addCourseDialogDismissed() {
+        addCourseDialog.dismiss();
+        addCourseDialog = null;
+    }
+
+    @Override
+    public void addCourseDialogAddedToSemester(Course course, int semester) {
+        if (semester == ADD_TO_SCHEDULE) {
+            ScheduleDocument doc = User.currentUser().getCurrentSchedule();
+            if (doc != null) {
+                doc.addCourse(course);
+                if (delegate.get() != null)
+                    delegate.get().courseNavigatorAddedCourse(this, course, semester);
+                Snackbar.make(contentLayout, "Added " + course.getSubjectID() + " to schedule", Snackbar.LENGTH_LONG).show();
+            }
+        } else {
+            RoadDocument doc = User.currentUser().getCurrentDocument();
+            if (doc != null) {
+                boolean worked = doc.addCourse(course, semester);
+                if (worked) {
+                    if (delegate.get() != null)
+                        delegate.get().courseNavigatorAddedCourse(this, course, semester);
+                    Snackbar.make(contentLayout, "Added " + course.getSubjectID(), Snackbar.LENGTH_LONG).show();
+                }
+            }
+        }
+        addCourseDialog.dismiss();
+        addCourseDialog = null;
+    }
+
 }

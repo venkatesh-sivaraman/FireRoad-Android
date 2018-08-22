@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="schedule_hour_col_width">44dp</dimen>
+    <dimen name="schedule_day_width">132dp</dimen>
+    <dimen name="schedule_hour_height">64dp</dimen>
+    <dimen name="schedule_line_width">1dp</dimen>
+    <dimen name="schedule_hour_label_margin">4dp</dimen>
+    <dimen name="schedule_day_label_height">26dp</dimen>
+
+    <dimen name="intro_image_view_width">480dp</dimen>
+    <dimen name="intro_image_view_height">640dp</dimen>
+    <dimen name="intro_image_view_margin_bottom">-150dp</dimen>
+    <dimen name="intro_image_view_label_margin">60dp</dimen>
+</resources>
