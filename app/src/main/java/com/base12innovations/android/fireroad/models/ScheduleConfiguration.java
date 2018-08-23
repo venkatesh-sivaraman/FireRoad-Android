@@ -1,6 +1,7 @@
 package com.base12innovations.android.fireroad.models;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -48,7 +49,7 @@ public class ScheduleConfiguration {
             }
         }
 
-        result.sort(new Comparator<ChronologicalElement>() {
+        Collections.sort(result, new Comparator<ChronologicalElement>() {
             @Override
             public int compare(ChronologicalElement t1, ChronologicalElement t2) {
                 return t1.item.startTime.compareTo(t2.item.startTime);

@@ -230,6 +230,12 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             addNestedCourseListItem(layout, coreqs);
         }
 
+        List<String> related = course.getRelatedSubjectsList();
+        if (related != null && related.size() > 0) {
+            addHeaderItem(layout, "Related");
+            addCourseListItem(layout, related);
+        }
+
         String notes = CourseManager.sharedInstance().getNotes(course);
         addHeaderItem(layout, "Notes");
         addEditTextItem(layout, notes);

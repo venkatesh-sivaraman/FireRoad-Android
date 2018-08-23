@@ -1,5 +1,6 @@
 package com.base12innovations.android.fireroad.models;
 
+import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -26,6 +27,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -113,7 +115,7 @@ public class DocumentManager {
         if (loadedDocuments == null)
             loadedDocuments = new HashMap<>();
         fileHandles = Arrays.asList(baseDir.listFiles(filter));
-        fileHandles.sort(new Comparator<File>() {
+        Collections.sort(fileHandles, new Comparator<File>() {
             @Override
             public int compare(File file, File t1) {
                 Date file1Date = getCloudModifiedDate(file.getName().substring(0, file.getName().lastIndexOf('.')));
@@ -184,10 +186,10 @@ public class DocumentManager {
         return doc;
     }
 
-    public Document getNewDocument(String title) throws FileAlreadyExistsException {
+    public Document getNewDocument(String title) throws IOException {
         File loc = new File(baseDir, title + getPathExtension());
         if (loc.exists()) {
-            throw new FileAlreadyExistsException(loc.getName());
+            throw new IOException(loc.getName());
         }
         fileHandles = null;
         return createDocumentFromCloud(null, title, null, null);
@@ -229,12 +231,12 @@ public class DocumentManager {
         return result;
     }
 
-    public boolean renameDocument(int index, final String newName, boolean localOnly) throws FileAlreadyExistsException {
+    public boolean renameDocument(int index, final String newName, boolean localOnly) throws IOException {
         final String oldName = getDocumentName(index);
         File loc = fileHandles.get(index);
         File newLoc = new File(baseDir, newName + getPathExtension());
         if (newLoc.exists()) {
-            throw new FileAlreadyExistsException(newLoc.getName());
+            throw new IOException(newLoc.getName());
         }
         boolean result = loc.renameTo(newLoc);
         if (result) {
@@ -252,10 +254,11 @@ public class DocumentManager {
         return result;
     }
 
-    public boolean renameDocument(String oldName, String newName, boolean localOnly) throws FileAlreadyExistsException {
+    public boolean renameDocument(String oldName, String newName, boolean localOnly) throws IOException {
         return renameDocument(fileHandles.indexOf(getFileHandle(oldName)), newName, localOnly);
     }
 
+    @TargetApi(Build.VERSION_CODES.O)
     public boolean duplicateDocument(int index) {
         File loc = fileHandles.get(index);
         String fileName = getDocumentName(index);
@@ -840,7 +843,7 @@ public class DocumentManager {
                             });
                         }
                     }
-                } catch (FileAlreadyExistsException e) {
+                } catch (IOException e) {
                     return;
                 }
             } else {

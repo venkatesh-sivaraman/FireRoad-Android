@@ -18,6 +18,7 @@ import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -133,7 +134,7 @@ public class DocumentBrowserAdapter extends RecyclerView.Adapter<DocumentBrowser
 
                 if (sectors.size() > 0) {
                     List<DocumentIconView.ColorSector> sectorList = new ArrayList<>(sectors.values());
-                    sectorList.sort(new Comparator<DocumentIconView.ColorSector>() {
+                    Collections.sort(sectorList, new Comparator<DocumentIconView.ColorSector>() {
                         @Override
                         public int compare(DocumentIconView.ColorSector t1, DocumentIconView.ColorSector t2) {
                             return Float.compare(t1.proportion, t2.proportion);

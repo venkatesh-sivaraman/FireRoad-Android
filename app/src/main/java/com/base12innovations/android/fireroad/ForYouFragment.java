@@ -40,6 +40,7 @@ import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -175,7 +176,7 @@ public class ForYouFragment extends Fragment implements AddCourseDialog.AddCours
                 addHeaderItem(card, titleForRecommendationsKey(key));
 
                 List<Course> courses = new ArrayList<>(recs.get(key).keySet());
-                courses.sort(new Comparator<Course>() {
+                Collections.sort(courses, new Comparator<Course>() {
                     @Override
                     public int compare(Course c1, Course c2) {
                         return -Double.compare(recs.get(key).get(c1), recs.get(key).get(c2));
@@ -193,7 +194,7 @@ public class ForYouFragment extends Fragment implements AddCourseDialog.AddCours
                 addHeaderItem(card, title);
 
                 List<Course> courses = new ArrayList<>(recs.get(key).keySet());
-                courses.sort(new Comparator<Course>() {
+                Collections.sort(courses, new Comparator<Course>() {
                     @Override
                     public int compare(Course c1, Course c2) {
                         return -Double.compare(recs.get(key).get(c1), recs.get(key).get(c2));

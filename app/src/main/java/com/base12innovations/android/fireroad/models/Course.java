@@ -10,8 +10,11 @@ import android.support.annotation.NonNull;
 import android.support.v4.util.CircularIntArray;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.utils.ListHelper;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -369,9 +372,14 @@ public class Course implements Parcelable {
         return result;
     }
 
-    public String relatedSubjects = "";
+    public String relatedSubjects;
     public List<String> getRelatedSubjectsList() {
-        return nonemptyComponents(relatedSubjects, ",");
+        if (relatedSubjects == null)
+            return new ArrayList<>();
+        Log.d("Course", "Getting related subjects with " + relatedSubjects);
+        List<String> subjs = nonemptyComponents(relatedSubjects, ",");
+        Log.d("Course", "Result: " + subjs.toString());
+        return subjs;
     }
 
     @Ignore
@@ -486,16 +494,16 @@ public class Course implements Parcelable {
             return true;
         }
         // The course satisfies more than the requirement
-        if (equivalencePairs.stream().filter(new Predicate<EquivalencePair>() {
+        if (ListHelper.containsElement(equivalencePairs, new ListHelper.Predicate<EquivalencePair>() {
             @Override
             public boolean test(EquivalencePair x) {
                 return x.subjectID.equals(getSubjectID()) && x.requirement.equals(req);
             }
-        }).collect(Collectors.toList()).size() > 0)
+        }))
             return true;
         // Multiple courses from the allCourses list together satisfy a requirement
         if (allCourses != null) {
-            List<Object> satisfyingSets = equivalenceSets.stream().filter(new Predicate<EquivalenceSet>() {
+            if (ListHelper.containsElement(equivalenceSets, new ListHelper.Predicate<EquivalenceSet>() {
                 @Override
                 public boolean test(EquivalenceSet equivalenceSet) {
                     if (!equivalenceSet.requirement.equals(req)) return false;
@@ -512,8 +520,7 @@ public class Course implements Parcelable {
                     }
                     return true;
                 }
-            }).collect(Collectors.toList());
-            if (satisfyingSets.size() > 0) {
+            })) {
                 return true;
             }
         }
@@ -803,7 +810,7 @@ public class Course implements Parcelable {
             }
 
             if (items.size() > 0) {
-                items.sort(new Comparator<List<ScheduleItem>>() {
+                Collections.sort(items, new Comparator<List<ScheduleItem>>() {
                     @Override
                     public int compare(List<ScheduleItem> scheduleItems, List<ScheduleItem> t1) {
                         return scheduleItems.get(0).compareTo(t1.get(0));

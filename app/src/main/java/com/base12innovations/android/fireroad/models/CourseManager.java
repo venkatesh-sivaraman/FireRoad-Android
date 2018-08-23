@@ -259,6 +259,7 @@ public class CourseManager {
 
     private static String catalogDownloadURL = NetworkManager.CATALOG_BASE_URL + "catalogs/";
     private static String requirementsPrefix = "requirements/";
+    private static String relatedCoursesFileIdentifier = "related";
 
     /*
     This function saves the current version to the preferences, and the completion block is passed
@@ -311,14 +312,26 @@ public class CourseManager {
         int currentReqVersion = forceUpdate ? 0 : dbPreferences.getInt(prefsRequirementsVersionKey, 0);
         List<URL> urls = new ArrayList<>();
         if (newDatabaseVersion != currentDBVersion || newRequirementsVersion != currentReqVersion) {
+            String relatedPath = null;
             for (String path : delta) {
                 if (newDatabaseVersion == currentDBVersion && !path.contains(requirementsPrefix)) {
+                    continue;
+                }
+                if (path.contains(relatedCoursesFileIdentifier)) {
+                    relatedPath = path;
                     continue;
                 }
                 try {
                     urls.add(new URL(catalogDownloadURL + path));
                 } catch (MalformedURLException e) {
                     Log.e("CourseManager", "Malformed URL, " + catalogDownloadURL + path);
+                }
+            }
+            if (relatedPath != null) {
+                try {
+                    urls.add(new URL(catalogDownloadURL + relatedPath));
+                } catch (MalformedURLException e) {
+                    Log.e("CourseManager", "Malformed URL, " + catalogDownloadURL + relatedPath);
                 }
             }
         }
@@ -465,12 +478,30 @@ public class CourseManager {
         courseDatabase.daoAccess().insertCourse(course);
     }
 
+    private void loadRelatedSubjectsFromLine(String line) {
+        String comps[] = line.trim().split(",");
+        String subjectID = comps[0];
+        Course course = getSubjectByID(subjectID);
+        if (course == null) {
+            return;
+        }
+        // Remove the relevance values from the components
+        String[] idsOnly = new String[(comps.length - 1) / 2];
+        int index = 0;
+        for (int i = 1; i < comps.length; i += 2) {
+            idsOnly[index] = comps[i];
+            index += 1;
+        }
+        course.relatedSubjects = TextUtils.join(",", idsOnly);
+        courseDatabase.daoAccess().updateCourse(course);
+    }
+
     private void loadCoursesFromURL(URL urlToRead) {
         Log.d("CourseManager", "Reading from " + urlToRead.toString());
         String path = urlToRead.getPath();
         String fileName = path.substring(path.lastIndexOf('/') + 1);
         if (fileName.equals("courses.txt") || fileName.equals("features.txt") || fileName.equals("enrollment.txt")
-                || fileName.contains("condensed") || fileName.equals("related.txt")) {
+                || fileName.contains("condensed")) {
             return;
         }
         try {
@@ -478,7 +509,9 @@ public class CourseManager {
             String inputLine;
             String[] header = null;
             while ((inputLine = in.readLine()) != null) {
-                if (header == null) {
+                if (fileName.contains("related")) {
+                    loadRelatedSubjectsFromLine(inputLine);
+                } else if (header == null) {
                     header = inputLine.split(",");
                 } else {
                     loadCourseFromLine(inputLine, header);
@@ -489,7 +522,6 @@ public class CourseManager {
             Log.d("CourseManager", "Error loading from URL " + urlToRead.toString());
             e.printStackTrace();
         }
-
     }
 
     private void downloadRequirementsFile(URL url) {

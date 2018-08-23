@@ -94,6 +94,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     private RequirementsFragment requirementsFragment;
 
     private CourseLoadingDialogFragment loadingDialogFragment;
+    private boolean isActivityPaused = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,9 +132,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             }
         };
 
-        Log.d("MainActivity", "On create");
         if (!CourseManager.sharedInstance().isLoaded()) {
-            Log.d("MainActivity", "Is not loaded");
             CourseManager.sharedInstance().postLoadBlock = new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
@@ -165,31 +164,34 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     }
                 });
             } else {
-                Log.d("MainActivity", "Loading courses");
                 CourseManager.sharedInstance().loadCourses(new CourseManager.LoadCoursesListener() {
                     @Override
                     public void completion() {
-                        Log.d("MainActivity", "Completion");
-                        if (loadingDialogFragment != null && loadingDialogFragment.isVisible()) {
+                        Log.d("MainActivity", "Completion " + (loadingDialogFragment != null ? loadingDialogFragment.toString() : "null"));
+                        if (loadingDialogFragment != null && !isActivityPaused) {
                             Log.d("MainActivity", "Dismissing");
                             loadingDialogFragment.dismiss();
                         }
+                        loadingDialogFragment = null;
                         CourseManager.sharedInstance().syncPreferences();
                     }
 
                     @Override
                     public void error() {
-                        if (loadingDialogFragment != null && loadingDialogFragment.isVisible()) {
+                        if (loadingDialogFragment != null && !isActivityPaused) {
                             loadingDialogFragment.dismiss();
                         }
+                        loadingDialogFragment = null;
                     }
 
                     @Override
                     public void needsFullLoad() {
                         Log.d("MainActivity", "Needs full load");
-                        loadingDialogFragment = new CourseLoadingDialogFragment();
-                        loadingDialogFragment.setCancelable(false);
-                        loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
+                        if (!isActivityPaused) {
+                            loadingDialogFragment = new CourseLoadingDialogFragment();
+                            loadingDialogFragment.setCancelable(false);
+                            loadingDialogFragment.show(getSupportFragmentManager(), "LoadingDialogFragment");
+                        }
                     }
                 });
             }
@@ -214,7 +216,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     public void run() {
                         performSync();
                     }
-                }, 0, 60, TimeUnit.SECONDS);
+                }, 5, 60, TimeUnit.SECONDS);
                 Log.d("MainActivity", "Logged in");
                 performSync();
             }
@@ -258,6 +260,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
     @Override
     protected void onPause() {
+        isActivityPaused = true;
         if (loadingDialogFragment != null) {
             loadingDialogFragment.dismiss();
         }
@@ -267,6 +270,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     @Override
     protected void onResume() {
         super.onResume();
+        isActivityPaused = false;
         if (loadingDialogFragment != null) {
             loadingDialogFragment.dismiss();
         }
@@ -387,6 +391,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     // Sync
 
     public void performSync() {
+        if (!CourseManager.sharedInstance().isLoaded() || CourseManager.sharedInstance().isUpdatingDatabase())
+            return;
         Log.d("MainActivity", "Syncing");
         if (!handlingConflict) {
             NetworkManager.sharedInstance().getRoadManager().syncAllFiles(this);
@@ -453,6 +459,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     response.response(conflict.negativeButton);
                 }
             });
+        b.setCancelable(false);
         b.show();
     }
 

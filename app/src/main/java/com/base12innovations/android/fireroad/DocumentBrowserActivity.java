@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -30,6 +31,7 @@ import com.base12innovations.android.fireroad.models.NetworkManager;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.file.FileAlreadyExistsException;
 
@@ -137,9 +139,13 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
                     renameDocument(index);
                     return true;
                 } else if (menuItem.getItemId() == R.id.duplicateDocument) {
-                    boolean success = documentManager.duplicateDocument(index);
-                    if (success)
-                        listAdapter.notifyDataSetChanged();
+                    boolean success = false;
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        success = documentManager.duplicateDocument(index);
+                        if (success)
+                            listAdapter.notifyDataSetChanged();
+                    }
                     else
                         Toast.makeText(DocumentBrowserActivity.this, "Failed to duplicate file - try again.", Toast.LENGTH_SHORT).show();
                 }
@@ -184,7 +190,7 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
                 try {
                     Document doc = documentManager.getNewDocument(text);
                     documentBrowserSelectedDocument(doc);
-                } catch (FileAlreadyExistsException e) {
+                } catch (IOException e) {
                     Toast.makeText(DocumentBrowserActivity.this, "File exists - try again.", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -234,7 +240,7 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
                                         documentBrowserSelectedDocument(doc);
                                     }
                                 });
-                            } catch (FileAlreadyExistsException e) {
+                            } catch (IOException e) {
                                 e.printStackTrace();
                             }
                         }
@@ -284,7 +290,7 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
                         Snackbar.make(listView, "Successfully renamed file", Snackbar.LENGTH_LONG).show();
                         listAdapter.notifyDataSetChanged();
                     }
-                } catch (FileAlreadyExistsException e) {
+                } catch (IOException e) {
                     Toast.makeText(DocumentBrowserActivity.this, "File exists - try again.", Toast.LENGTH_SHORT).show();
                 }
             }

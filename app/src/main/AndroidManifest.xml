@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.base12innovations.android.fireroad"
-    android:versionCode="1"
+    android:versionCode="2"
     android:versionName="1.0">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -23,24 +23,6 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name=".CourseDetailsFragment"
-            android:label="@string/title_activity_course_details"
-            android:parentActivityName=".MainActivity"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
-            android:name=".SearchCoursesFragment"
-            android:label="SearchCoursesActivity"
-            android:parentActivityName=".MainActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.SEARCH" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.app.searchable"
-                android:resource="@xml/searchable" />
         </activity>
         <activity
             android:name=".DocumentBrowserActivity"

@@ -610,7 +610,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                     if (occupiedColumns.get(colKey) > j)
                         newOccupiedCols.put(colKey, occupiedColumns.get(colKey));
                 occupiedColumns = newOccupiedCols;
-                
+
                 int occupancy = slotOccupancyCounts.get(cluster);
                 int duration = slotSizes.get(cluster);
                 float widthFraction = 1.0f / (float) occupancy;
@@ -634,7 +634,6 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                     params.addRule(RelativeLayout.ALIGN_PARENT_END);
 
                     // Find the first unoccupied column and position its margins to situate it there
-                    Log.d("ScheduleFragment", "Occupancy "+ Integer.toString(occupancy) + " occupied columns " + occupiedColumns.toString());
                     for (int subcolumn = 0; subcolumn < occupancy; subcolumn++) {
                         if (occupiedColumns.containsKey(subcolumn)) continue;
 
@@ -744,7 +743,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
             configView.setVisibility(View.VISIBLE);
         } else {
             if (noCoursesView instanceof TextView)
-                ((TextView)noCoursesView).setText(Html.fromHtml("<b>No subjects in your schedule yet!</b><br/>Add one by searching above or by browsing the Requirements page.", Html.FROM_HTML_MODE_LEGACY));
+                ((TextView)noCoursesView).setText(Html.fromHtml("<b>No subjects in your schedule yet!</b><br/>Add one by searching above or by browsing the Requirements page."));
             configView.setVisibility(View.INVISIBLE);
             noCoursesView.setVisibility(View.VISIBLE);
         }

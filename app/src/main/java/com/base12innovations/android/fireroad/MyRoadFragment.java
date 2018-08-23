@@ -290,7 +290,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             recyclerView.setVisibility(View.VISIBLE);
         } else {
             if (noCoursesView instanceof TextView)
-                ((TextView)noCoursesView).setText(Html.fromHtml("<b>No subjects in your road yet!</b><br/>Add one by searching above or by browsing the Requirements page.", Html.FROM_HTML_MODE_LEGACY));
+                ((TextView)noCoursesView).setText(Html.fromHtml("<b>No subjects in your road yet!</b><br/>Add one by searching above or by browsing the Requirements page."));
             recyclerView.setVisibility(View.INVISIBLE);
             noCoursesView.setVisibility(View.VISIBLE);
         }

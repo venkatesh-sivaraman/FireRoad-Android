@@ -110,7 +110,6 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
     @Override
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
-        Log.d("RequirementsListFragment", "Hidden changed");
         updateRequirementStatus();
     }
 

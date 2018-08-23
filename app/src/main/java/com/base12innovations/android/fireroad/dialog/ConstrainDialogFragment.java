@@ -21,6 +21,7 @@ import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.Course;
+import com.base12innovations.android.fireroad.utils.ListHelper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,13 +47,6 @@ public class ConstrainDialogFragment extends DialogFragment {
 
     public ConstrainDialogFragment() {
         // Required empty public constructor
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_constrain_dialog, container, false);
     }
 
     @NonNull
@@ -104,12 +98,12 @@ public class ConstrainDialogFragment extends DialogFragment {
             for (int i = 0; i < items.size(); i++) {
                 List<Course.ScheduleItem> itemSet = items.get(i);
 
-                String desc = TextUtils.join(", ", itemSet.stream().map(new Function<Course.ScheduleItem, String>() {
+                String desc = TextUtils.join(", ", ListHelper.map(itemSet, new ListHelper.Function<Course.ScheduleItem, String>() {
                     @Override
                     public String apply(Course.ScheduleItem scheduleItem) {
                         return scheduleItem.toString(false);
                     }
-                }).collect(Collectors.toList()));
+                }));
                 String location = null;
                 for (Course.ScheduleItem item : itemSet) {
                     if (item.location != null) {

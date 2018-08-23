@@ -3,8 +3,11 @@ package com.base12innovations.android.fireroad.models;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.utils.ListHelper;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,13 +40,13 @@ public class ScheduleGenerator {
                 allowedSections.get(course).get(section).size() == 0) {
             return allItems;
         }
-        return (List<List<Course.ScheduleItem>>)(Object)allowedSections.get(course).get(section)
-                .stream().map(new Function<Integer, List<Course.ScheduleItem>>() {
+        return ListHelper.map(allowedSections.get(course).get(section),
+                new ListHelper.Function<Integer, List<Course.ScheduleItem>>() {
                     @Override
                     public List<Course.ScheduleItem> apply(Integer integer) {
                         return allItems.get(integer);
                     }
-                }).collect(Collectors.toList());
+                });
     }
 
     public List<ScheduleConfiguration> generateSchedules(List<Course> courses, Map<Course, Map<String, List<Integer>>> sections) {
@@ -87,7 +90,7 @@ public class ScheduleGenerator {
         }
 
         // Sort - performance improvement
-        schedConfigs.sort(new Comparator<List<ScheduleUnit>>() {
+        Collections.sort(schedConfigs, new Comparator<List<ScheduleUnit>>() {
             @Override
             public int compare(List<ScheduleUnit> t1, List<ScheduleUnit> t2) {
                 return t1.size() != t2.size() ? (t1.size() < t2.size() ? -1 : 1) : 0;
@@ -129,7 +132,7 @@ public class ScheduleGenerator {
                 new ArrayList<ScheduleUnit>(), 0, null
         );
 
-        results.sort(new Comparator<ScheduleConfiguration>() {
+        Collections.sort(results, new Comparator<ScheduleConfiguration>() {
             @Override
             public int compare(ScheduleConfiguration t1, ScheduleConfiguration t2) {
                 return t1.conflictCount != t2.conflictCount ? (t1.conflictCount < t2.conflictCount ? -1 : 1) : 0;
@@ -229,14 +232,14 @@ public class ScheduleGenerator {
 
         int minConflicts = 0;
         if (sets.size() != 0) {
-            Optional<ScheduleConfigResult> optMin = sets.stream().min(new Comparator<ScheduleConfigResult>() {
+            ScheduleConfigResult minConfig = ListHelper.minimum(sets, new Comparator<ScheduleConfigResult>() {
                 @Override
                 public int compare(ScheduleConfigResult t1, ScheduleConfigResult t2) {
                     return (t1.conflicts != t2.conflicts) ? (t1.conflicts < t2.conflicts ? -1 : 1) : 0;
                 }
-            });
-            if (optMin.isPresent())
-                minConflicts = optMin.get().conflicts;
+            }, null);
+            if (minConfig != null)
+                minConflicts = minConfig.conflicts;
         }
 
         // First, recurse on only the ones that have few conflicts

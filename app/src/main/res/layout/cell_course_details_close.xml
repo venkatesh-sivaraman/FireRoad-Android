@@ -19,7 +19,7 @@
         android:id="@+id/closeLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
+        android:layout_gravity="center_vertical|start"
         android:text="Close"
         android:textAlignment="textStart"
         android:textSize="14sp" />

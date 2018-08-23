@@ -4,12 +4,15 @@ import android.arch.persistence.room.util.StringUtil;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.utils.ListHelper;
+
 import org.w3c.dom.Text;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -213,13 +216,13 @@ public class RequirementsListStatement {
     /// Gives the minimum number of steps needed to traverse the tree down to a leaf (an individual course).
     public int minimumNestDepth() {
         if (requirements != null) {
-            OptionalInt result = requirements.stream().mapToInt(new ToIntFunction<RequirementsListStatement>() {
+            Integer result = ListHelper.minimum(ListHelper.map(requirements, new ListHelper.Function<RequirementsListStatement, Integer>() {
                 @Override
-                public int applyAsInt(RequirementsListStatement req) {
+                public Integer apply(RequirementsListStatement req) {
                     return req.minimumNestDepth();
                 }
-            }).min();
-            return (result.orElse(-1)) + 1;
+            }), -1);
+            return result + 1;
         }
         return 0;
     }
@@ -227,13 +230,13 @@ public class RequirementsListStatement {
     /// Gives the maximum number of steps needed to traverse the tree down to a leaf (an individual course).
     public int maximumNestDepth() {
         if (requirements != null) {
-            OptionalInt result = requirements.stream().mapToInt(new ToIntFunction<RequirementsListStatement>() {
+            Integer result = ListHelper.maximum(ListHelper.map(requirements, new ListHelper.Function<RequirementsListStatement, Integer>() {
                 @Override
-                public int applyAsInt(RequirementsListStatement req) {
+                public Integer apply(RequirementsListStatement req) {
                     return req.maximumNestDepth();
                 }
-            }).max();
-            return (result.orElse(-1)) + 1;
+            }), -1);
+            return result + 1;
         }
         return 0;
     }
@@ -377,7 +380,7 @@ public class RequirementsListStatement {
         if (modifier.contains("|")) {
             String[] comps = modifier.split("\\|");
             if (comps.length != 2) {
-                Log.e("RequirementsListStatement", "Unsupported number of components in modifier string: " + modifier);
+                Log.e("RequirementsListStmt", "Unsupported number of components in modifier string: " + modifier);
                 return;
             }
             if (comps[0].length() > 0) {
@@ -477,12 +480,12 @@ public class RequirementsListStatement {
 
     public List<Course> coursesSatisfyingRequirement(final List<Course> courses) {
         if (requirement != null) {
-            return (List<Course>)(Object)(courses.stream().filter(new Predicate<Course>() {
+            return ListHelper.filter(courses, new ListHelper.Predicate<Course>() {
                 @Override
                 public boolean test(Course course) {
                     return course.satisfiesRequirement(requirement, courses);
                 }
-            }).collect(Collectors.toList()));
+            });
         }
         return new ArrayList<>();
     }
@@ -507,28 +510,28 @@ public class RequirementsListStatement {
     }
 
     private int totalUnitsInCourses(Collection<Course> courses) {
-        return courses.stream().mapToInt(new ToIntFunction<Course>() {
+        return ListHelper.reduce(ListHelper.map(courses, new ListHelper.Function<Course, Integer>() {
             @Override
-            public int applyAsInt(Course course) {
+            public Integer apply(Course course) {
                 return course.totalUnits;
             }
-        }).sum();
+        }), 0, new ListHelper.IntegerSum());
     }
 
-    private FulfillmentProgress sumFulfillmentProgresses(List<RequirementsListStatement> reqs, final ThresholdCriterion crit, final ToIntFunction<Integer> maxFunction) {
-        return reqs.stream().map(new Function<RequirementsListStatement, FulfillmentProgress>() {
+    private FulfillmentProgress sumFulfillmentProgresses(List<RequirementsListStatement> reqs, final ThresholdCriterion crit, final ListHelper.Function<Integer, Integer> maxFunction) {
+        return ListHelper.reduce(ListHelper.map(reqs, new ListHelper.Function<RequirementsListStatement, FulfillmentProgress>() {
             @Override
             public FulfillmentProgress apply(RequirementsListStatement req) {
                 if (crit == ThresholdCriterion.SUBJECTS)
                     return req.subjectProgress;
                 return req.unitProgress;
             }
-        }).reduce(new FulfillmentProgress(0, 0), new BinaryOperator<FulfillmentProgress>() {
+        }), new FulfillmentProgress(0, 0), new ListHelper.Reducer<FulfillmentProgress, FulfillmentProgress>() {
             @Override
-            public FulfillmentProgress apply(FulfillmentProgress p1, FulfillmentProgress p2) {
+            public FulfillmentProgress concat(FulfillmentProgress p1, FulfillmentProgress p2) {
                 if (p2 == null) return p1;
                 if (maxFunction != null)
-                    return new FulfillmentProgress(p1.progress + p2.progress, p1.max + maxFunction.applyAsInt(p2.max));
+                    return new FulfillmentProgress(p1.progress + p2.progress, p1.max + maxFunction.apply(p2.max));
                 return new FulfillmentProgress(p1.progress + p2.progress, p1.max + p2.max);
             }
         });
@@ -614,7 +617,7 @@ public class RequirementsListStatement {
             totalSat.addAll(sat);
         }
         List<RequirementsListStatement> sortedProgresses = new ArrayList<>(requirements);
-        sortedProgresses.sort(new Comparator<RequirementsListStatement>() {
+        Collections.sort(sortedProgresses, new Comparator<RequirementsListStatement>() {
             @Override
             public int compare(RequirementsListStatement t1, RequirementsListStatement t2) {
                 float p1 = t1.percentageFulfilled(), p2 = t2.percentageFulfilled();
@@ -655,15 +658,15 @@ public class RequirementsListStatement {
                     isFulfilled = numReqsSatisfied >= distinctThreshold.getActualCutoff();
                 else
                     isFulfilled = true;
-                subjectProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.SUBJECTS, new ToIntFunction<Integer>() {
+                subjectProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.SUBJECTS, new ListHelper.Function<Integer, Integer>() {
                     @Override
-                    public int applyAsInt(Integer integer) {
+                    public Integer apply(Integer integer) {
                         return Math.max(integer, 1);
                     }
                 });
-                unitProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.UNITS, new ToIntFunction<Integer>() {
+                unitProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.UNITS, new ListHelper.Function<Integer, Integer>() {
                     @Override
-                    public int applyAsInt(Integer integer) {
+                    public Integer apply(Integer integer) {
                         return integer == 0 ? DEFAULT_UNIT_COUNT : integer;
                     }
                 });
@@ -677,15 +680,15 @@ public class RequirementsListStatement {
                                 distinctThreshold.type == ThresholdType.GREATER_THAN_OR_EQUAL)) {
                     isFulfilled = numberSatisfiesThreshold(subjectProgress.progress, unitProgress.progress, threshold) && numReqsSatisfied >= distinctThreshold.getActualCutoff();
                     if (numReqsSatisfied < distinctThreshold.getActualCutoff()) {
-                        subjectProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.SUBJECTS, new ToIntFunction<Integer>() {
+                        subjectProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.SUBJECTS, new ListHelper.Function<Integer, Integer>() {
                             @Override
-                            public int applyAsInt(Integer integer) {
+                            public Integer apply(Integer integer) {
                                 return Math.max(integer, 1);
                             }
                         });
-                        unitProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.UNITS, new ToIntFunction<Integer>() {
+                        unitProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.UNITS, new ListHelper.Function<Integer, Integer>() {
                             @Override
-                            public int applyAsInt(Integer integer) {
+                            public Integer apply(Integer integer) {
                                 return integer == 0 ? DEFAULT_UNIT_COUNT : integer;
                             }
                         });

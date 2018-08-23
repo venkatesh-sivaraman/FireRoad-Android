@@ -42,13 +42,6 @@ public class CourseWarningsDialogFragment extends DialogFragment {
         // Required empty public constructor
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_warnings_dialog, container, false);
-    }
-
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
@@ -76,7 +69,7 @@ public class CourseWarningsDialogFragment extends DialogFragment {
                 }
                 comps.add(base);
             }
-            ((TextView)view.findViewById(R.id.detailLabel)).setText(Html.fromHtml(TextUtils.join("<br/><br/>", comps), Html.FROM_HTML_MODE_LEGACY));
+            ((TextView)view.findViewById(R.id.detailLabel)).setText(Html.fromHtml(TextUtils.join("<br/><br/>", comps)));
             Switch mSwitch = view.findViewById(R.id.overrideSwitch);
             mSwitch.setChecked(override);
             mSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
