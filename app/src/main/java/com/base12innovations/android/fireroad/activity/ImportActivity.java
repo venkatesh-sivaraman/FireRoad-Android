@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.activity;
 
 import android.content.ContentResolver;
 import android.content.DialogInterface;
@@ -8,6 +8,8 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
+import com.base12innovations.android.fireroad.MainActivity;
+import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.doc.Document;
 import com.base12innovations.android.fireroad.models.doc.DocumentManager;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;

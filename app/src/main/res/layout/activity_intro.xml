@@ -8,7 +8,7 @@
     android:fitsSystemWindows="true"
     android:theme="@style/AppTheme.NoActionBar"
     android:background="@android:color/white"
-    tools:context=".IntroActivity">
+    tools:context=".activity.IntroActivity">
 
     <View
         android:id="@+id/backgroundColorView"

@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:theme="@style/AppTheme.NoActionBar"
     android:clipChildren="false"
-    tools:context=".IntroActivity$PlaceholderFragment">
+    tools:context=".activity.IntroActivity$PlaceholderFragment">
 
     <Button
         android:id="@+id/nextButton"

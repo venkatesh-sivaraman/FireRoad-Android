@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.activity;
 
 import android.content.Context;
 import android.content.DialogInterface;
@@ -24,6 +24,7 @@ import android.widget.FrameLayout;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
+import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.adapter.DocumentBrowserAdapter;
 import com.base12innovations.android.fireroad.models.doc.Document;
 import com.base12innovations.android.fireroad.models.doc.DocumentManager;
@@ -300,7 +301,7 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
 
     // Help text
 
-    private static String PREFERENCES = "com.base12innovations.android.fireroad.DocumentBrowserActivity.Preferences";
+    private static String PREFERENCES = "com.base12innovations.android.fireroad.activity.DocumentBrowserActivity.Preferences";
     private static String HAS_SHOWN_HELP = "hasShownHelp";
 
     private boolean hasShownHelpText() {
