@@ -1,26 +1,15 @@
-package com.base12innovations.android.fireroad.models;
+package com.base12innovations.android.fireroad.models.course;
 
 import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.net.Network;
-import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.android.volley.NetworkResponse;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
+import com.base12innovations.android.fireroad.models.AppSettings;
+import com.base12innovations.android.fireroad.models.doc.NetworkManager;
+import com.base12innovations.android.fireroad.models.req.RequirementsListManager;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -36,11 +25,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

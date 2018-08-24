@@ -1,7 +1,6 @@
-package com.base12innovations.android.fireroad.models;
+package com.base12innovations.android.fireroad.models.course;
 
 import android.graphics.Color;
-import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;

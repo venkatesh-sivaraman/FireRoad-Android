@@ -10,8 +10,8 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.R;
-import com.base12innovations.android.fireroad.models.ColorManager;
-import com.base12innovations.android.fireroad.models.Course;
+import com.base12innovations.android.fireroad.models.course.ColorManager;
+import com.base12innovations.android.fireroad.models.course.Course;
 
 import java.lang.ref.WeakReference;
 import java.util.List;

@@ -12,14 +12,13 @@ import android.text.Html;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.R;
-import com.base12innovations.android.fireroad.models.Course;
-import com.base12innovations.android.fireroad.models.RoadDocument;
+import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 
 import java.util.ArrayList;
 import java.util.List;

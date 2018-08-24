@@ -14,12 +14,12 @@ import android.widget.ProgressBar;
 
 import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
 import com.base12innovations.android.fireroad.models.AppSettings;
-import com.base12innovations.android.fireroad.models.Course;
-import com.base12innovations.android.fireroad.models.CourseManager;
-import com.base12innovations.android.fireroad.models.CourseSearchEngine;
-import com.base12innovations.android.fireroad.models.NetworkManager;
-import com.base12innovations.android.fireroad.models.RequirementsList;
-import com.base12innovations.android.fireroad.models.RequirementsListManager;
+import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.course.CourseManager;
+import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.doc.NetworkManager;
+import com.base12innovations.android.fireroad.models.req.RequirementsList;
+import com.base12innovations.android.fireroad.models.req.RequirementsListManager;
 import com.base12innovations.android.fireroad.utils.CourseLayoutBuilder;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 

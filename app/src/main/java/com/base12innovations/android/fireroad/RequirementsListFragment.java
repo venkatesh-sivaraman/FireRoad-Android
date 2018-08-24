@@ -17,13 +17,13 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
-import com.base12innovations.android.fireroad.models.Course;
-import com.base12innovations.android.fireroad.models.CourseManager;
-import com.base12innovations.android.fireroad.models.CourseSearchEngine;
-import com.base12innovations.android.fireroad.models.RequirementsList;
-import com.base12innovations.android.fireroad.models.RequirementsListManager;
-import com.base12innovations.android.fireroad.models.RequirementsListStatement;
-import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.course.CourseManager;
+import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.req.RequirementsList;
+import com.base12innovations.android.fireroad.models.req.RequirementsListManager;
+import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
+import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.CourseLayoutBuilder;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 

@@ -20,15 +20,13 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.R;
-import com.base12innovations.android.fireroad.models.Course;
+import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.utils.ListHelper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static android.text.TextUtils.join;
 

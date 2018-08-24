@@ -13,7 +13,7 @@ import android.view.View;
 import android.widget.Button;
 
 import com.base12innovations.android.fireroad.R;
-import com.base12innovations.android.fireroad.models.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
 
 import java.lang.ref.WeakReference;
 import java.util.EnumSet;

@@ -16,10 +16,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
-import com.base12innovations.android.fireroad.models.ColorManager;
-import com.base12innovations.android.fireroad.models.Course;
-import com.base12innovations.android.fireroad.models.CourseManager;
-import com.base12innovations.android.fireroad.models.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.course.ColorManager;
+import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.course.CourseManager;
+import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
 import com.base12innovations.android.fireroad.utils.BottomSheetNavFragment;
 import com.base12innovations.android.fireroad.utils.CourseLayoutBuilder;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;

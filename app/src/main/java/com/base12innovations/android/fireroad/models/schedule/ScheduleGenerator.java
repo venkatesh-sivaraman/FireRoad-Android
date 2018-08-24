@@ -1,8 +1,9 @@
-package com.base12innovations.android.fireroad.models;
+package com.base12innovations.android.fireroad.models.schedule;
 
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.utils.ListHelper;
 
 import java.util.ArrayList;
@@ -13,10 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class ScheduleGenerator {
 

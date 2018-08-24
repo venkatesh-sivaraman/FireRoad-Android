@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad.models;
+package com.base12innovations.android.fireroad.models.doc;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -8,7 +8,6 @@ import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 public class User {
 

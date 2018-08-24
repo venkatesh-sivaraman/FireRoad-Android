@@ -1,8 +1,10 @@
-package com.base12innovations.android.fireroad.models;
+package com.base12innovations.android.fireroad.models.doc;
 
-import android.net.Network;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.models.AppSettings;
+import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import org.json.JSONArray;

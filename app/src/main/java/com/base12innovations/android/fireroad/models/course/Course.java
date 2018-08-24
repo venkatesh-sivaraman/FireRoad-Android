@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad.models;
+package com.base12innovations.android.fireroad.models.course;
 
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.Ignore;
@@ -7,7 +7,6 @@ import android.arch.persistence.room.PrimaryKey;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
-import android.support.v4.util.CircularIntArray;
 import android.util.Log;
 
 import com.base12innovations.android.fireroad.utils.ListHelper;
@@ -20,8 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 @Entity(indices = {@Index(value = {"subjectID"},
         unique = true)})

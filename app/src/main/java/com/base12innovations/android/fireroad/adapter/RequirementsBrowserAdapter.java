@@ -1,28 +1,20 @@
 package com.base12innovations.android.fireroad.adapter;
 
 import android.app.Activity;
-import android.content.Context;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
-import android.text.Html;
-import android.util.Log;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.R;
-import com.base12innovations.android.fireroad.models.ColorManager;
-import com.base12innovations.android.fireroad.models.RequirementsList;
-import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.models.course.ColorManager;
+import com.base12innovations.android.fireroad.models.req.RequirementsList;
+import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
-
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.HashSet;

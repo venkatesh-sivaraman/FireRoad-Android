@@ -2,7 +2,6 @@ package com.base12innovations.android.fireroad.adapter;
 
 import android.graphics.drawable.GradientDrawable;
 import android.support.annotation.NonNull;
-import android.support.v7.widget.AppCompatImageButton;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -12,9 +11,9 @@ import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.AppSettings;
-import com.base12innovations.android.fireroad.models.ColorManager;
-import com.base12innovations.android.fireroad.models.Course;
-import com.base12innovations.android.fireroad.models.RoadDocument;
+import com.base12innovations.android.fireroad.models.course.ColorManager;
+import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.util.List;

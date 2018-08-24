@@ -8,16 +8,13 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
-import com.base12innovations.android.fireroad.models.Document;
-import com.base12innovations.android.fireroad.models.DocumentManager;
-import com.base12innovations.android.fireroad.models.RoadDocument;
-import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.models.doc.Document;
+import com.base12innovations.android.fireroad.models.doc.DocumentManager;
+import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 

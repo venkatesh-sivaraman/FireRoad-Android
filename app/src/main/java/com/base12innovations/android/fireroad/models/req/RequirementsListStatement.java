@@ -1,12 +1,10 @@
-package com.base12innovations.android.fireroad.models;
+package com.base12innovations.android.fireroad.models.req;
 
-import android.arch.persistence.room.util.StringUtil;
-import android.text.TextUtils;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.utils.ListHelper;
-
-import org.w3c.dom.Text;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -18,17 +16,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalInt;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.IntBinaryOperator;
-import java.util.function.Predicate;
-import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class RequirementsListStatement {
     public String title;

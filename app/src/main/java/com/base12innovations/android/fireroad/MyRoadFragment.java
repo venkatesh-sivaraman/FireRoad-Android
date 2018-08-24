@@ -24,11 +24,11 @@ import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.adapter.MyRoadCoursesAdapter;
 import com.base12innovations.android.fireroad.dialog.CourseWarningsDialogFragment;
-import com.base12innovations.android.fireroad.models.Course;
-import com.base12innovations.android.fireroad.models.CourseManager;
-import com.base12innovations.android.fireroad.models.Document;
-import com.base12innovations.android.fireroad.models.RoadDocument;
-import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.course.CourseManager;
+import com.base12innovations.android.fireroad.models.doc.Document;
+import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.io.File;

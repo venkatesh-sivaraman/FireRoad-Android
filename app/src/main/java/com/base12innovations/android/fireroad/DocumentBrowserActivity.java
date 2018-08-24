@@ -25,15 +25,14 @@ import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import com.base12innovations.android.fireroad.adapter.DocumentBrowserAdapter;
-import com.base12innovations.android.fireroad.models.Document;
-import com.base12innovations.android.fireroad.models.DocumentManager;
-import com.base12innovations.android.fireroad.models.NetworkManager;
+import com.base12innovations.android.fireroad.models.doc.Document;
+import com.base12innovations.android.fireroad.models.doc.DocumentManager;
+import com.base12innovations.android.fireroad.models.doc.NetworkManager;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.nio.file.FileAlreadyExistsException;
 
 public class DocumentBrowserActivity extends AppCompatActivity implements DocumentBrowserAdapter.Delegate {
 

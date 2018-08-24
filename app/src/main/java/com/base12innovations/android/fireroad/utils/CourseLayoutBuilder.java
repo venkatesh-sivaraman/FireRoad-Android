@@ -18,9 +18,9 @@ import android.widget.TextView;
 import android.widget.ToggleButton;
 
 import com.base12innovations.android.fireroad.R;
-import com.base12innovations.android.fireroad.models.ColorManager;
-import com.base12innovations.android.fireroad.models.Course;
-import com.base12innovations.android.fireroad.models.CourseManager;
+import com.base12innovations.android.fireroad.models.course.ColorManager;
+import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.course.CourseManager;
 
 import java.util.Locale;
 

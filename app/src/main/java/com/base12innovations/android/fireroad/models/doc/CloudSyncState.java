@@ -1,4 +1,4 @@
-package com.base12innovations.android.fireroad.models;
+package com.base12innovations.android.fireroad.models.doc;
 
 import com.google.gson.annotations.SerializedName;
 

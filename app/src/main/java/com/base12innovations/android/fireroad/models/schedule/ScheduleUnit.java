@@ -1,4 +1,6 @@
-package com.base12innovations.android.fireroad.models;
+package com.base12innovations.android.fireroad.models.schedule;
+
+import com.base12innovations.android.fireroad.models.course.Course;
 
 import java.util.List;
 

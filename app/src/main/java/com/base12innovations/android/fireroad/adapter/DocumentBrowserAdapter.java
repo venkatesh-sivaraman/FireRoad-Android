@@ -10,10 +10,10 @@ import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.utils.DocumentIconView;
 import com.base12innovations.android.fireroad.R;
-import com.base12innovations.android.fireroad.models.ColorManager;
-import com.base12innovations.android.fireroad.models.Course;
-import com.base12innovations.android.fireroad.models.Document;
-import com.base12innovations.android.fireroad.models.DocumentManager;
+import com.base12innovations.android.fireroad.models.course.ColorManager;
+import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.doc.Document;
+import com.base12innovations.android.fireroad.models.doc.DocumentManager;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;

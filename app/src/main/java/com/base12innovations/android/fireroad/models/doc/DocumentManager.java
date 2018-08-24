@@ -1,16 +1,14 @@
-package com.base12innovations.android.fireroad.models;
+package com.base12innovations.android.fireroad.models.doc;
 
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.SyncResult;
 import android.os.Build;
-import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.base12innovations.android.fireroad.ScheduleFragment;
+import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -19,8 +17,6 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.nio.file.CopyOption;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.text.ParseException;

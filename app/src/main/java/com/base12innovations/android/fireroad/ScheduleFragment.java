@@ -30,18 +30,18 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.dialog.ConstrainDialogFragment;
-import com.base12innovations.android.fireroad.models.ColorManager;
-import com.base12innovations.android.fireroad.models.Course;
-import com.base12innovations.android.fireroad.models.CourseManager;
-import com.base12innovations.android.fireroad.models.Document;
-import com.base12innovations.android.fireroad.models.DocumentManager;
-import com.base12innovations.android.fireroad.models.NetworkManager;
-import com.base12innovations.android.fireroad.models.ScheduleConfiguration;
-import com.base12innovations.android.fireroad.models.ScheduleDocument;
-import com.base12innovations.android.fireroad.models.ScheduleGenerator;
-import com.base12innovations.android.fireroad.models.ScheduleSlots;
-import com.base12innovations.android.fireroad.models.ScheduleUnit;
-import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.models.course.ColorManager;
+import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.course.CourseManager;
+import com.base12innovations.android.fireroad.models.doc.Document;
+import com.base12innovations.android.fireroad.models.doc.DocumentManager;
+import com.base12innovations.android.fireroad.models.doc.NetworkManager;
+import com.base12innovations.android.fireroad.models.schedule.ScheduleConfiguration;
+import com.base12innovations.android.fireroad.models.doc.ScheduleDocument;
+import com.base12innovations.android.fireroad.models.schedule.ScheduleGenerator;
+import com.base12innovations.android.fireroad.models.schedule.ScheduleSlots;
+import com.base12innovations.android.fireroad.models.schedule.ScheduleUnit;
+import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.io.File;
@@ -55,7 +55,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.function.Predicate;
 
 
 /**
