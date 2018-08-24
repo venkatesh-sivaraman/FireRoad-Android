@@ -1,43 +1,31 @@
 package com.base12innovations.android.fireroad;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.res.ColorStateList;
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.ToggleButton;
 
 import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
-import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.RequirementsList;
 import com.base12innovations.android.fireroad.models.RequirementsListManager;
 import com.base12innovations.android.fireroad.models.RequirementsListStatement;
-import com.base12innovations.android.fireroad.models.RoadDocument;
-import com.base12innovations.android.fireroad.models.ScheduleDocument;
 import com.base12innovations.android.fireroad.models.User;
+import com.base12innovations.android.fireroad.utils.CourseLayoutBuilder;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
-
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,8 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import static com.base12innovations.android.fireroad.CourseNavigatorDelegate.ADD_TO_SCHEDULE;
 
 
 /**
@@ -194,19 +180,46 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
 
     private Map<RequirementsListStatement, View> headerCells;
     private Map<RequirementsListStatement, View> courseListCells;
+    private CourseLayoutBuilder layoutBuilder;
 
     private void buildRequirementsListLayout(LinearLayout layout) {
         layout.removeAllViews();
         headerCells = new HashMap<>();
         courseListCells = new HashMap<>();
 
+        if (layoutBuilder == null) {
+            layoutBuilder = new CourseLayoutBuilder(getContext());
+            layoutBuilder.defaultMargin = (int)getResources().getDimension(R.dimen.requirements_card_padding);
+            layoutBuilder.showHeadingTopMargin = true;
+        }
+
         if (requirementsList.title != null && requirementsList.title.length() > 0) {
-            addHeaderItem(layout, requirementsList.title);
+            layoutBuilder.addHeaderItem(layout, requirementsList.title);
         }
         if (requirementsList.contentDescription != null && requirementsList.contentDescription.length() > 0) {
-            addDescriptionItem(layout, requirementsList.contentDescription);
+            layoutBuilder.addDescriptionItem(layout, requirementsList.contentDescription);
         }
-        addToggleCourseItem(layout);
+        layoutBuilder.addToggleCourseItem(layout,
+                "Add to My Courses",
+                "Remove from My Courses",
+                User.currentUser().getCurrentDocument() != null &&
+                        User.currentUser().getCurrentDocument().coursesOfStudy.contains(requirementsListID),
+                User.currentUser().getCurrentDocument() != null ?
+                        new CompoundButton.OnCheckedChangeListener() {
+                            @Override
+                            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                                String titleToShow = requirementsList.mediumTitle != null ? requirementsList.mediumTitle : requirementsList.shortTitle;
+                                if (b) {
+                                    User.currentUser().getCurrentDocument().addCourseOfStudy(requirementsListID);
+                                    Snackbar.make(mLayout, "Added " + titleToShow + " to my courses", Snackbar.LENGTH_SHORT).show();
+                                } else {
+                                    User.currentUser().getCurrentDocument().removeCourseOfStudy(requirementsListID);
+                                    Snackbar.make(mLayout, "Removed " + titleToShow + " from my courses", Snackbar.LENGTH_SHORT).show();
+                                }
+                                if (delegate != null)
+                                    delegate.fragmentUpdatedCoursesOfStudy(RequirementsListFragment.this);
+                            }
+                        } : null);
 
         if (requirementsList.getRequirements() == null)
             return;
@@ -247,7 +260,7 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
     public void updateRequirementStatus(RequirementsListStatement statement) {
         if (headerCells == null || courseListCells == null) return;
         if (headerCells.containsKey(statement)) {
-            updateSubHeaderProgress(headerCells.get(statement), statement.percentageFulfilled());
+            layoutBuilder.updateSubHeaderProgress(headerCells.get(statement), statement.percentageFulfilled());
         }
         if (courseListCells.containsKey(statement)) {
             formatCourseCellFulfillmentIndicator(courseListCells.get(statement), statement.getFulfillmentProgress());
@@ -259,40 +272,21 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
     }
 
     private void addCard(final LinearLayout layout, List<PresentationItem> items, boolean nested, int rowIndex) {
-        int margin = (int) getResources().getDimension(R.dimen.course_details_padding);
-        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lparams.setMargins(margin, margin, margin, margin / 2);
-        final LinearLayout card = (LinearLayout)LayoutInflater.from(getContext()).inflate(R.layout.requirements_card, null);
-        if (rowIndex == -1)
-            layout.addView(card);
-        else
-            layout.addView(card, rowIndex);
-        if (nested) {
-            card.setBackgroundResource(R.drawable.requirements_nested_card_background);
-            card.setElevation(0.0f);
-            addCloseButtonItem(card, new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    layout.removeView(card);
-                }
-            });
-        }
-        card.setLayoutParams(lparams);
+        LinearLayout card = layoutBuilder.addCard(layout, nested, rowIndex);
 
         // Add the presentation items
         for (PresentationItem item : items) {
             switch (item.cellType) {
                 case TITLE_2:
-                    View headerView = addSubHeaderItem(card, item.text, 0.0f, textSize(item.cellType));
+                    layoutBuilder.addSubHeaderItem(card, item.text, 0.0f, textSize(item.cellType));
                     break;
                 case TITLE:
                 case TITLE_1:
-                    headerView = addSubHeaderItem(card, item.text, item.statement.percentageFulfilled(), textSize(item.cellType));
+                    View headerView = layoutBuilder.addSubHeaderItem(card, item.text, item.statement.percentageFulfilled(), textSize(item.cellType));
                     headerCells.put(item.statement, headerView);
                     break;
                 case DESCRIPTION:
-                    addDescriptionItem(card, item.text);
+                    layoutBuilder.addDescriptionItem(card, item.text);
                     break;
                 case COURSE_LIST:
                     if (item.statement.getRequirements() == null)
@@ -323,112 +317,9 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
         }
     }
 
-    private void addCloseButtonItem(LinearLayout layout, View.OnClickListener listener) {
-        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        View buttonView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_close, null);
-        layout.addView(buttonView);
-        buttonView.setLayoutParams(lparams);
-
-        ImageButton button = (ImageButton)buttonView.findViewById(R.id.closeButton);
-        button.setOnClickListener(listener);
-    }
-
-    private void addHeaderItem(LinearLayout layout, String title) {
-        int margin = (int) getResources().getDimension(R.dimen.requirements_card_padding);
-        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lparams.setMargins(margin, 0, margin, 0);
-        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_header, null);
-        layout.addView(metadataView);
-        metadataView.setLayoutParams(lparams);
-
-        TextView titleView = (TextView)metadataView.findViewById(R.id.headingTitle);
-        titleView.setText(title);
-    }
-
-    private void addToggleCourseItem(LinearLayout layout) {
-        int margin = (int) getResources().getDimension(R.dimen.requirements_card_padding);
-        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lparams.setMargins(margin, 0, margin, 0);
-        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_toggle_button, null);
-        layout.addView(metadataView);
-        metadataView.setLayoutParams(lparams);
-
-        ToggleButton button = metadataView.findViewById(R.id.toggleButton);
-        button.setTextOff("Add to My Courses");
-        button.setTextOn("Remove from My Courses");
-        if (User.currentUser().getCurrentDocument() != null) {
-            button.setChecked(User.currentUser().getCurrentDocument().coursesOfStudy.contains(requirementsListID));
-            button.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                    String titleToShow = requirementsList.mediumTitle != null ? requirementsList.mediumTitle : requirementsList.shortTitle;
-                    if (b) {
-                        User.currentUser().getCurrentDocument().addCourseOfStudy(requirementsListID);
-                        Snackbar.make(mLayout, "Added " + titleToShow + " to my courses", Snackbar.LENGTH_SHORT).show();
-                    } else {
-                        User.currentUser().getCurrentDocument().removeCourseOfStudy(requirementsListID);
-                        Snackbar.make(mLayout, "Removed " + titleToShow + " from my courses", Snackbar.LENGTH_SHORT).show();
-                    }
-                    if (delegate != null)
-                        delegate.fragmentUpdatedCoursesOfStudy(RequirementsListFragment.this);
-                }
-            });
-        } else
-            button.setChecked(false);
-    }
-
-    private View addSubHeaderItem(LinearLayout layout, String title, float progress, float textSize) {
-        int margin = (int) getResources().getDimension(R.dimen.requirements_card_padding);
-        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lparams.setMargins(margin, 0, margin, 0);
-        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_requirements_header, null);
-        layout.addView(metadataView);
-        metadataView.setLayoutParams(lparams);
-
-        TextView titleView = (TextView)metadataView.findViewById(R.id.headingTitle);
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSize);
-        titleView.setText(title);
-        updateSubHeaderProgress(metadataView, progress);
-
-        return metadataView;
-    }
-
-    private void updateSubHeaderProgress(View metadataView, float progress) {
-        if (progress <= 0.5f) {
-            metadataView.findViewById(R.id.progressLabel).setVisibility(View.GONE);
-        } else {
-            TextView progressLabel = metadataView.findViewById(R.id.progressLabel);
-            progressLabel.setVisibility(View.VISIBLE);
-            progressLabel.setText(String.format(Locale.US, "%d%%", (int)progress));
-
-            int color = Color.HSVToColor(new float[] { 1.8f * progress, 0.5f, 0.8f });
-            ((GradientDrawable)progressLabel.getBackground()).setColor(color);
-        }
-    }
-
-    private View addDescriptionItem(LinearLayout layout, String description) {
-        int margin = (int) getResources().getDimension(R.dimen.requirements_card_padding);
-        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lparams.setMargins(margin, 0, margin, 0);
-        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_description, null);
-        layout.addView(metadataView);
-        metadataView.setLayoutParams(lparams);
-
-        ((TextView)metadataView.findViewById(R.id.descriptionLabel)).setText(description);
-        return metadataView;
-    }
-
-    private View addCourseListItem(final LinearLayout layout, final List<RequirementsListStatement> requirements) {
-        View listView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_list, null);
-        layout.addView(listView);
+    private void addCourseListItem(final LinearLayout layout, final List<RequirementsListStatement> requirements) {
         final int rowIndex = layout.getChildCount() - 1;
-
-        final LinearLayout listLayout = listView.findViewById(R.id.courseListLayout);
+        final LinearLayout listLayout = layoutBuilder.addCourseListItem(layout);
         TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
             public void perform() {
@@ -463,52 +354,28 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
                     @Override
                     public void perform() {
                         for (int i = 0; i < courses.size(); i++) {
-                            View cell = addCourseCell(layout, rowIndex, listLayout, courses.get(i), requirements.get(i));
+                            final Course course = courses.get(i);
+                            final RequirementsListStatement statement = requirements.get(i);
+                            final View cell = layoutBuilder.addCourseCell(listLayout, course,
+                                    new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            onClickCourseCell(layout, rowIndex, view, course, statement);
+                                        }
+                                    }, new View.OnLongClickListener() {
+                                        @Override
+                                        public boolean onLongClick(View view) {
+                                            addCourse(course);
+                                            return true;
+                                        }
+                                    });
                             courseListCells.put(requirements.get(i), cell);
+                            formatCourseCellFulfillmentIndicator(cell, statement.getFulfillmentProgress());
                         }
                     }
                 });
             }
         });
-
-        return listView;
-    }
-
-    private View addCourseCell(final LinearLayout parentLayout, final int rowIndex, LinearLayout layout, final Course course, final RequirementsListStatement statement) {
-        int width = (int) getResources().getDimension(R.dimen.course_cell_default_width);
-        int height = (int) getResources().getDimension(R.dimen.course_cell_height);
-        int margin = (int) getResources().getDimension(R.dimen.course_cell_spacing);
-        int elevation = (int) getResources().getDimension(R.dimen.course_cell_elevation);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width, height);
-        params.setMargins(margin, margin, margin, margin);
-        final View courseThumbnail = LayoutInflater.from(getContext()).inflate(R.layout.linearlayout_course, null);
-        layout.addView(courseThumbnail);
-        courseThumbnail.setLayoutParams(params);
-        courseThumbnail.setElevation(elevation);
-
-        int color = ColorManager.colorForCourse(course);
-        ProgressBar pBar = courseThumbnail.findViewById(R.id.requirementsProgressBar);
-        pBar.setProgressTintList(ColorStateList.valueOf(ColorManager.darkenColor(color, 0xFF)));
-        pBar.setProgressBackgroundTintList(ColorStateList.valueOf(ColorManager.lightenColor(color, 0xFF)));
-        ((GradientDrawable)courseThumbnail.getBackground()).setColor(color);
-        ((TextView) courseThumbnail.findViewById(R.id.subjectIDLabel)).setText(course.getSubjectID());
-        ((TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel)).setText(course.subjectTitle);
-        formatCourseCellFulfillmentIndicator(courseThumbnail, statement.getFulfillmentProgress());
-
-        courseThumbnail.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                onClickCourseCell(parentLayout, rowIndex, courseThumbnail, course, statement);
-            }
-        });
-        courseThumbnail.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View view) {
-                addCourse(course);
-                return true;
-            }
-        });
-        return courseThumbnail;
     }
 
     private void formatCourseCellFulfillmentIndicator(View courseThumbnail, RequirementsListStatement.FulfillmentProgress progress) {

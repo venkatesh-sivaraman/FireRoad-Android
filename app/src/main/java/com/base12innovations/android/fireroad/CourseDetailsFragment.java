@@ -1,36 +1,27 @@
 package com.base12innovations.android.fireroad;
 
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.ScaleAnimation;
-import android.widget.CompoundButton;
-import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.RatingBar;
 import android.widget.TextView;
-import android.widget.ToggleButton;
 
 import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
 import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.CourseSearchEngine;
-import com.base12innovations.android.fireroad.models.RoadDocument;
-import com.base12innovations.android.fireroad.models.ScheduleDocument;
-import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.BottomSheetNavFragment;
+import com.base12innovations.android.fireroad.utils.CourseLayoutBuilder;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
@@ -41,8 +32,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-import static com.base12innovations.android.fireroad.CourseNavigatorDelegate.ADD_TO_SCHEDULE;
-
 public class CourseDetailsFragment extends Fragment implements BottomSheetNavFragment, AddCourseDialog.AddCourseDialogDelegate {
 
     public static String SUBJECT_ID_EXTRA = "CourseDetails_SubjectID";
@@ -51,6 +40,8 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
     private View mContentView;
     private FloatingActionButton fab;
     public boolean canGoBack = false;
+
+    private CourseLayoutBuilder layoutBuilder;
 
     public CourseDetailsFragment() {
 
@@ -170,6 +161,12 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
         LinearLayout layout = contentView.findViewById(R.id.courseDetailsLinearLayout);
 
+        if (layoutBuilder == null) {
+            layoutBuilder = new CourseLayoutBuilder(getContext());
+            layoutBuilder.defaultMargin = (int)getResources().getDimension(R.dimen.course_details_padding);
+            layoutBuilder.showHeadingTopMargin = false;
+        }
+
         if (!course.isGeneric)
             addUnitsItem(layout);
         addRequirementsItem(layout);
@@ -181,64 +178,71 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
         List<String> instructors = course.getInstructorsList();
         if (instructors.size() > 0) {
-            addMetadataItem(layout, "Instructor" + (instructors.size() != 1 ? "s" : ""), TextUtils.join(", ", instructors));
+            layoutBuilder.addMetadataItem(layout, "Instructor" + (instructors.size() != 1 ? "s" : ""), TextUtils.join(", ", instructors));
         }
 
         if (course.enrollmentNumber > 0) {
-            addMetadataItem(layout, "Average Enrollment", Integer.toString(course.enrollmentNumber));
+            layoutBuilder.addMetadataItem(layout, "Average Enrollment", Integer.toString(course.enrollmentNumber));
         }
 
-        addHeaderItem(layout, "Ratings");
+        layoutBuilder.addHeaderItem(layout, "Ratings");
         if (course.rating != 0.0) {
-            addMetadataItem(layout, "Average Rating", Double.toString(course.rating) + " out of 7");
+            layoutBuilder.addMetadataItem(layout, "Average Rating", Double.toString(course.rating) + " out of 7");
         }
         if (course.inClassHours != 0.0 || course.outOfClassHours != 0.0) {
-            addMetadataItem(layout, "Hours", String.format(Locale.US, "%.2g in class\n%.2g out of class", course.inClassHours, course.outOfClassHours));
+            layoutBuilder.addMetadataItem(layout, "Hours", String.format(Locale.US, "%.2g in class\n%.2g out of class", course.inClassHours, course.outOfClassHours));
         }
-        addRatingItem(layout, "My Rating");
-        addFavoritesItem(layout);
+        layoutBuilder.addRatingItem(layout, "My Rating", course);
+        layoutBuilder.addFavoritesItem(layout, course);
 
         List<String> subjectList = course.getEquivalentSubjectsList();
         if (subjectList.size() > 0) {
-            addHeaderItem(layout, "Equivalent Subjects");
+            layoutBuilder.addHeaderItem(layout, "Equivalent Subjects");
             addCourseListItem(layout, subjectList);
         }
 
         subjectList = course.getJointSubjectsList();
         if (subjectList.size() > 0) {
-            addHeaderItem(layout, "Joint Subjects");
+            layoutBuilder.addHeaderItem(layout, "Joint Subjects");
             addCourseListItem(layout, subjectList);
         }
 
         subjectList = course.getMeetsWithSubjectsList();
         if (subjectList.size() > 0) {
-            addHeaderItem(layout, "Meets With Subjects");
+            layoutBuilder.addHeaderItem(layout, "Meets With Subjects");
             addCourseListItem(layout, subjectList);
         }
 
         List<List<String>> prereqs = course.getPrerequisitesList();
         if (prereqs != null && prereqs.size() > 0) {
-            addHeaderItem(layout, "Prerequisites");
+            layoutBuilder.addHeaderItem(layout, "Prerequisites");
             if (course.getEitherPrereqOrCoreq()) {
-                addDescriptionItem(layout, "Fulfill either the prerequisites or the corequisites.\n\nPrereqs: ");
+                layoutBuilder.addDescriptionItem(layout, "Fulfill either the prerequisites or the corequisites.\n\nPrereqs: ");
             }
             addNestedCourseListItem(layout, prereqs);
         }
         List<List<String>> coreqs = course.getCorequisitesList();
         if (coreqs != null && coreqs.size() > 0) {
-            addHeaderItem(layout, "Corequisites");
+            layoutBuilder.addHeaderItem(layout, "Corequisites");
             addNestedCourseListItem(layout, coreqs);
         }
 
         List<String> related = course.getRelatedSubjectsList();
         if (related != null && related.size() > 0) {
-            addHeaderItem(layout, "Related");
+            layoutBuilder.addHeaderItem(layout, "Related");
             addCourseListItem(layout, related);
         }
 
         String notes = CourseManager.sharedInstance().getNotes(course);
-        addHeaderItem(layout, "Notes");
-        addEditTextItem(layout, notes);
+        layoutBuilder.addHeaderItem(layout, "Notes");
+        layoutBuilder.addEditTextItem(layout, notes, new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean b) {
+                if (!b) {
+                    CourseManager.sharedInstance().setNotes(course, ((TextView)view).getText().toString());
+                }
+            }
+        });
     }
 
     // Adding information types
@@ -256,7 +260,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         if (course.pdfOption) {
             unitsString += "\n[P/D/F]";
         }
-        addMetadataItem(layout, "Units", unitsString);
+        layoutBuilder.addMetadataItem(layout, "Units", unitsString);
     }
 
     private void addOfferedItem(LinearLayout layout) {
@@ -290,7 +294,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             }
         }
         //offeredString = offeredString.substring(0, 1).toUpperCase() + offeredString.substring(1);
-        addMetadataItem(layout, "Offered", offeredString);
+        layoutBuilder.addMetadataItem(layout, "Offered", offeredString);
     }
 
     private void addRequirementsItem(LinearLayout layout) {
@@ -309,7 +313,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         }
 
         if (reqs.size() > 0) {
-            addMetadataItem(layout, "Fulfills", TextUtils.join(", ", reqs));
+            layoutBuilder.addMetadataItem(layout, "Fulfills", TextUtils.join(", ", reqs));
         }
     }
 
@@ -337,7 +341,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
                 command = "Fulfill any of the following:";
             else
                 command = "Fulfill one from each row:";
-            addDescriptionItem(layout, command);
+            layoutBuilder.addDescriptionItem(layout, command);
         }
 
         for (List<String> group : newCourses) {
@@ -347,106 +351,8 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
     // Layout
 
-    private void addMetadataItem(LinearLayout layout, String title, String value) {
-        int margin = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_details_padding);
-        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lparams.setMargins(margin, 0, margin, 0);
-        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_metadata, null);
-        layout.addView(metadataView);
-
-        ((TextView)metadataView.findViewById(R.id.metadataTitle)).setText(title);
-        ((TextView)metadataView.findViewById(R.id.metadataValue)).setText(value);
-    }
-
-    private void addRatingItem(LinearLayout layout, String title) {
-        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_rating, null);
-        layout.addView(metadataView);
-
-        ((TextView)metadataView.findViewById(R.id.metadataTitle)).setText(title);
-        RatingBar ratingBar = metadataView.findViewById(R.id.ratingBar);
-        int rating = CourseManager.sharedInstance().getRatingForCourse(course);
-        if (rating != CourseManager.NO_RATING)
-            ratingBar.setRating((float)(rating + 5) / 2.0f);
-        else
-            ratingBar.setRating(0.0f);
-        ratingBar.setOnRatingBarChangeListener(new RatingBar.OnRatingBarChangeListener() {
-            @Override
-            public void onRatingChanged(RatingBar ratingBar, float newValue, boolean b) {
-                Log.d("RatingBar", "Changed to " + Float.toString(newValue));
-                CourseManager.sharedInstance().setRatingForCourse(course, (int)Math.round(newValue * 2.0f - 5.0f));
-            }
-        });
-    }
-
-    private void addFavoritesItem(LinearLayout layout) {
-        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_toggle_button, null);
-        layout.addView(metadataView);
-
-        ToggleButton button = metadataView.findViewById(R.id.toggleButton);
-        button.setChecked(CourseManager.sharedInstance().getFavoriteCourses().contains(course.getSubjectID()));
-        button.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                if (b)
-                    CourseManager.sharedInstance().addCourseToFavorites(course);
-                else
-                    CourseManager.sharedInstance().removeCourseFromFavorites(course);
-            }
-        });
-    }
-
-    private void addHeaderItem(LinearLayout layout, String title) {
-        int margin = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_details_padding);
-        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lparams.setMargins(margin, margin, margin, 0);
-        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_header, null);
-        layout.addView(metadataView);
-        metadataView.setLayoutParams(lparams);
-
-        ((TextView)metadataView.findViewById(R.id.headingTitle)).setText(title);
-    }
-
-    private void addDescriptionItem(LinearLayout layout, String text) {
-        int margin = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_details_padding);
-        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lparams.setMargins(margin, 0, margin, 0);
-        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_description, null);
-        layout.addView(metadataView);
-        metadataView.setLayoutParams(lparams);
-
-        ((TextView)metadataView.findViewById(R.id.descriptionLabel)).setText(text);
-    }
-
-    private void addEditTextItem(LinearLayout layout, String text) {
-        int margin = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_details_padding);
-        int height = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_details_edittext_height);
-        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, height);
-        lparams.setMargins(margin, 0, margin, 0);
-        View metadataView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_edittext, null);
-        layout.addView(metadataView);
-        metadataView.setLayoutParams(lparams);
-
-        final EditText textView = metadataView.findViewById(R.id.editText);
-        textView.setText(text);
-        textView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View view, boolean focused) {
-                if (!focused) {
-                    CourseManager.sharedInstance().setNotes(course, textView.getText().toString());
-                }
-            }
-        });
-    }
-
     private void addCourseListItem(LinearLayout layout, final List<String> subjectIDs) {
-        View listView = LayoutInflater.from(getContext()).inflate(R.layout.cell_course_details_list, null);
-        layout.addView(listView);
-
-        final LinearLayout listLayout = listView.findViewById(R.id.courseListLayout);
+        final LinearLayout listLayout = layoutBuilder.addCourseListItem(layout);
         TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
             public void perform() {
@@ -481,44 +387,28 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
                     @Override
                     public void perform() {
                         for (final Course course : courses) {
-                            int width = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_cell_default_width);
-                            int height = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_cell_height);
-                            int margin = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_cell_spacing);
-                            int elevation = (int) CourseDetailsFragment.this.getResources().getDimension(R.dimen.course_cell_elevation);
-                            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width, height);
-                            params.setMargins(margin, margin, margin, margin);
-                            View courseThumbnail = LayoutInflater.from(CourseDetailsFragment.this.getContext()).inflate(R.layout.linearlayout_course, null);
-                            listLayout.addView(courseThumbnail);
-                            courseThumbnail.setLayoutParams(params);
-                            courseThumbnail.setElevation(elevation);
-                            ((GradientDrawable)courseThumbnail.getBackground()).setColor(ColorManager.colorForCourse(course));
-                            ((TextView) courseThumbnail.findViewById(R.id.subjectIDLabel)).setText(course.getSubjectID());
-                            ((TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel)).setText(course.subjectTitle);
-
-                            if (realCourses.contains(course) || course.getGIRAttribute() != null) {
-                                courseThumbnail.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View view) {
-                                        if (realCourses.contains(course))
-                                            showCourseDetails(course);
-                                        else if (delegate.get() != null) {
-                                            EnumSet<CourseSearchEngine.Filter> filters = EnumSet.copyOf(CourseSearchEngine.Filter.noFilter);
-                                            CourseSearchEngine.Filter.filterGIR(filters, CourseSearchEngine.Filter.GIR);
-                                            CourseSearchEngine.Filter.filterSearchField(filters, CourseSearchEngine.Filter.SEARCH_REQUIREMENTS);
-                                            delegate.get().courseNavigatorWantsSearchCourses(CourseDetailsFragment.this, course.subjectTitle, filters);
-                                        }
-                                    }
-                                });
-                                if (realCourses.contains(course)) {
-                                    courseThumbnail.setOnLongClickListener(new View.OnLongClickListener() {
+                            layoutBuilder.addCourseCell(listLayout, course,
+                                    realCourses.contains(course) || course.getGIRAttribute() != null ?
+                                            new View.OnClickListener() {
+                                                @Override
+                                                public void onClick(View view) {
+                                                    if (realCourses.contains(course))
+                                                        showCourseDetails(course);
+                                                    else if (delegate.get() != null) {
+                                                        EnumSet<CourseSearchEngine.Filter> filters = EnumSet.copyOf(CourseSearchEngine.Filter.noFilter);
+                                                        CourseSearchEngine.Filter.filterGIR(filters, CourseSearchEngine.Filter.GIR);
+                                                        CourseSearchEngine.Filter.filterSearchField(filters, CourseSearchEngine.Filter.SEARCH_REQUIREMENTS);
+                                                        delegate.get().courseNavigatorWantsSearchCourses(CourseDetailsFragment.this, course.subjectTitle, filters);
+                                                    }
+                                                }
+                                            } : null,
+                                    realCourses.contains(course) ? new View.OnLongClickListener() {
                                         @Override
                                         public boolean onLongClick(View view) {
                                             addCourse(course);
                                             return true;
                                         }
-                                    });
-                                }
-                            }
+                                    } : null);
                         }
                     }
                 });
