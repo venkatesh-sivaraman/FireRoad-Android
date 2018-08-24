@@ -56,6 +56,8 @@ public class CourseManager {
     private static String prefsDatabaseVersionKey = "databaseVersionKey";
     private static String prefsRequirementsVersionKey = "requirementsVersionKey";
     private static String prefsDatabaseSemesterKey = "databaseSemesterKey";
+    // This preferences flag allows the load to restart if it crashed in the middle
+    private static String hasPerformedFullLoad = "hasPerformedFullLoad";
 
     private static String RATINGS_PREFS = "com.base12innovations.android.fireroad.ratingsPreferences";
     private SharedPreferences ratingsPreferences;
@@ -178,6 +180,8 @@ public class CourseManager {
                         Log.d("CourseManager", "Updating " + Integer.toString(urls.size()) + " URLs");
                         if (urls.size() > 0) {
                             listener.needsFullLoad();
+                            // Mark that a database update has been started
+                            dbPreferences.edit().putBoolean(hasPerformedFullLoad, true).apply();
                             courseDatabase.daoAccess().clearCourses();
                             loadingProgress = 0.0f;
                             _isUpdatingDB = true;
@@ -215,8 +219,10 @@ public class CourseManager {
                             editor.putInt(prefsRequirementsVersionKey, newRequirementsVersion);
                         if (newSemester != null && newSemester.length() > 0)
                             editor.putString(prefsDatabaseSemesterKey, newSemester);
+                        editor.putBoolean(hasPerformedFullLoad, true);
                         editor.apply();
 
+                        RequirementsListManager.sharedInstance().loadRequirementsFiles();
                         _isUpdatingDB = false;
                         if (postLoadBlock != null) {
                             try {
@@ -308,8 +314,9 @@ public class CourseManager {
         if (delta == null)
             return new ArrayList<>();
 
-        int currentDBVersion = forceUpdate ? 0 : dbPreferences.getInt(prefsDatabaseVersionKey, 0);
-        int currentReqVersion = forceUpdate ? 0 : dbPreferences.getInt(prefsRequirementsVersionKey, 0);
+        boolean needUpdate = !dbPreferences.getBoolean(hasPerformedFullLoad, false) || forceUpdate;
+        int currentDBVersion = needUpdate ? 0 : dbPreferences.getInt(prefsDatabaseVersionKey, 0);
+        int currentReqVersion = needUpdate ? 0 : dbPreferences.getInt(prefsRequirementsVersionKey, 0);
         List<URL> urls = new ArrayList<>();
         if (newDatabaseVersion != currentDBVersion || newRequirementsVersion != currentReqVersion) {
             String relatedPath = null;

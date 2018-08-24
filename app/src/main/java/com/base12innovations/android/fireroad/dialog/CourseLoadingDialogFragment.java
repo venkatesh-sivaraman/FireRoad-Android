@@ -48,7 +48,12 @@ public class CourseLoadingDialogFragment extends DialogFragment {
         {
             int progress = (int)(CourseManager.sharedInstance().getLoadingProgress() * 100.0f);
             progressBar.setProgress(progress);
-            if (progress < 99 && !shouldStop) {
+            if (CourseManager.sharedInstance().isLoaded() && !CourseManager.sharedInstance().isUpdatingDatabase()) {
+                shouldStop = true;
+                if (isVisible())
+                    dismiss();
+            }
+            if (progress < 100 && !shouldStop) {
                 progressHandler.postDelayed(this, 500);
             }
         }

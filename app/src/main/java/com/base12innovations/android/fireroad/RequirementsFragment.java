@@ -1,10 +1,12 @@
 package com.base12innovations.android.fireroad;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -146,6 +148,8 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
             currentSelection = 0;
             courseSelector.setSelection(oldSelection);
         }
+
+        showHelpText();
     }
 
     @Override
@@ -227,5 +231,32 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(LAST_REQ_LIST_KEY, id);
         editor.apply();
+    }
+
+    // Help text
+
+    private static String HAS_SHOWN_HELP = "hasShownHelp";
+
+    private boolean hasShownHelpText() {
+        SharedPreferences prefs = getContext().getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        return prefs.getBoolean(HAS_SHOWN_HELP, false);
+    }
+
+    void showHelpText() {
+        if (hasShownHelpText()) return;
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle("Requirements Tab");
+        builder.setMessage("* Use the popup menu to select a course of study.\n* Tap a course to view details, or tap and hold to add directly.\n* Tap \"Add to My Courses\" to save as your major or minor.");
+
+        builder.setNegativeButton("Dismiss", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+                SharedPreferences prefs = getContext().getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+                prefs.edit().putBoolean(HAS_SHOWN_HELP, true).apply();
+            }
+        });
+        builder.show();
     }
 }

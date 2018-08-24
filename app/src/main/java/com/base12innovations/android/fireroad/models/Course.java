@@ -376,10 +376,7 @@ public class Course implements Parcelable {
     public List<String> getRelatedSubjectsList() {
         if (relatedSubjects == null)
             return new ArrayList<>();
-        Log.d("Course", "Getting related subjects with " + relatedSubjects);
-        List<String> subjs = nonemptyComponents(relatedSubjects, ",");
-        Log.d("Course", "Result: " + subjs.toString());
-        return subjs;
+        return nonemptyComponents(relatedSubjects, ",");
     }
 
     @Ignore

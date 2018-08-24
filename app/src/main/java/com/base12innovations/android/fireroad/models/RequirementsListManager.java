@@ -39,7 +39,7 @@ public class RequirementsListManager {
         loadRequirementsFiles();
     }
 
-    private void loadRequirementsFiles() {
+    public void loadRequirementsFiles() {
         requirementsLists = new HashMap<>();
         for (File reqFile : getRequirementsDirectory().listFiles()) {
             RequirementsList newReqList = new RequirementsList(reqFile);
