@@ -185,17 +185,9 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
 
     @Override
     public void addCourseDialogAddedToSemester(Course course, int semester) {
-        RoadDocument doc = User.currentUser().getCurrentDocument();
-        if (doc != null) {
-            boolean worked = doc.addCourse(course, semester);
-            if (worked && delegate.get() != null) {
-                delegate.get().courseNavigatorAddedCourse(this, course, semester);
-            }
-        }
+        if (delegate.get() != null)
+            delegate.get().courseNavigatorAddedCourse(this, course, semester);
         addCourseDialog.dismiss();
-        if (resultsView != null) {
-            Snackbar.make(resultsView, "Added " + course.getSubjectID(), Snackbar.LENGTH_LONG).show();
-        }
         addCourseDialog = null;
     }
 }

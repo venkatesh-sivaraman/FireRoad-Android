@@ -1,18 +1,17 @@
 package com.base12innovations.android.fireroad;
 
 import android.animation.Animator;
-import android.app.ActivityManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
-import android.os.Build;
 import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.v4.content.FileProvider;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -52,6 +51,7 @@ import com.base12innovations.android.fireroad.models.RoadDocument;
 import com.base12innovations.android.fireroad.models.ScheduleDocument;
 import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.BottomSheetNavFragment;
+import com.base12innovations.android.fireroad.utils.CourseSearchSuggestion;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import org.json.JSONException;
@@ -60,7 +60,6 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.nio.file.FileAlreadyExistsException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -962,10 +961,22 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     @Override
     public void courseNavigatorAddedCourse(Fragment source, Course course, int semester) {
         if (semester == ADD_TO_SCHEDULE) {
+            ScheduleDocument doc = User.currentUser().getCurrentSchedule();
+            if (doc != null) {
+                doc.addCourse(course);
+                Snackbar.make(mSearchView, "Added " + course.getSubjectID() + " to schedule", Snackbar.LENGTH_LONG).show();
+            }
             showContentFragment(R.id.schedule_menu_item);
             if (scheduleFragment != null)
                 scheduleFragment.scheduleAddedCourse(course);
         } else {
+            RoadDocument doc = User.currentUser().getCurrentDocument();
+            if (doc != null) {
+                boolean worked = doc.addCourse(course, semester);
+                if (worked) {
+                    Snackbar.make(mSearchView, "Added " + course.getSubjectID() + " to " + RoadDocument.semesterNames[semester], Snackbar.LENGTH_LONG).show();
+                }
+            }
             getMyRoadFragment().roadAddedCourse(course, semester);
             if (requirementsFragment != null) {
                 requirementsFragment.notifyRequirementsStatusChanged();

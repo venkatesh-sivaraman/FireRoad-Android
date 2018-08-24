@@ -1,7 +1,6 @@
-package com.base12innovations.android.fireroad;
+package com.base12innovations.android.fireroad.utils;
 
 import android.os.Parcel;
-import android.text.Html;
 
 import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
 
@@ -13,7 +12,7 @@ public class CourseSearchSuggestion implements SearchSuggestion {
     public String subjectTitle;
     public boolean isRecent;
 
-    CourseSearchSuggestion(String subjectID, String subjectTitle, boolean isRecent) {
+    public CourseSearchSuggestion(String subjectID, String subjectTitle, boolean isRecent) {
         this.subjectID = subjectID;
         this.subjectTitle = subjectTitle;
         this.isRecent = isRecent;

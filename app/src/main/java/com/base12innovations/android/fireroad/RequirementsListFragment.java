@@ -698,25 +698,8 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
 
     @Override
     public void addCourseDialogAddedToSemester(Course course, int semester) {
-        if (semester == ADD_TO_SCHEDULE) {
-            ScheduleDocument doc = User.currentUser().getCurrentSchedule();
-            if (doc != null) {
-                doc.addCourse(course);
-                if (delegate != null)
-                    delegate.courseNavigatorAddedCourse(this, course, semester);
-                Snackbar.make(mLayout, "Added " + course.getSubjectID() + " to schedule", Snackbar.LENGTH_LONG).show();
-            }
-        } else {
-            RoadDocument doc = User.currentUser().getCurrentDocument();
-            if (doc != null) {
-                boolean worked = doc.addCourse(course, semester);
-                if (worked) {
-                    if (delegate != null)
-                        delegate.courseNavigatorAddedCourse(this, course, semester);
-                    Snackbar.make(mLayout, "Added " + course.getSubjectID(), Snackbar.LENGTH_LONG).show();
-                }
-            }
-        }
+        if (delegate != null)
+            delegate.courseNavigatorAddedCourse(this, course, semester);
         addCourseDialog.dismiss();
         addCourseDialog = null;
     }
