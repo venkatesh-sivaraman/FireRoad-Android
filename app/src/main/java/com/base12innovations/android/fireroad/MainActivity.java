@@ -14,6 +14,7 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.NavigationView;
 import android.support.v4.content.FileProvider;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -25,6 +26,7 @@ import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 
@@ -70,7 +72,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate,
-        FilterDialogFragment.Delegate, ForYouFragment.Delegate, DocumentManager.SyncResponseHandler, DocumentManager.SyncFileListener {
+        FilterDialogFragment.Delegate, ForYouFragment.Delegate, MyRoadFragment.Delegate, DocumentManager.SyncResponseHandler, DocumentManager.SyncFileListener {
 
     private static String CURRENT_FRAGMENT_TAG = "currentlyDisplayedFragment";
 
@@ -299,6 +301,24 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         super.onSaveInstanceState(outState, outPersistentState);
     }
 
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            BottomSheetBehavior b = BottomSheetBehavior.from(bottomSheet);
+            if (b != null && b.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+                if (detailsStack.size() > 1) {
+                    navFragmentWantsBack(null);
+                } else {
+                    collapseBottomSheet();
+                }
+                return true;
+            } else if (mDrawer.isDrawerOpen(GravityCompat.START)) {
+                mDrawer.closeDrawers();
+                return true;
+            }
+        }
+        return super.onKeyDown(keyCode, event);
+    }
 
     private void setupDrawerContent(NavigationView navigationView) {
         navigationView.setNavigationItemSelectedListener(
@@ -623,6 +643,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             @Override
             public void onSuggestionClicked(SearchSuggestion searchSuggestion) {
                 final CourseSearchSuggestion suggestion = (CourseSearchSuggestion)searchSuggestion;
+                if (suggestion.subjectTitle.equals(getResources().getString(R.string.no_suggestions_message)))
+                    return;
                 mSearchView.clearSuggestions();
                 mSearchView.clearSearchFocus();
                 detailsStack = null;
@@ -678,6 +700,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     mFilterDialog = new FilterDialogFragment();
                     mFilterDialog.filters = filters;
                     mFilterDialog.delegate = new WeakReference<FilterDialogFragment.Delegate>(MainActivity.this);
+                    mFilterDialog.setCancelable(false);
                     mFilterDialog.show(getSupportFragmentManager(), "FilterDialog");
                     filterItem = item;
                     // This is needed to refresh the icon, due to peculiarities with floatingsearchview
@@ -750,6 +773,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                                 break;
                             suggestions.add(new CourseSearchSuggestion(course.getSubjectID(), course.subjectTitle, false));
                         }
+                        if (suggestions.size() == 0)
+                            suggestions.add(new CourseSearchSuggestion("", getResources().getString(R.string.no_suggestions_message), false));
                         mSearchView.swapSuggestions(suggestions);
                         if (!mSearchView.getQuery().equals(query)) {
                             loadSearchResults(mSearchView.getQuery());
@@ -840,8 +865,10 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     private void dimViewOn() {
+        Log.d("MainActivity", "Dimming on");
         final View dimmer = findViewById(R.id.backgroundDimmer);
         dimmer.setClickable(true);
+        dimmer.setVisibility(View.VISIBLE);
         dimmer.animate().alpha(1.0f).setDuration(300).setListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animator) { }
@@ -995,6 +1022,13 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         return myRoadFragment;
     }
 
+    @Override
+    public void myRoadFragmentAddedCoursesToSchedule(List<Course> courses, String fileName) {
+        showContentFragment(R.id.schedule_menu_item);
+        if (scheduleFragment != null)
+            scheduleFragment.addAllCourses(courses, fileName);
+    }
+
     public void onShowCourseDetails(Course course) {
         if (detailsStack != null && detailsStack.size() > 0) {
             Course lastCourse = detailsStack.get(detailsStack.size() - 1).course;
@@ -1022,7 +1056,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         return requirementsFragment;
     }
 
-    // Requirements
+    // For You
     private ForYouFragment forYouFragment;
     private ForYouFragment getForYouFragment() {
         if (forYouFragment == null)

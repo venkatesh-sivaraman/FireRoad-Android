@@ -28,7 +28,15 @@ public class ScheduleDocument extends Document {
 
     }
 
-    public List<Course> courses = new ArrayList<>();
+    private List<Course> courses = new ArrayList<>();
+
+    public List<Course> getCourses() { return courses; }
+
+    public void setCourses(List<Course> courses) {
+        this.courses = courses;
+        save();
+    }
+
     public Map<Course, Map<String, List<Integer>>> allowedSections;
 
     private int displayedScheduleIndex = -1;

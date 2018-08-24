@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -33,6 +34,8 @@ import com.base12innovations.android.fireroad.models.ColorManager;
 import com.base12innovations.android.fireroad.models.Course;
 import com.base12innovations.android.fireroad.models.CourseManager;
 import com.base12innovations.android.fireroad.models.Document;
+import com.base12innovations.android.fireroad.models.DocumentManager;
+import com.base12innovations.android.fireroad.models.NetworkManager;
 import com.base12innovations.android.fireroad.models.ScheduleConfiguration;
 import com.base12innovations.android.fireroad.models.ScheduleDocument;
 import com.base12innovations.android.fireroad.models.ScheduleGenerator;
@@ -42,6 +45,7 @@ import com.base12innovations.android.fireroad.models.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -62,6 +66,7 @@ import java.util.function.Predicate;
 public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemClickListener {
 
 
+    private static String PREFERENCES = "com.base12innovations.android.fireroad.ScheduleFragmentPreferences";
     private View mView;
     private View configView, noResultsView, noCoursesView;
     private LinearLayout columnView;
@@ -75,6 +80,8 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
 
     private CourseNavigatorDelegate mListener;
 
+    private boolean needsDisplay = false;
+
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -83,6 +90,10 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
+        }
+        if (needsDisplay) {
+            loadScheduleDisplay(false);
+            needsDisplay = false;
         }
     }
 
@@ -243,7 +254,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                 }
 
                 // Check that all courses have schedules available
-                Iterator<Course> it = document.courses.iterator();
+                Iterator<Course> it = document.getCourses().iterator();
                 final List<String> incompatibleCourses = new ArrayList<>();
                 while (it.hasNext()) {
                     Course course = it.next();
@@ -261,9 +272,9 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                     });
                 }
 
-                Log.d("ScheduleFragment", "Courses: " + document.courses.toString());
+                Log.d("ScheduleFragment", "Courses: " + document.getCourses().toString());
                 ScheduleGenerator gen = new ScheduleGenerator();
-                scheduleConfigurations = gen.generateSchedules(document.courses, document.allowedSections);
+                scheduleConfigurations = gen.generateSchedules(document.getCourses(), document.allowedSections);
                 if (scheduleConfigurations.size() == 0) {
                     // Show no-results label
                     TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
@@ -336,8 +347,69 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
     }
 
     public void scheduleAddedCourse(Course course) {
-        Log.d("ScheduleFragment", "Updating with " + User.currentUser().getCurrentSchedule().courses);
         loadSchedules(false);
+    }
+
+    public void addAllCourses(final List<Course> courses, final String fileName) {
+        if (User.currentUser().getCurrentSchedule() != null) {
+            String currentName = User.currentUser().getCurrentSchedule().getFileName().replaceAll(fileName, "").trim();
+            try {
+                // If it's a version of the same semester, replace the current document
+                if (currentName.length() == 0 || Integer.parseInt(currentName) != 0) {
+                    User.currentUser().getCurrentSchedule().setCourses(courses);
+                    loadSchedules(true);
+                }
+            } catch (NumberFormatException e) {
+                    // Create a new document
+                    final DocumentManager manager = NetworkManager.sharedInstance().getScheduleManager();
+                    TaskDispatcher.perform(new TaskDispatcher.Task<ScheduleDocument>() {
+                        @Override
+                        public ScheduleDocument perform() {
+                            try {
+                                ScheduleDocument newDoc = (ScheduleDocument) manager.getNewDocument(manager.noConflictName(fileName));
+                                newDoc.setCourses(courses);
+                                return newDoc;
+                            } catch (IOException e2) {
+                                e2.printStackTrace();
+                                return null;
+                            }
+                        }
+                    }, new TaskDispatcher.CompletionBlock<ScheduleDocument>() {
+                        @Override
+                        public void completed(ScheduleDocument newDoc) {
+                            if (newDoc != null) {
+                                manager.setAsCurrent(newDoc);
+                                showNewFileHelpText();
+                            }
+                        }
+                    });
+            }
+        }
+    }
+
+    private static String HAS_SHOWN_NEW_FILE_HELP = "hasShownNewFileHelp";
+
+    private boolean hasShownNewFileHelpText() {
+        SharedPreferences prefs = getContext().getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        return prefs.getBoolean(HAS_SHOWN_NEW_FILE_HELP, false);
+    }
+
+    void showNewFileHelpText() {
+        if (hasShownNewFileHelpText()) return;
+
+        android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(getActivity());
+        builder.setTitle("New Schedule Created");
+        builder.setMessage(Html.fromHtml("To access previous schedules, tap the <b>&#8942;</b> button, then <b>Open other schedule</b>."));
+
+        builder.setNegativeButton("Dismiss", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+                SharedPreferences prefs = getContext().getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+                prefs.edit().putBoolean(HAS_SHOWN_NEW_FILE_HELP, true).apply();
+            }
+        });
+        builder.show();
     }
 
     // Schedule display
@@ -453,15 +525,15 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         subjectTitleLabel.setText(sectionType + " (" + item.location + ")");
         subjectTitleLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.0f);
 
-        courseThumbnail.setOnClickListener(new View.OnClickListener() {
+        /*courseThumbnail.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 showCourseDetails(course);
             }
-        });
-        courseThumbnail.setOnLongClickListener(new View.OnLongClickListener() {
+        });*/
+        courseThumbnail.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onLongClick(View view) {
+            public void onClick(View view) {
                 currentlySelectedCourse = course;
                 PopupMenu menu = new PopupMenu(getActivity(), view);
                 MenuInflater mInflater = menu.getMenuInflater();
@@ -469,7 +541,6 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                 menu.setOnMenuItemClickListener(ScheduleFragment.this);
                 menu.show();
                 currentPopupMenu = menu;
-                return true;
             }
         });
         return courseThumbnail;
@@ -658,6 +729,11 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
     // Delta between schedules
 
     private void loadScheduleDisplay(boolean withDelta) {
+        if (getContext() == null) {
+            needsDisplay = true;
+            return;
+        }
+
         final ScheduleConfiguration newConfig = scheduleConfigurations.get(document.getDisplayedScheduleIndex());
         if (withDelta) {
             List<ScheduleUnit> removedUnits = (currentConfiguration != null) ? scheduleUnitsNotPresentInOtherSchedule(currentConfiguration, newConfig) : new ArrayList<ScheduleUnit>();

@@ -57,10 +57,14 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     private PopupMenu currentPopupMenu;
     private View noCoursesView;
 
-    private CourseNavigatorDelegate mListener;
+    private Delegate mListener;
 
     public MyRoadFragment() {
         // Required empty public constructor
+    }
+
+    public interface Delegate extends CourseNavigatorDelegate {
+        void myRoadFragmentAddedCoursesToSchedule(List<Course> courses, String fileName);
     }
 
     /**
@@ -107,13 +111,13 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         recyclerView.setLayoutManager(layoutManager);
         int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.course_cell_spacing);
         recyclerView.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
-        gridAdapter.itemClickListener = new MyRoadCoursesAdapter.ClickListener() {
+        /*gridAdapter.itemClickListener = new MyRoadCoursesAdapter.ClickListener() {
             @Override
             public void onClick(Course course, int position, View view) {
                 showCourseDetails(course);
             }
-        };
-        gridAdapter.itemLongClickListener = new MyRoadCoursesAdapter.ClickListener() {
+        };*/
+        gridAdapter.itemClickListener = new MyRoadCoursesAdapter.ClickListener() {
             @Override
             public void onClick(Course course, int position, View view) {
                 currentlySelectedCourse = course;
@@ -122,6 +126,10 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 final PopupMenu menu = new PopupMenu(getActivity(), view);
                 MenuInflater mInflater = menu.getMenuInflater();
                 mInflater.inflate(R.menu.menu_course_cell, menu.getMenu());
+
+                final MenuItem owOn = menu.getMenu().findItem(R.id.overrideWarningsOn);
+                final MenuItem owOff = menu.getMenu().findItem(R.id.overrideWarningsOff);
+
                 List<RoadDocument.Warning> warnings = User.currentUser().getCurrentDocument().warningsForCourseCached(currentlySelectedCourse, currentlySelectedSemester);
                 if (warnings == null) {
                     TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
@@ -132,12 +140,26 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                                 @Override
                                 public void perform() {
                                     menu.getMenu().findItem(R.id.courseWarnings).setEnabled(newWarnings.size() > 0);
+                                    if (newWarnings.size() == 0) {
+                                        owOn.setEnabled(false);
+                                        owOff.setEnabled(false);
+                                    }
                                 }
                             });
                         }
                     });
                 } else {
                     menu.getMenu().findItem(R.id.courseWarnings).setEnabled(warnings.size() > 0);
+                    if (warnings.size() == 0) {
+                        owOn.setEnabled(false);
+                        owOff.setEnabled(false);
+                    }
+                }
+
+                if (User.currentUser().getCurrentDocument().overrideWarningsForCourse(course)) {
+                    owOn.setVisible(false);
+                } else {
+                    owOff.setVisible(false);
                 }
 
                 menu.setOnMenuItemClickListener(MyRoadFragment.this);
@@ -145,7 +167,18 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 currentPopupMenu = menu;
             }
         };
-
+        gridAdapter.onHeaderClickListener = new MyRoadCoursesAdapter.HeaderClickListener() {
+            @Override
+            public void onHeaderButtonClick(int semester, View view) {
+                final PopupMenu menu = new PopupMenu(getActivity(), view);
+                MenuInflater mInflater = menu.getMenuInflater();
+                mInflater.inflate(R.menu.menu_myroad_header, menu.getMenu());
+                menu.setOnMenuItemClickListener(MyRoadFragment.this);
+                menu.show();
+                currentlySelectedSemester = semester;
+                currentPopupMenu = menu;
+            }
+        };
 
         // Support drag and drop to move courses
         ItemTouchHelper.Callback _ithCallback = new ItemTouchHelper.Callback() {
@@ -155,11 +188,13 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                     currentPopupMenu.dismiss();
                     currentPopupMenu = null;
                 }
-                gridAdapter.notifyItemChanged(gridAdapter.headerPositionForSemester(gridAdapter.semesterForGridPosition(viewHolder.getAdapterPosition())));
-                boolean success = gridAdapter.moveCourse(viewHolder.getAdapterPosition(), target.getAdapterPosition());
-                gridAdapter.notifyItemChanged(gridAdapter.headerPositionForSemester(gridAdapter.semesterForGridPosition(target.getAdapterPosition())));
+                return gridAdapter.moveCourse(viewHolder.getAdapterPosition(), target.getAdapterPosition());
+            }
 
-                return success;
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+                updateRecyclerView();
             }
 
             @Override
@@ -192,7 +227,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 if (gridAdapter != null) {
                     gridAdapter.setDocument(newDocument);
                 }
-                updateNoCoursesView();
+                updateRecyclerView();
             }
         });
 
@@ -243,7 +278,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 @Override
                 public void perform() {
                     loadingIndicator.setVisibility(ProgressBar.GONE);
-                    updateNoCoursesView();
+                    updateRecyclerView();
                 }
             });
         } else {
@@ -251,7 +286,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 gridAdapter.setDocument(User.currentUser().getCurrentDocument());
             }
             loadingIndicator.setVisibility(ProgressBar.GONE);
-            updateNoCoursesView();
+            updateRecyclerView();
 
         }
 
@@ -268,7 +303,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         if (gridAdapter != null) {
             gridAdapter.setDocument(User.currentUser().getCurrentDocument());
         }
-        updateNoCoursesView();
+        updateRecyclerView();
     }
 
     public void roadAddedCourse(Course course, int semester) {
@@ -280,10 +315,13 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 recyclerView.scrollToPosition(position);
             }
         }
-        updateNoCoursesView();
+        updateRecyclerView();
     }
 
-    private void updateNoCoursesView() {
+    private void updateRecyclerView() {
+        if (getContext() == null)
+            return;
+
         if (User.currentUser().getCurrentDocument() != null &&
                 User.currentUser().getCurrentDocument().getAllCourses().size() > 0) {
             noCoursesView.setVisibility(View.GONE);
@@ -294,13 +332,23 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             recyclerView.setVisibility(View.INVISIBLE);
             noCoursesView.setVisibility(View.VISIBLE);
         }
+
+        for (int childCount = recyclerView.getChildCount(), i = 0; i < childCount; ++i) {
+            MyRoadCoursesAdapter.ViewHolder holder = (MyRoadCoursesAdapter.ViewHolder)recyclerView.getChildViewHolder(recyclerView.getChildAt(i));
+            if (holder == null) continue;
+            int pos = holder.getAdapterPosition();
+            if (pos >= 0 && gridAdapter.isSectionHeader(pos))
+                gridAdapter.notifyItemChanged(pos);
+            else
+                gridAdapter.updateWarningsView(holder);
+        }
     }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof CourseNavigatorDelegate) {
-            mListener = (CourseNavigatorDelegate) context;
+        if (context instanceof Delegate) {
+            mListener = (Delegate) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement CourseNavigatorDelegate");
@@ -324,6 +372,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
 
     @Override
     public boolean onMenuItemClick(MenuItem menuItem) {
+        currentPopupMenu.dismiss();
         currentPopupMenu = null;
         switch (menuItem.getItemId()) {
             case R.id.viewCourse:
@@ -337,13 +386,36 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                         User.currentUser().getCurrentDocument().removeCourse(currentlySelectedCourse, currentlySelectedSemester);
                         gridAdapter.notifyItemRemoved(currentlySelectedPosition);
                         gridAdapter.notifyItemChanged(gridAdapter.headerPositionForSemester(currentlySelectedSemester));
-                        updateNoCoursesView();
+                        updateRecyclerView();
                     }
                 }, 400);
                 return true;
             case R.id.courseWarnings:
                 presentWarningAlert(currentlySelectedCourse, currentlySelectedSemester, currentlySelectedPosition);
-                return false;
+                return true;
+            case R.id.overrideWarningsOn:
+                User.currentUser().getCurrentDocument().setOverrideWarningsForCourse(currentlySelectedCourse, true);
+                gridAdapter.notifyItemChanged(currentlySelectedPosition);
+                return true;
+            case R.id.overrideWarningsOff:
+                User.currentUser().getCurrentDocument().setOverrideWarningsForCourse(currentlySelectedCourse, false);
+                gridAdapter.notifyItemChanged(currentlySelectedPosition);
+                return true;
+            case R.id.createSchedule:
+                if (mListener != null)
+                    mListener.myRoadFragmentAddedCoursesToSchedule(User.currentUser().getCurrentDocument().coursesForSemester(currentlySelectedSemester), RoadDocument.semesterNames[currentlySelectedSemester]);
+                return true;
+            case R.id.clearCourses:
+                final Handler handler2 = new Handler();
+                handler2.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        User.currentUser().getCurrentDocument().removeAllCoursesFromSemester(currentlySelectedSemester);
+                        gridAdapter.notifyDataSetChanged();
+                        updateRecyclerView();
+                    }
+                }, 400);
+                return true;
             default:
                 return false;
         }

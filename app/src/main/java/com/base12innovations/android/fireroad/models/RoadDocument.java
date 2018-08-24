@@ -231,6 +231,14 @@ public class RoadDocument extends Document {
         return ret;
     }
 
+    public void removeAllCoursesFromSemester(int semester) {
+        if (semester < 0 || semester >= semesterNames.length) {
+            return;
+        }
+        courses.get(semester).clear();
+        save();
+    }
+
     public void moveCourse(int startSemester, int startPos, int endSemester, int endPos) {
         if (!courses.containsKey(startSemester)) {
             return;

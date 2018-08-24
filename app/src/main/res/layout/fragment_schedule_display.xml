@@ -24,7 +24,7 @@
                 android:layout_alignParentTop="true"
                 android:layout_marginStart="@dimen/schedule_hour_col_width"
                 android:layout_marginEnd="16dp"
-                android:text="Tap and hold on a subject to delete or set sections."
+                android:text="Tap on a subject to delete or set sections."
                 android:textSize="14sp"
                 />
             <LinearLayout

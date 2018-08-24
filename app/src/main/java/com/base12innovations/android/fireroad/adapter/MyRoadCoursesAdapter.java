@@ -2,6 +2,7 @@ package com.base12innovations.android.fireroad.adapter;
 
 import android.graphics.drawable.GradientDrawable;
 import android.support.annotation.NonNull;
+import android.support.v7.widget.AppCompatImageButton;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -25,8 +26,13 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
         void onClick(Course course, int position, View view);
     }
 
+    public interface HeaderClickListener {
+        void onHeaderButtonClick(int semester, View view);
+    }
+
     public ClickListener itemClickListener;
     public ClickListener itemLongClickListener;
+    public HeaderClickListener onHeaderClickListener;
 
     private RoadDocument document;
 
@@ -221,7 +227,7 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
         final View view = viewHolder.cellView;
         if (isSectionHeader(position)) {
             final TextView textView = (TextView)view.findViewById(R.id.headerTextView);
-            int semester = semesterForGridPosition(position);
+            final int semester = semesterForGridPosition(position);
             textView.setText(RoadDocument.semesterNames[semester]);
             List<Course> courses = document.coursesForSemester(semester);
             TextView hoursView = view.findViewById(R.id.hoursTextView);
@@ -236,6 +242,16 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
                 hoursView.setText(String.format(Locale.US, "%d units, %.1f hours", units, hours));
             } else {
                 hoursView.setText("");
+            }
+
+            view.findViewById(R.id.moreButton).setVisibility(document.coursesForSemester(semester).size() > 0 ? View.VISIBLE : View.INVISIBLE);
+            if (onHeaderClickListener != null) {
+                view.findViewById(R.id.moreButton).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        onHeaderClickListener.onHeaderButtonClick(semester, view.findViewById(R.id.moreButton));
+                    }
+                });
             }
         } else {
             final Course course = courseForGridPosition(position);
@@ -261,32 +277,41 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
                     if (itemLongClickListener != null) {
                         int newPos = viewHolder.getAdapterPosition();
                         itemLongClickListener.onClick(course, newPos, view);
+                        return true;
                     }
-                    return true;
+                    return false;
                 }
             });
 
-            final View warningView = view.findViewById(R.id.warningView);
-            if (AppSettings.shared().getBoolean(AppSettings.HIDE_ALL_WARNINGS, false))
-                warningView.setVisibility(View.GONE);
-            else
-                TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
-                    @Override
-                    public void perform() {
-                        int pos = viewHolder.getAdapterPosition();
-                        final boolean showWarnings = document.warningsForCourse(course, semesterForGridPosition(pos)).size() > 0 && !document.overrideWarningsForCourse(course);
-                        TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
-                            @Override
-                            public void perform() {
-                                if (showWarnings)
-                                    warningView.setVisibility(View.VISIBLE);
-                                else
-                                    warningView.setVisibility(View.GONE);
-                            }
-                        });
-                    }
-                });
+            updateWarningsView(viewHolder);
         }
+    }
+
+    public void updateWarningsView(final ViewHolder viewHolder) {
+        if (viewHolder.getAdapterPosition() < 0 || viewHolder.getAdapterPosition() >= getItemCount() ||
+                isSectionHeader(viewHolder.getAdapterPosition()))
+            return;
+        final View warningView = viewHolder.cellView.findViewById(R.id.warningView);
+        if (AppSettings.shared().getBoolean(AppSettings.HIDE_ALL_WARNINGS, false))
+            warningView.setVisibility(View.GONE);
+        else
+            TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+                @Override
+                public void perform() {
+                    final Course course = courseForGridPosition(viewHolder.getAdapterPosition());
+                    int pos = viewHolder.getAdapterPosition();
+                    final boolean showWarnings = document.warningsForCourse(course, semesterForGridPosition(pos)).size() > 0 && !document.overrideWarningsForCourse(course);
+                    TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                        @Override
+                        public void perform() {
+                            if (showWarnings)
+                                warningView.setVisibility(View.VISIBLE);
+                            else
+                                warningView.setVisibility(View.GONE);
+                        }
+                    });
+                }
+            });
     }
 
     @Override

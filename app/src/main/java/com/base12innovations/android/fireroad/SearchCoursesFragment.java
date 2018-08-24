@@ -140,7 +140,7 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
                     @Override
                     public void perform() {
                         isSearching = false;
-                        String title = Integer.toString(courses.size()) + " Search Results";
+                        String title = Integer.toString(courses.size()) + " Search Result" + (courses.size() != 1 ? "s" : "");
                         if (!filters.equals(CourseSearchEngine.Filter.noFilter))
                             title += " (filters on)";
                         toolbar.setTitle(title);

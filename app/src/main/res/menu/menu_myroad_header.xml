@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/createSchedule"
+        android:title="Create schedule..."/>
+    <item android:id="@+id/clearCourses"
+        android:title="Clear courses"/>
+</menu>

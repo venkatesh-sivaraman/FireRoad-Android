@@ -8,6 +8,8 @@
     <string name="search_hint">Search subjects</string>
     <string name="filter_search">Filter</string>
 
+    <string name="no_suggestions_message">Press Enter to search.</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_course_details">CourseDetailsActivity</string>

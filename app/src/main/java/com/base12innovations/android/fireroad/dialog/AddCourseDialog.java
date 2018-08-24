@@ -59,7 +59,7 @@ public class AddCourseDialog extends DialogFragment {
 
         Button scheduleButton = (Button)view.findViewById(R.id.buttonSchedule);
         if (User.currentUser().getCurrentSchedule() != null &&
-                User.currentUser().getCurrentSchedule().courses.contains(course)) {
+                User.currentUser().getCurrentSchedule().getCourses().contains(course)) {
             scheduleButton.setEnabled(false);
             scheduleButton.setAlpha(0.5f);
             scheduleButton.setText("Added to Schedule");
