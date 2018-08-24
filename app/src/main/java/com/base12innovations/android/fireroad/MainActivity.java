@@ -101,6 +101,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     private CourseLoadingDialogFragment loadingDialogFragment;
     private boolean isActivityPaused = false;
 
+    //region Lifecycle
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -137,6 +139,17 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             }
         };
 
+        loadCourseManagerIfNeeded();
+
+        if (!AppSettings.shared().getBoolean(AppSettings.SHOWN_INTRO, false)) {
+            Intent i = new Intent(this, IntroActivity.class);
+            startActivityForResult(i, INTRO_INTENT_TAG);
+        } else {
+            setupLogin();
+        }
+    }
+
+    private void loadCourseManagerIfNeeded() {
         if (!CourseManager.sharedInstance().isLoaded()) {
             CourseManager.sharedInstance().postLoadBlock = new Callable<Void>() {
                 @Override
@@ -201,36 +214,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 });
             }
         }
-
-        if (!AppSettings.shared().getBoolean(AppSettings.SHOWN_INTRO, false)) {
-            Intent i = new Intent(this, IntroActivity.class);
-            startActivityForResult(i, INTRO_INTENT_TAG);
-        } else {
-            setupLogin();
-        }
-    }
-
-    private void setupLogin() {
-        NetworkManager.sharedInstance().loginIfNeeded(new NetworkManager.AsyncResponse<Boolean>() {
-            @Override
-            public void success(Boolean result) {
-                NetworkManager.sharedInstance().getRoadManager().fileListener = new WeakReference<DocumentManager.SyncFileListener>(MainActivity.this);
-                NetworkManager.sharedInstance().getScheduleManager().fileListener = new WeakReference<DocumentManager.SyncFileListener>(MainActivity.this);
-                syncExecutor = Executors.newScheduledThreadPool(1);
-                syncFuture = syncExecutor.scheduleAtFixedRate(new Runnable() {
-                    public void run() {
-                        performSync();
-                    }
-                }, 5, 60, TimeUnit.SECONDS);
-                Log.d("MainActivity", "Logged in");
-                performSync();
-            }
-
-            @Override
-            public void failure() {
-                Log.d("MainActivity", "Failed");
-            }
-        });
     }
 
     @Override
@@ -297,6 +280,14 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (syncFuture != null)
+            syncFuture.cancel(false);
+        syncExecutor = null;
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
         if (loadingDialogFragment != null) {
             loadingDialogFragment.dismiss();
@@ -322,6 +313,9 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         }
         return super.onKeyDown(keyCode, event);
     }
+
+    //endregion
+    //region Content Fragments
 
     private void setupDrawerContent(NavigationView navigationView) {
         navigationView.setNavigationItemSelectedListener(
@@ -403,15 +397,32 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (syncFuture != null)
-            syncFuture.cancel(false);
-        syncExecutor = null;
-    }
+    //endregion
 
-    // Sync
+    //region Sync
+
+    private void setupLogin() {
+        NetworkManager.sharedInstance().loginIfNeeded(new NetworkManager.AsyncResponse<Boolean>() {
+            @Override
+            public void success(Boolean result) {
+                NetworkManager.sharedInstance().getRoadManager().fileListener = new WeakReference<DocumentManager.SyncFileListener>(MainActivity.this);
+                NetworkManager.sharedInstance().getScheduleManager().fileListener = new WeakReference<DocumentManager.SyncFileListener>(MainActivity.this);
+                syncExecutor = Executors.newScheduledThreadPool(1);
+                syncFuture = syncExecutor.scheduleAtFixedRate(new Runnable() {
+                    public void run() {
+                        performSync();
+                    }
+                }, 5, 60, TimeUnit.SECONDS);
+                Log.d("MainActivity", "Logged in");
+                performSync();
+            }
+
+            @Override
+            public void failure() {
+                Log.d("MainActivity", "Failed");
+            }
+        });
+    }
 
     public void performSync() {
         if (!CourseManager.sharedInstance().isLoaded() || CourseManager.sharedInstance().isUpdatingDatabase())
@@ -572,7 +583,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         }
     }
 
-    // Searching
+    //endregion
+    //region Searching
 
     private static int NUM_SEARCH_SUGGESTIONS = 5;
     private boolean isSearching = false;
@@ -788,7 +800,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         });
     }
 
-    // Bottom sheet
+    //endregion
+    //region Bottom Sheet
 
     private class BottomSheetItem {
         String searchQuery;
@@ -938,6 +951,9 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         dimViewOff();
     }
 
+    //endregion
+    //region Fragment Delegates
+
     @Override
     public void navFragmentClickedToolbar(BottomSheetNavFragment fragment) {
         // Expand bottom sheet
@@ -1014,8 +1030,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         showSearchCoursesView(query, filters);
     }
 
-    // Filter
-
     @Override
     public void filterDialogDismissed(FilterDialogFragment fragment) {
         setFilters(fragment.filters);
@@ -1026,9 +1040,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             searchCoursesFragment.loadSearchResults(searchCoursesFragment.searchQuery);
         }
     }
-
-
-    // My Road
 
     public MyRoadFragment getMyRoadFragment() {
         if (myRoadFragment == null) {
@@ -1088,7 +1099,9 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         return scheduleFragment;
     }
 
-    // Preferences
+    //endregion
+    //region Preferences
+
     private static String PREFERENCES = "com.base12innovations.android.fireroad.MainActivity.Preferences";
     private static String LAST_SHOWN_FRAGMENT = "lastShownFragment";
 
@@ -1104,7 +1117,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         editor.apply();
     }
 
-    // Sharing
+    //endregion
+    //region Sharing
 
     public void shareText(String text, String fileName) {
         Intent sharingIntent = new Intent(Intent.ACTION_SEND);
@@ -1132,4 +1146,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         intentShareFile.putExtra(Intent.EXTRA_SUBJECT, fileName);
         startActivity(Intent.createChooser(intentShareFile, "Share \"" + fileName + "\""));
     }
+
+    //endregion
 }

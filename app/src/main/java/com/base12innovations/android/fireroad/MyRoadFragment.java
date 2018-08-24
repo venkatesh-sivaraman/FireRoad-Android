@@ -289,14 +289,6 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             updateRecyclerView();
 
         }
-
-        /*if (document.getAllCourses().size() == 0) {
-            document.addCourse(new Course("8.02", "Physics"), 0);
-            document.addCourse(new Course("18.03", "Differential Equations"), 1);
-            document.addCourse(new Course("16.00", "Unified"), 1);
-            document.addCourse(new Course("6.036", "Introduction to Machine Learning"), 3);
-        }*/
-
     }
 
     public void reloadView() {
