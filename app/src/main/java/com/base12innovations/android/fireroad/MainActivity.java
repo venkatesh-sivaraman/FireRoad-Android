@@ -589,12 +589,12 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     private static int NUM_SEARCH_SUGGESTIONS = 5;
     private boolean isSearching = false;
     private FilterDialogFragment mFilterDialog;
-    private EnumSet<CourseSearchEngine.Filter> filters = EnumSet.copyOf(CourseSearchEngine.Filter.noFilter);
+    private EnumSet<CourseSearchEngine.Filter> filters = CourseSearchEngine.Filter.noFilter();
 
     public void setFilters(EnumSet<CourseSearchEngine.Filter> newValue) {
         filters = newValue;
         if (filterItem != null) {
-            if (filters.equals(CourseSearchEngine.Filter.noFilter))
+            if (filters.equals(CourseSearchEngine.Filter.noFilter()))
                 filterItem.setIcon(R.drawable.filter_icon);
             else
                 filterItem.setIcon(R.drawable.filter_icon_filled);
@@ -805,10 +805,12 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
     private class BottomSheetItem {
         String searchQuery;
+        EnumSet<CourseSearchEngine.Filter> filters;
         Course course;
 
-        BottomSheetItem(String query) {
+        BottomSheetItem(String query, EnumSet<CourseSearchEngine.Filter> filters) {
             this.searchQuery = query;
+            this.filters = filters;
         }
 
         BottomSheetItem(Course course) {
@@ -971,7 +973,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             detailsStack.remove(detailsStack.size() - 1);
             BottomSheetItem last = detailsStack.remove(detailsStack.size() - 1);
             if (last.searchQuery != null) {
-                showSearchCoursesView(last.searchQuery);
+                showSearchCoursesView(last.searchQuery, last.filters);
             } else if (last.course != null) {
                 onShowCourseDetails(last.course);
             }
@@ -1013,6 +1015,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     public void showSearchCoursesView(String query, EnumSet<CourseSearchEngine.Filter> filters) {
+        Log.d("MainActivity", "Search courses filters: " + filters.toString());
         SearchCoursesFragment fragment = SearchCoursesFragment.newInstance(query, filters);
         searchCoursesFragment = fragment;
         currentDetailsFragment = null;
@@ -1020,7 +1023,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             detailsStack = new Stack<>();
         }
         fragment.canGoBack = detailsStack.size() > 0;
-        detailsStack.add(new BottomSheetItem(query));
+        detailsStack.add(new BottomSheetItem(query, filters));
         fragment.delegate = new WeakReference<BottomSheetNavFragment.Delegate>(this);
         presentBottomSheet(fragment);
     }

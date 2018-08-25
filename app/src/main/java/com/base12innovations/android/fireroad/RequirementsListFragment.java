@@ -327,7 +327,7 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
                 for (RequirementsListStatement req : requirements) {
                     String shortDesc = req.getShortDescription();
                     Course newCourse = CourseManager.sharedInstance().getSubjectByID(shortDesc);
-                    if (newCourse != null) {
+                    if (newCourse != null && !newCourse.isGeneric) {
                         courses.add(newCourse);
                     } else {
                         String[] words = shortDesc.split("\\s+");
@@ -403,7 +403,7 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
             @Override
             public Boolean perform() {
                 Course realCourse = CourseManager.sharedInstance().getSubjectByID(course.getSubjectID());
-                return realCourse != null && realCourse.equals(course);
+                return realCourse != null && realCourse.equals(course) && !realCourse.isGeneric;
             }
         }, new TaskDispatcher.CompletionBlock<Boolean>() {
             @Override
@@ -421,7 +421,7 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
                     String reqString = req.requirement.replaceAll("GIR:", "");
 
                     // Set up requirement filters based on the content of the string
-                    EnumSet<CourseSearchEngine.Filter> filters = CourseSearchEngine.Filter.noFilter;
+                    EnumSet<CourseSearchEngine.Filter> filters = CourseSearchEngine.Filter.noFilter();
                     Course.GIRAttribute gir = Course.GIRAttribute.fromRaw(reqString);
                     Course.HASSAttribute hass = Course.HASSAttribute.fromRaw(reqString);
                     Course.CommunicationAttribute ci = Course.CommunicationAttribute.fromRaw(reqString);
@@ -430,6 +430,7 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
                             CourseSearchEngine.Filter.filterCI(filters, CourseSearchEngine.Filter.CI_H);
                         else if (ci == Course.CommunicationAttribute.CI_HW)
                             CourseSearchEngine.Filter.filterCI(filters, CourseSearchEngine.Filter.CI_HW);
+                        reqString = "";
                     } else if (hass != null) {
                         CourseSearchEngine.Filter baseOption = CourseSearchEngine.Filter.HASS_NONE;
                         switch (hass) {
@@ -447,8 +448,10 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
                                 break;
                         }
                         CourseSearchEngine.Filter.filterHASS(filters, baseOption);
+                        reqString = "";
                     } else if (gir != null) {
                         CourseSearchEngine.Filter.filterGIR(filters, CourseSearchEngine.Filter.GIR);
+                        reqString = "";
                     }
                     CourseSearchEngine.Filter.filterSearchField(filters, CourseSearchEngine.Filter.SEARCH_REQUIREMENTS);
 

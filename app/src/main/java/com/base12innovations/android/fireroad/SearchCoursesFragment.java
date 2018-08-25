@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -105,7 +106,7 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
         toolbar.setBackgroundColor(value.data);
 
         progressIndicator = layout.findViewById(R.id.loadingIndicator);
-        if (searchQuery != null && searchQuery.length() > 0)
+        if (searchQuery != null && (searchQuery.length() > 0 || !filters.equals(CourseSearchEngine.Filter.noFilter())))
             loadSearchResults(searchQuery);
 
         return layout;
@@ -117,7 +118,9 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
         if (isSearching) {
             return;
         }
-        if (query.length() == 0) {
+        Log.d("SearchCourses", query + ", " + filters.toString() + CourseSearchEngine.Filter.noFilter().toString() + Boolean.toString(filters.equals(CourseSearchEngine.Filter.noFilter())));
+        if (query.length() == 0 && filters.equals(CourseSearchEngine.Filter.noFilter())) {
+            toolbar.setTitle("No Results");
             listAdapter.setCourses(new ArrayList<Course>());
             return;
         }
@@ -138,7 +141,7 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
                     public void perform() {
                         isSearching = false;
                         String title = Integer.toString(courses.size()) + " Search Result" + (courses.size() != 1 ? "s" : "");
-                        if (!filters.equals(CourseSearchEngine.Filter.noFilter))
+                        if (!filters.equals(CourseSearchEngine.Filter.noFilter()))
                             title += " (filters on)";
                         toolbar.setTitle(title);
                         progressIndicator.setVisibility(ProgressBar.INVISIBLE);

@@ -298,6 +298,8 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
                 @Override
                 public void perform() {
                     final Course course = courseForGridPosition(viewHolder.getAdapterPosition());
+                    if (course == null)
+                        return;
                     int pos = viewHolder.getAdapterPosition();
                     final boolean showWarnings = document.warningsForCourse(course, semesterForGridPosition(pos)).size() > 0 && !document.overrideWarningsForCourse(course);
                     TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {

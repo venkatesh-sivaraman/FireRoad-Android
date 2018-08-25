@@ -47,7 +47,11 @@ public class CourseSearchEngine {
         public static EnumSet<Filter> allLevelFilters = EnumSet.of(LEVEL_NONE, LEVEL_UG, LEVEL_G);
         public static EnumSet<Filter> allConflictsFilters = EnumSet.of(CONFLICTS_ANY, CONFLICTS_NO_LECTURE, CONFLICTS_NOT_ALLOWED);
         public static EnumSet<Filter> searchAllFields = EnumSet.of(SEARCH_ID, SEARCH_TITLE, SEARCH_PREREQS, SEARCH_COREQS, SEARCH_INSTRUCTORS, SEARCH_REQUIREMENTS);
-        public static EnumSet<Filter> noFilter = union(searchAllFields, EnumSet.of(GIR_NONE, HASS_NONE, CI_NONE, LEVEL_NONE, OFFERED_NONE, CONFLICTS_ANY));
+
+        private static EnumSet<Filter> noFilter = union(searchAllFields, EnumSet.of(GIR_NONE, HASS_NONE, CI_NONE, LEVEL_NONE, OFFERED_NONE, CONFLICTS_ANY));
+        public static EnumSet<Filter> noFilter() {
+            return EnumSet.copyOf(noFilter);
+        }
 
         @SafeVarargs
         private static EnumSet<Filter> union(EnumSet<Filter> ... enums) {
@@ -157,25 +161,30 @@ public class CourseSearchEngine {
                 continue;
             List<String> searchFields = searchFieldsForCourse(course, filters);
             float relevance = 0.0f;
-            for (String comp : queryComps) {
-                boolean found = false;
-                for (int i = 0; i < searchFields.size(); i++) {
-                    String field = searchFields.get(i);
-                    if (field.contains(comp)) {
-                        found = true;
-                        if (field.indexOf(comp) == 0)
-                            relevance += (float)(searchFields.size() - i) * 2.0f;
-                        else
-                            relevance += (float)(searchFields.size() - i);
+            if (query.length() == 0)
+                relevance = 1.0f;
+            else {
+                for (String comp : queryComps) {
+                    boolean found = false;
+                    for (int i = 0; i < searchFields.size(); i++) {
+                        String field = searchFields.get(i);
+                        if (field.contains(comp)) {
+                            found = true;
+                            if (field.indexOf(comp) == 0)
+                                relevance += (float) (searchFields.size() - i) * 2.0f;
+                            else
+                                relevance += (float) (searchFields.size() - i);
+                        }
                     }
-                }
-                if (!found) {
-                    relevance = 0.0f;
-                    break;
+                    if (!found) {
+                        relevance = 0.0f;
+                        break;
+                    }
                 }
             }
 
             if (relevance > 0.0f) {
+                Log.d("CourseSearchEngine", "Has relevance: " + course.getSubjectID());
                 if (course.isGeneric)
                     relevance = 1000.0f;
                 if (course.enrollmentNumber > 0) {
@@ -258,7 +267,7 @@ public class CourseSearchEngine {
     private List<String> searchFieldsForCourse(Course course, EnumSet<Filter> mFilters) {
         List<String> searchFields = new ArrayList<>();
 
-        EnumSet<Filter> filters = mFilters == null ? Filter.noFilter : mFilters;
+        EnumSet<Filter> filters = mFilters == null ? Filter.noFilter() : mFilters;
 
         if (filters.contains(Filter.SEARCH_ID))
             searchFields.add(course.getSubjectID().toLowerCase());

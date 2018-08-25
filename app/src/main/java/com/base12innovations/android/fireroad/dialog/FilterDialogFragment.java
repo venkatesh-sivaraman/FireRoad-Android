@@ -86,11 +86,11 @@ public class FilterDialogFragment extends DialogFragment {
         updateButton(view, R.id.notCI, CourseSearchEngine.Filter.NOT_CI);
 
         Button clearAll = (Button)view.findViewById(R.id.noFilter);
-        clearAll.setEnabled(!filters.equals(CourseSearchEngine.Filter.noFilter));
+        clearAll.setEnabled(!filters.equals(CourseSearchEngine.Filter.noFilter()));
         clearAll.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                filters = CourseSearchEngine.Filter.noFilter;
+                filters = CourseSearchEngine.Filter.noFilter();
                 if (delegate.get() != null) {
                     delegate.get().filterDialogDismissed(FilterDialogFragment.this);
                 }

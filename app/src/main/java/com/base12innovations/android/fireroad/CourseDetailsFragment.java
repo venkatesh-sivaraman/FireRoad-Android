@@ -395,7 +395,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
                                                     if (realCourses.contains(course))
                                                         showCourseDetails(course);
                                                     else if (delegate.get() != null) {
-                                                        EnumSet<CourseSearchEngine.Filter> filters = EnumSet.copyOf(CourseSearchEngine.Filter.noFilter);
+                                                        EnumSet<CourseSearchEngine.Filter> filters = CourseSearchEngine.Filter.noFilter();
                                                         CourseSearchEngine.Filter.filterGIR(filters, CourseSearchEngine.Filter.GIR);
                                                         CourseSearchEngine.Filter.filterSearchField(filters, CourseSearchEngine.Filter.SEARCH_REQUIREMENTS);
                                                         delegate.get().courseNavigatorWantsSearchCourses(CourseDetailsFragment.this, course.subjectTitle, filters);
