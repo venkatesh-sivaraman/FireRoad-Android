@@ -6,6 +6,7 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 
 import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.AppSettings;
@@ -58,6 +59,7 @@ public class SettingsActivity extends AppCompatActivity
                 AppSettings.setAllowsRecommendationsFromBool(newFlag);
             } else if (key.equals(AppSettings.CLASS_YEAR_STRING)) {
                 String classYear = AppSettings.shared().getString(AppSettings.CLASS_YEAR_STRING, "1");
+                Log.d("Settings", classYear);
                 CourseManager.sharedInstance().updateCurrentSemester(classYear);
             }
         }

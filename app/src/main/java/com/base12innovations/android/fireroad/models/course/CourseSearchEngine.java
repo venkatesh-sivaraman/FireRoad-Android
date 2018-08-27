@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class CourseSearchEngine {
     private static CourseSearchEngine _shared;
@@ -38,7 +39,8 @@ public class CourseSearchEngine {
         OFFERED_NONE, OFFERED_FALL, OFFERED_SPRING, OFFERED_IAP,
         LEVEL_NONE, LEVEL_UG, LEVEL_G,
         SEARCH_ID, SEARCH_TITLE, SEARCH_PREREQS, SEARCH_COREQS, SEARCH_INSTRUCTORS, SEARCH_REQUIREMENTS,
-        CONFLICTS_ANY, CONFLICTS_NO_LECTURE, CONFLICTS_NOT_ALLOWED;
+        CONFLICTS_ANY, CONFLICTS_NO_LECTURE, CONFLICTS_NOT_ALLOWED,
+        CONTAINS, MATCHES;
 
         public static EnumSet<Filter> allGIRFilters = EnumSet.of(GIR_NONE, GIR, GIR_LAB, GIR_REST);
         public static EnumSet<Filter> allHASSFilters = EnumSet.of(HASS_NONE, HASS, HASS_A, HASS_S, HASS_H);
@@ -48,7 +50,7 @@ public class CourseSearchEngine {
         public static EnumSet<Filter> allConflictsFilters = EnumSet.of(CONFLICTS_ANY, CONFLICTS_NO_LECTURE, CONFLICTS_NOT_ALLOWED);
         public static EnumSet<Filter> searchAllFields = EnumSet.of(SEARCH_ID, SEARCH_TITLE, SEARCH_PREREQS, SEARCH_COREQS, SEARCH_INSTRUCTORS, SEARCH_REQUIREMENTS);
 
-        private static EnumSet<Filter> noFilter = union(searchAllFields, EnumSet.of(GIR_NONE, HASS_NONE, CI_NONE, LEVEL_NONE, OFFERED_NONE, CONFLICTS_ANY));
+        private static EnumSet<Filter> noFilter = union(searchAllFields, EnumSet.of(GIR_NONE, HASS_NONE, CI_NONE, LEVEL_NONE, OFFERED_NONE, CONFLICTS_ANY, CONTAINS));
         public static EnumSet<Filter> noFilter() {
             return EnumSet.copyOf(noFilter);
         }
@@ -92,6 +94,10 @@ public class CourseSearchEngine {
         public static void filterSearchField(EnumSet<Filter> filter, Filter searchField) {
             filter.removeAll(searchAllFields);
             filter.add(searchField);
+        }
+        public static void exactMatch(EnumSet<Filter> filter) {
+            filter.remove(CONTAINS);
+            filter.add(MATCHES);
         }
     }
 
@@ -166,9 +172,11 @@ public class CourseSearchEngine {
             else {
                 for (String comp : queryComps) {
                     boolean found = false;
+                    String regex = filters.contains(Filter.MATCHES) ? "^.*[^A-z0-9]" + Pattern.quote(comp) + "[^A-z0-9].*$" : "";
                     for (int i = 0; i < searchFields.size(); i++) {
                         String field = searchFields.get(i);
-                        if (field.contains(comp)) {
+                        if ((filters.contains(Filter.MATCHES) && field.matches(regex)) ||
+                                (!filters.contains(Filter.MATCHES) && field.contains(comp))) {
                             found = true;
                             if (field.indexOf(comp) == 0)
                                 relevance += (float) (searchFields.size() - i) * 2.0f;
@@ -184,7 +192,6 @@ public class CourseSearchEngine {
             }
 
             if (relevance > 0.0f) {
-                Log.d("CourseSearchEngine", "Has relevance: " + course.getSubjectID());
                 if (course.isGeneric)
                     relevance = 1000.0f;
                 if (course.enrollmentNumber > 0) {

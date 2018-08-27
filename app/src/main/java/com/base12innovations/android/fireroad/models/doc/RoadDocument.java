@@ -185,12 +185,12 @@ public class RoadDocument extends Document {
         warningsCache = null;
         super.save();
 
-        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+        /*TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
             public void perform() {
                 NetworkManager.sharedInstance().getRoadManager().syncDocument(RoadDocument.this, true, false, true, null);
             }
-        });
+        });*/
     }
 
     @Override

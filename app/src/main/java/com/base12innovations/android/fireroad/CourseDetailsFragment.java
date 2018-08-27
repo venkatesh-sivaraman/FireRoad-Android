@@ -1,5 +1,7 @@
 package com.base12innovations.android.fireroad;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -232,6 +234,41 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             layoutBuilder.addHeaderItem(layout, "Related");
             addCourseListItem(layout, related);
         }
+
+        layoutBuilder.addButtonItem(layout, "View Subjects with " + course.getSubjectID() + " as Prerequisite", new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (delegate.get() != null) {
+                    EnumSet<CourseSearchEngine.Filter> filter = CourseSearchEngine.Filter.noFilter();
+                    CourseSearchEngine.Filter.filterSearchField(filter, CourseSearchEngine.Filter.SEARCH_PREREQS);
+                    CourseSearchEngine.Filter.exactMatch(filter);
+
+                    String searchText = course.getSubjectID();
+                    if (course.getGIRAttribute() != null && course.getGIRAttribute() != Course.GIRAttribute.REST)
+                        searchText = course.getGIRAttribute().toString();
+                    delegate.get().courseNavigatorWantsSearchCourses(CourseDetailsFragment.this, searchText, filter);
+                }
+            }
+        });
+        if (course.url != null && course.url.length() > 0) {
+            layoutBuilder.addButtonItem(layout, "View in Subject Catalog", new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent i = new Intent(Intent.ACTION_VIEW);
+                    i.setData(Uri.parse(course.url));
+                    startActivity(i);
+                }
+            });
+        }
+        layoutBuilder.addButtonItem(layout, "View Subject Evaluations", new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String url = "https://edu-apps.mit.edu/ose-rpt/subjectEvaluationSearch.htm?search=Search&subjectCode=" + course.getSubjectID();
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setData(Uri.parse(url));
+                startActivity(i);
+            }
+        });
 
         String notes = CourseManager.sharedInstance().getNotes(course);
         layoutBuilder.addHeaderItem(layout, "Notes");

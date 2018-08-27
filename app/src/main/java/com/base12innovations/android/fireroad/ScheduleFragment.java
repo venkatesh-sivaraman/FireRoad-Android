@@ -143,6 +143,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
             public void scheduleChanged(ScheduleDocument newDocument) {
                 // Update schedule view
                 document = newDocument;
+                Log.d("ScheduleFragment", "Document changed: " + document.getDisplayedScheduleIndex());
                 loadSchedules(true);
             }
         });
@@ -240,6 +241,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         }
         loadingIndicator.setVisibility(View.VISIBLE);
         configView.setClickable(false);
+        Log.d("ScheduleFragment", "Loading, display index is " + document.getDisplayedScheduleIndex());
         if (isLoading) {
             Log.d("ScheduleFragment", "Aborting load");
             return;
@@ -291,7 +293,8 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                     });
                 } else {
                     isLoading = false;
-                    inferScheduleIndex();
+                    if (document.getDisplayedScheduleIndex() < 0 || document.getDisplayedScheduleIndex() >= scheduleConfigurations.size())
+                        inferScheduleIndex();
 
                     Log.d("ScheduleFragment", "Displaying");
                     TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
@@ -351,6 +354,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
     }
 
     public void scheduleAddedCourse(Course course) {
+        document.setDisplayedScheduleIndex(-1);
         loadSchedules(false);
     }
 
@@ -360,7 +364,8 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
             try {
                 // If it's a version of the same semester, replace the current document
                 if (currentName.length() == 0 || Integer.parseInt(currentName) != 0) {
-                    User.currentUser().getCurrentSchedule().setCourses(courses);
+                    document.setCourses(courses);
+                    document.setDisplayedScheduleIndex(-1);
                     loadSchedules(true);
                 }
             } catch (NumberFormatException e) {

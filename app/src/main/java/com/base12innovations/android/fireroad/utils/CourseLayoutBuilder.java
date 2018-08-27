@@ -209,6 +209,16 @@ public class CourseLayoutBuilder {
         return metadataView;
     }
 
+    public View addButtonItem(LinearLayout layout, String title, View.OnClickListener clickListener) {
+        View metadataView = getLayoutInflater().inflate(R.layout.cell_course_details_button, null);
+        layout.addView(metadataView);
+
+        TextView button = metadataView.findViewById(R.id.buttonTitle);
+        button.setText(title);
+        metadataView.setOnClickListener(clickListener);
+        return metadataView;
+    }
+
     public View addEditTextItem(LinearLayout layout, String text, View.OnFocusChangeListener textViewCompletion) {
         int margin = defaultMargin;
         int height = (int) context.getResources().getDimension(R.dimen.course_details_edittext_height);

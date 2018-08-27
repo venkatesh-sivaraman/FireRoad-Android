@@ -223,12 +223,12 @@ public class ScheduleDocument extends Document {
     public void save() {
         super.save();
 
-        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+        /*TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
             public void perform() {
                 NetworkManager.sharedInstance().getScheduleManager().syncDocument(ScheduleDocument.this, true, false, true, null);
             }
-        });
+        });*/
     }
 
     public void addCourse(Course course) {

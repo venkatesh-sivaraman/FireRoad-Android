@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import okhttp3.RequestBody;
+import okio.Buffer;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Retrofit;
@@ -95,8 +97,8 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
         @GET("verify")
         Call<HashMap<String, Object>> verifyLogin(@Header("Authorization") String authorization);
 
-        @POST("set_semester")
-        Call<Map<String, Object>> setSemester(@Header("Authorization") String auth, @Body HashMap<String, Object> semBody);
+        @POST("set_semester/")
+        Call<Map<String, Object>> setSemester(@Header("Authorization") String auth, @Body HashMap<String, Integer> semBody);
     }
 
     public interface AuthenticationListener {
@@ -260,7 +262,7 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
 
         LoginAPI api = retrofit.create(LoginAPI.class);
 
-        HashMap<String, Object> body = new HashMap<>();
+        HashMap<String, Integer> body = new HashMap<>();
         body.put("semester", semester);
         Call<Map<String, Object>> req = api.setSemester(getAuthorizationString(), body);
         req.enqueue(new Callback<Map<String, Object>>() {
@@ -330,7 +332,7 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
     // Ratings
 
     interface RatingAPI {
-        @POST("recommend/rate")
+        @POST("recommend/rate/")
         Call<HashMap<String, Object>> submitRatings(@Header("Authorization") String auth, @Body List<Object> body);
 
         @GET("recommend/get")
@@ -430,17 +432,17 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
     interface SyncedPreferenceAPI {
         @GET("prefs/favorites")
         Call<HashMap<String, Object>> getFavorites(@Header("Authorization") String authorization);
-        @POST("prefs/set_favorites")
+        @POST("prefs/set_favorites/")
         Call<HashMap<String, Object>> setFavorites(@Header("Authorization") String authorization, @Body ArrayList<String> subjectIDs);
 
         @GET("prefs/notes")
         Call<HashMap<String, Object>> getNotes(@Header("Authorization") String authorization);
-        @POST("prefs/set_notes")
+        @POST("prefs/set_notes/")
         Call<HashMap<String, Object>> setNotes(@Header("Authorization") String authorization, @Body HashMap<String, String> subjectIDs);
 
         @GET("prefs/progress_overrides")
         Call<HashMap<String, Object>> getProgressOverrides(@Header("Authorization") String authorization);
-        @POST("prefs/set_progress_overrides")
+        @POST("prefs/set_progress_overrides/")
         Call<HashMap<String, Object>> setProgressOverrides(@Header("Authorization") String authorization, @Body HashMap<String, Integer> overrides);
     }
 
@@ -571,19 +573,19 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
         @GET("sync/roads")
         Call<CloudSyncState> getRoads(@Header("Authorization") String auth, @Query("id") Integer id);
 
-        @POST("sync/sync_road")
+        @POST("sync/sync_road/")
         Call<CloudSyncState> syncRoad(@Header("Authorization") String auth, @Body CloudSyncState input);
 
-        @POST("sync/delete_road")
+        @POST("sync/delete_road/")
         Call<CloudSyncState> deleteRoad(@Header("Authorization") String auth, @Body CloudSyncState input);
 
         @GET("sync/schedules")
         Call<CloudSyncState> getSchedules(@Header("Authorization") String auth, @Query("id") Integer id);
 
-        @POST("sync/sync_schedule")
+        @POST("sync/sync_schedule/")
         Call<CloudSyncState> syncSchedule(@Header("Authorization") String auth, @Body CloudSyncState input);
 
-        @POST("sync/delete_schedule")
+        @POST("sync/delete_schedule/")
         Call<CloudSyncState> deleteSchedule(@Header("Authorization") String auth, @Body CloudSyncState input);
     }
 

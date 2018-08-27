@@ -29,6 +29,7 @@ import android.widget.TextView;
 import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.course.ColorManager;
+import com.base12innovations.android.fireroad.models.course.CourseManager;
 
 public class IntroActivity extends AppCompatActivity {
 
@@ -134,6 +135,7 @@ public class IntroActivity extends AppCompatActivity {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         AppSettings.shared().edit().putInt(AppSettings.CLASS_YEAR, i + 1).apply();
+                        CourseManager.sharedInstance().updateCurrentSemester(Integer.toString(i + 1));
                     }
                 });
         b.setPositiveButton("Start Using FireRoad", new DialogInterface.OnClickListener() {
