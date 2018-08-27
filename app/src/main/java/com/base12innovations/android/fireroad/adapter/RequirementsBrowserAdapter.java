@@ -3,6 +3,7 @@ package com.base12innovations.android.fireroad.adapter;
 import android.app.Activity;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,11 +17,14 @@ import com.base12innovations.android.fireroad.models.req.RequirementsList;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+
+import static android.graphics.Typeface.BOLD;
 
 public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAdapter {
 
@@ -126,10 +130,14 @@ public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAd
     public View getView(int i, View view, ViewGroup viewGroup) {
         View myView = view;
         if (myView == null) {
-            myView = inflater.inflate(android.R.layout.simple_list_item_1, viewGroup, false);
+            myView = inflater.inflate(R.layout.cell_requirements_browse_selected, viewGroup, false);
         }
-        RequirementsList rList = (RequirementsList)getItem(i);
-        ((TextView)myView.findViewById(android.R.id.text1)).setText(rList.mediumTitle != null ? rList.mediumTitle : rList.title);
+        Object o = getItem(i);
+        if (o instanceof RequirementsList) {
+            RequirementsList rList = (RequirementsList) o;
+            TextView titleView = myView.findViewById(android.R.id.text1);
+            titleView.setText(rList.mediumTitle != null ? rList.mediumTitle : rList.title);
+        }
         return myView;
     }
 

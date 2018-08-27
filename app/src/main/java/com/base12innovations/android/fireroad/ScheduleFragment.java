@@ -240,14 +240,19 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         }
         loadingIndicator.setVisibility(View.VISIBLE);
         configView.setClickable(false);
-        if (isLoading)
+        if (isLoading) {
+            Log.d("ScheduleFragment", "Aborting load");
             return;
+        }
         isLoading = true;
 
         TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
             public void perform() {
                 if (document == null) {
+                    configView.setClickable(false);
+                    configView.setVisibility(View.VISIBLE);
+                    loadingIndicator.setVisibility(View.INVISIBLE);
                     isLoading = false;
                     return;
                 }
@@ -271,7 +276,6 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                     });
                 }
 
-                Log.d("ScheduleFragment", "Courses: " + document.getCourses().toString());
                 ScheduleGenerator gen = new ScheduleGenerator();
                 scheduleConfigurations = gen.generateSchedules(document.getCourses(), document.allowedSections);
                 if (scheduleConfigurations.size() == 0) {
@@ -289,6 +293,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                     isLoading = false;
                     inferScheduleIndex();
 
+                    Log.d("ScheduleFragment", "Displaying");
                     TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
                         @Override
                         public void perform() {

@@ -97,6 +97,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
     private MyRoadFragment myRoadFragment;
     private RequirementsFragment requirementsFragment;
+    private int backStackFragment = 0;  // Fragment to go back to if back button is pressed
 
     private CourseLoadingDialogFragment loadingDialogFragment;
     private boolean isActivityPaused = false;
@@ -249,6 +250,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     @Override
     protected void onPause() {
         isActivityPaused = true;
+        backStackFragment = 0;
         if (loadingDialogFragment != null) {
             loadingDialogFragment.dismiss();
         }
@@ -299,7 +301,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             BottomSheetBehavior b = BottomSheetBehavior.from(bottomSheet);
-            if (b != null && b.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+            if (detailsStack != null && b != null && b.getState() == BottomSheetBehavior.STATE_EXPANDED) {
                 if (detailsStack.size() > 1) {
                     navFragmentWantsBack(null);
                 } else {
@@ -308,6 +310,13 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 return true;
             } else if (mDrawer.isDrawerOpen(GravityCompat.START)) {
                 mDrawer.closeDrawers();
+                return true;
+            } else if (mFilterDialog != null && mFilterDialog.isVisible()) {
+                filterDialogDismissed(mFilterDialog);
+                return true;
+            } else if (backStackFragment != 0) {
+                showContentFragment(backStackFragment);
+                backStackFragment = 0;
                 return true;
             }
         }
@@ -334,8 +343,13 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
     public void selectDrawerItem(MenuItem menuItem) {
         if (menuItem.getItemId() == R.id.settings_menu_item) {
+            mDrawer.closeDrawers();
             Intent i = new Intent(this, SettingsActivity.class);
             startActivity(i);
+            return;
+        } else if (menuItem.getItemId() == R.id.feedback_menu_item) {
+            mDrawer.closeDrawers();
+            showContactDialog();
             return;
         }
         // Create a new fragment and specify the fragment to show based on nav item clicked
@@ -346,6 +360,9 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         setTitle(menuItem.getTitle());
         // Close the navigation drawer
         mDrawer.closeDrawers();
+
+        // Reset the fake backstack
+        backStackFragment = 0;
     }
 
     private void restoreFragments() {
@@ -383,6 +400,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 mSearchView.inflateOverflowMenu(R.menu.menu_main_road);
                 break;
         }
+        backStackFragment = lastShownFragmentID();
         setLastShownFragmentID(id);
 
         showContentFragment(fragment);
@@ -660,6 +678,10 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 final CourseSearchSuggestion suggestion = (CourseSearchSuggestion)searchSuggestion;
                 if (suggestion.subjectTitle.equals(getResources().getString(R.string.no_suggestions_message)))
                     return;
+                if (suggestion.subjectTitle.equals(getResources().getString(R.string.more_suggestions))) {
+                    performFullSearch(mSearchView.getQuery());
+                    return;
+                }
                 mSearchView.clearSuggestions();
                 mSearchView.clearSearchFocus();
                 detailsStack = null;
@@ -683,27 +705,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
             @Override
             public void onSearchAction(final String currentQuery) {
-                mSearchView.clearSuggestions();
-                mSearchView.clearSearchFocus();
-                detailsStack = null;
-                TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
-                    @Override
-                    public void perform() {
-                        final Course course = CourseManager.sharedInstance().getSubjectByID(currentQuery);
-                        if (course != null)
-                            CourseSearchEngine.sharedInstance().addRecentCourse(course);
-                        TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
-                            @Override
-                            public void perform() {
-                                if (course == null) {
-                                    showSearchCoursesView(currentQuery);
-                                } else {
-                                    onShowCourseDetails(course);
-                                }
-                            }
-                        });
-                    }
-                });
+                performFullSearch(currentQuery);
             }
         });
 
@@ -750,6 +752,30 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         });
     }
 
+    private void performFullSearch(final String currentQuery) {
+        mSearchView.clearSuggestions();
+        mSearchView.clearSearchFocus();
+        detailsStack = null;
+        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                final Course course = CourseManager.sharedInstance().getSubjectByID(currentQuery);
+                if (course != null)
+                    CourseSearchEngine.sharedInstance().addRecentCourse(course);
+                TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                    @Override
+                    public void perform() {
+                        if (course == null) {
+                            showSearchCoursesView(currentQuery);
+                        } else {
+                            onShowCourseDetails(course);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
     public void loadSearchResults(final String query) {
         if (isSearching) {
             return;
@@ -761,7 +787,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 public void result(List<Course> courses) {
                     List<CourseSearchSuggestion> suggestions = new ArrayList<>();
                     for (Course course : courses) {
-                        if (suggestions.size() > NUM_SEARCH_SUGGESTIONS)
+                        if (suggestions.size() >= NUM_SEARCH_SUGGESTIONS)
                             break;
                         suggestions.add(new CourseSearchSuggestion(course.getSubjectID(), course.subjectTitle, true));
                     }
@@ -784,10 +810,12 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                         isSearching = false;
                         List<CourseSearchSuggestion> suggestions = new ArrayList<>();
                         for (Course course : courses) {
-                            if (suggestions.size() > NUM_SEARCH_SUGGESTIONS)
+                            if (suggestions.size() >= NUM_SEARCH_SUGGESTIONS - 1 && courses.size() > NUM_SEARCH_SUGGESTIONS)
                                 break;
                             suggestions.add(new CourseSearchSuggestion(course.getSubjectID(), course.subjectTitle, false));
                         }
+                        if (courses.size() > NUM_SEARCH_SUGGESTIONS)
+                            suggestions.add(new CourseSearchSuggestion("", getResources().getString(R.string.more_suggestions), false));
                         if (suggestions.size() == 0)
                             suggestions.add(new CourseSearchSuggestion("", getResources().getString(R.string.no_suggestions_message), false));
                         mSearchView.swapSuggestions(suggestions);
@@ -1121,7 +1149,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     //endregion
-    //region Sharing
+    //region Sharing and Contact
 
     public void shareText(String text, String fileName) {
         Intent sharingIntent = new Intent(Intent.ACTION_SEND);
@@ -1148,6 +1176,38 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         intentShareFile.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intentShareFile.putExtra(Intent.EXTRA_SUBJECT, fileName);
         startActivity(Intent.createChooser(intentShareFile, "Share \"" + fileName + "\""));
+    }
+
+    public void showContactDialog() {
+        AlertDialog.Builder b = new AlertDialog.Builder(this);
+        b.setTitle("Report Issue");
+        b.setMessage("To report corrections in the course requirements, please submit a modification request in the online Requirements Editor. For other bugs or corrections, send us an email.");
+        b.setNeutralButton("Dismiss", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+            }
+        });
+        b.setNegativeButton("Send Email", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                Intent intent = new Intent(Intent.ACTION_SENDTO);
+                intent.setType("text/plain");
+                intent.putExtra(Intent.EXTRA_EMAIL, "base12apps@gmail.com");
+                intent.putExtra(Intent.EXTRA_SUBJECT, "FireRoad Feedback");
+                intent.putExtra(Intent.EXTRA_TEXT, "Platform:\nOS version:\nFeedback:");
+                startActivity(Intent.createChooser(intent, "Contact developer"));
+            }
+        });
+        b.setPositiveButton("Requirements Editor", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int index) {
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setData(Uri.parse("https://venkats.scripts.mit.edu/fireroad/requirements"));
+                startActivity(i);
+            }
+        });
+        b.show();
     }
 
     //endregion

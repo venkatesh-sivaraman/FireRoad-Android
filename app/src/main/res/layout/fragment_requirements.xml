@@ -10,7 +10,8 @@
 
     <Spinner
         android:id="@+id/courseSelector"
-        android:layout_width="match_parent"
+        style="@style/Widget.AppCompat.Spinner.Underlined"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
         android:layout_marginStart="16dp"

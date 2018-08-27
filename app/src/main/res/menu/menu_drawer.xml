@@ -26,5 +26,9 @@
             android:id="@+id/settings_menu_item"
             android:icon="@drawable/settings_icon"
             android:title="Settings" />
+        <item
+            android:id="@+id/feedback_menu_item"
+            android:icon="@drawable/mail_icon"
+            android:title="Report issue" />
     </group>
 </menu>

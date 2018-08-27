@@ -42,5 +42,11 @@
                 <extra android:name="android.intent.extra.SUBJECT" android:value="FireRoad for Android Feedback" />
             </intent>
         </Preference>
+        <Preference android:title="Requirements Editor"
+            android:summary="Visit the online editor to browse and submit edits for major and minor requirements files.">
+            <intent android:action="android.intent.action.VIEW"
+                android:data="https://venkats.scripts.mit.edu/fireroad/requirements">
+            </intent>
+        </Preference>
     </PreferenceCategory>
 </PreferenceScreen>
