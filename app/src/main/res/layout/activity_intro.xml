@@ -27,8 +27,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
+        android:textAlignment="center"
         android:layout_marginTop="@dimen/intro_title_top_y"
-        android:textSize="36sp"
+        android:textSize="@dimen/intro_title_font_size"
         android:textColor="@android:color/white"
         android:text="Welcome to FireRoad"/>
 </FrameLayout>

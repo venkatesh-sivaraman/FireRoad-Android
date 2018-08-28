@@ -191,6 +191,7 @@ public class RoadDocument extends Document {
                 NetworkManager.sharedInstance().getRoadManager().syncDocument(RoadDocument.this, true, false, true, null);
             }
         });*/
+        NetworkManager.sharedInstance().getRoadManager().setJustModifiedFile(getFileName());
     }
 
     @Override

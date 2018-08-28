@@ -133,6 +133,7 @@ public class CourseManager {
         course.isOfferedIAP = true;
         course.isOfferedSpring = true;
         course.isGeneric = true;
+        course.totalUnits = 12;
         return course;
 
     }

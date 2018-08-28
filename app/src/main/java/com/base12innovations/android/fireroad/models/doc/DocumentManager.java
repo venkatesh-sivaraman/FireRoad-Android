@@ -27,9 +27,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 public class DocumentManager {
 
@@ -305,6 +307,7 @@ public class DocumentManager {
     private Map<String, String> userIDs;
     private Map<String, String> cloudModifiedDates;
     private Map<String, String> downloadDates;
+    private Set<String> justModifiedFiles;
 
     private void loadCloudSyncAttributes() {
         if (documentIDs == null) {
@@ -454,6 +457,16 @@ public class DocumentManager {
         saveAttributeMap(downloadDates, DOWNLOAD_DATES_KEY);
     }
 
+    public void setJustModifiedFile(String name) {
+        if (justModifiedFiles == null)
+            justModifiedFiles = new HashSet<>();
+        justModifiedFiles.add(name);
+    }
+
+    public boolean justModifiedFile(String name) {
+        return justModifiedFiles != null && justModifiedFiles.contains(name);
+    }
+
     // Cloud sync
 
     public interface SyncNetworkHandler {
@@ -553,7 +566,7 @@ public class DocumentManager {
                         Log.d("DocumentManager", "Syncing my file " + myFileName);
                         Document doc = initializeDocument(getFileHandle(myFileName), false);
                         doc.read();
-                        syncDocument(doc, false, false, false, listener);
+                        syncDocument(doc, justModifiedFile(myFileName), false, false, listener);
                     }
                 }
 
@@ -566,7 +579,7 @@ public class DocumentManager {
                         Log.d("DocumentManager", "Syncing " + name + " part 2");
                         Document doc = initializeDocument(getFileHandle(name), false);
                         doc.read();
-                        syncDocument(doc, false, false, false, listener);
+                        syncDocument(doc, justModifiedFile(name), false, false, listener);
                     } else {
                         // Download the new file
                         Log.d("DocumentManager", "Downloading new file " + fileID);
@@ -608,6 +621,7 @@ public class DocumentManager {
                     });
                 }
 
+                justModifiedFiles = null;
                 syncInProgress = false;
                 TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
                     @Override
@@ -854,7 +868,6 @@ public class DocumentManager {
                 }
             }
         }
-        Log.d("DocumentManager", "Successfully finished syncing " + name);
     }
 
     public void renameDocumentInCloud(String oldName, String newName) {

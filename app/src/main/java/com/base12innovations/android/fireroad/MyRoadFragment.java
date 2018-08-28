@@ -56,6 +56,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     private Course currentlySelectedCourse;
     private PopupMenu currentPopupMenu;
     private View noCoursesView;
+    private GridLayoutManager gridLayoutManager;
 
     private Delegate mListener;
 
@@ -106,9 +107,9 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
 
         recyclerView = layout.findViewById(R.id.coursesRecyclerView);
         recyclerView.setHasFixedSize(false);
-        GridLayoutManager layoutManager = new GridLayoutManager(getActivity(), numColumns);
+        gridLayoutManager = new GridLayoutManager(getActivity(), numColumns);
         recyclerView.setAdapter(gridAdapter);
-        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setLayoutManager(gridLayoutManager);
         int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.course_cell_spacing);
         recyclerView.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
         /*gridAdapter.itemClickListener = new MyRoadCoursesAdapter.ClickListener() {
@@ -182,19 +183,26 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
 
         // Support drag and drop to move courses
         ItemTouchHelper.Callback _ithCallback = new ItemTouchHelper.Callback() {
-            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+            public boolean onMove(final RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, final RecyclerView.ViewHolder target) {
                 // get the viewHolder's and target's positions in your adapter data, swap them
                 if (currentPopupMenu != null) {
                     currentPopupMenu.dismiss();
                     currentPopupMenu = null;
                 }
+
                 return gridAdapter.moveCourse(viewHolder.getAdapterPosition(), target.getAdapterPosition());
+            }
+
+            @Override
+            public void onMoved(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, int fromPos, @NonNull RecyclerView.ViewHolder target, int toPos, int x, int y) {
+                // Empty implementation overrides super and disables weird scrolling behavior!!
             }
 
             @Override
             public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
                 super.clearView(recyclerView, viewHolder);
-                updateRecyclerView();
+                if (!recyclerView.isComputingLayout())
+                    updateRecyclerView();
             }
 
             @Override
@@ -219,7 +227,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         ItemTouchHelper ith = new ItemTouchHelper(_ithCallback);
         ith.attachToRecyclerView(recyclerView);
 
-        layoutManager.setSpanSizeLookup(gridAdapter.spanSizeLookup());
+        gridLayoutManager.setSpanSizeLookup(gridAdapter.spanSizeLookup());
 
         User.currentUser().addRoadChangedListener(new User.RoadChangedListener() {
             @Override
@@ -398,7 +406,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                     mListener.myRoadFragmentAddedCoursesToSchedule(User.currentUser().getCurrentDocument().coursesForSemester(currentlySelectedSemester), RoadDocument.semesterNames[currentlySelectedSemester]);
                 return true;
             case R.id.clearCourses:
-                final Handler handler2 = new Handler();
+                /*final Handler handler2 = new Handler();
                 handler2.postDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -406,7 +414,12 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                         gridAdapter.notifyDataSetChanged();
                         updateRecyclerView();
                     }
-                }, 400);
+                }, 400);*/
+                int size = User.currentUser().getCurrentDocument().coursesForSemester(currentlySelectedSemester).size();
+                User.currentUser().getCurrentDocument().moveCourse(currentlySelectedSemester, 0,
+                        currentlySelectedSemester,  size - 1);
+                gridAdapter.notifyItemMoved(gridAdapter.lastPositionForSemester(currentlySelectedSemester) - size,
+                        gridAdapter.lastPositionForSemester(currentlySelectedSemester));
                 return true;
             default:
                 return false;

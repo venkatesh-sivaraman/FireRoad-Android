@@ -70,7 +70,6 @@ public class ScheduleDocument extends Document {
 
         try {
             JSONObject json = new JSONObject(contents);
-            Log.d("ScheduleDocument", "Loading");
 
             JSONArray selectedSubjects = json.getJSONArray(ScheduleJSON.selectedSubjects);
             Map<Course, Map<String, List<Integer>>> newAllowedSections = null;
@@ -229,6 +228,7 @@ public class ScheduleDocument extends Document {
                 NetworkManager.sharedInstance().getScheduleManager().syncDocument(ScheduleDocument.this, true, false, true, null);
             }
         });*/
+        NetworkManager.sharedInstance().getScheduleManager().setJustModifiedFile(getFileName());
     }
 
     public void addCourse(Course course) {

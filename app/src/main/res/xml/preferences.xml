@@ -34,7 +34,7 @@
             android:selectable="false"
             android:persistent="false"
             android:title=""
-            android:summary="Created by Venkatesh Sivaraman. Course evaluation data courtesy of Edward Fan; additional major/minor requirements contributed by Tanya Smith, Maia Hannahs, and Cindy Shi. In-app icons courtesy of icons8.com.\n\nAll subject descriptions, evaluations, and course requirements © Massachusetts Institute of Technology. FireRoad is not intended to be your sole source of course information - please be sure to check your department's website to make sure you have the most up-to-date information."/>
+            android:summary="Created by Venkatesh Sivaraman. Course evaluation data courtesy of Edward Fan; additional major/minor requirements contributed by Tanya Smith, Maia Hannahs, and Cindy Shi. In-app icons courtesy of icons8.com. All subject descriptions, evaluations, and course requirements © Massachusetts Institute of Technology. FireRoad is not intended to be your sole source of course information - please be sure to check your department's website to make sure you have the most up-to-date information."/>
         <Preference android:title="Contact"
             android:summary="Tap here to send us feedback, ask questions, or report bugs or out-of-date information.">
             <intent android:action="android.intent.action.VIEW"
