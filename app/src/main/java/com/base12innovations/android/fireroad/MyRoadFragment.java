@@ -251,8 +251,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     }
 
     public static void createInitialDocument(Context context, final TaskDispatcher.TaskNoReturn completion) {
-        Log.d("MyRoadFragment", "Creating initial document");
-        final RoadDocument document = RoadDocument.newDocument(new File(context.getFilesDir(), Document.INITIAL_DOCUMENT_TITLE + ".road"));
+                final RoadDocument document = RoadDocument.newDocument(new File(context.getFilesDir(), Document.INITIAL_DOCUMENT_TITLE + ".road"));
         TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
             @Override
             public Void perform() {

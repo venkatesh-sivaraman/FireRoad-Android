@@ -37,7 +37,7 @@
             android:layout_centerHorizontal="true"
             android:text="--"
             android:textAlignment="center"
-            android:textSize="14dp" />
+            android:textSize="14sp" />
 
         <ImageButton
             android:id="@+id/nextButton"
@@ -103,7 +103,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:textSize="18dp"
+        android:textSize="18sp"
         android:textAlignment="center" />
 
     <ProgressBar

@@ -207,7 +207,7 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
                             if (sem != 0)
                                 AppSettings.setCurrentSemester(sem);
                         }
-                        Log.d("NetworkManager", "Successfully logged in");
+                        //Log.d("NetworkManager", "Successfully logged in");
                         isLoggedIn = true;
                         completion.success(true);
                     } else {
@@ -237,7 +237,6 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
                 return false;
 
             String token = response.getString("access_token");
-            Log.d("NetworkManager", "Access token: " + token);
             setAccessToken(token);
 
             if (response.has("academic_id"))
@@ -362,7 +361,7 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
             public void onResponse(Call<HashMap<String, Object>> call, retrofit2.Response<HashMap<String, Object>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     HashMap<String, Object> val = response.body();
-                    Log.d("NetworkManager", "Succeeded at rating submission: " + val.toString());
+                    //Log.d("NetworkManager", "Succeeded at rating submission: " + val.toString());
                 }
             }
 

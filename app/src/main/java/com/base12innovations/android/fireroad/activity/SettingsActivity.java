@@ -59,7 +59,7 @@ public class SettingsActivity extends AppCompatActivity
                 AppSettings.setAllowsRecommendationsFromBool(newFlag);
             } else if (key.equals(AppSettings.CLASS_YEAR_STRING)) {
                 String classYear = AppSettings.shared().getString(AppSettings.CLASS_YEAR_STRING, "1");
-                Log.d("Settings", classYear);
+                //Log.d("Settings", classYear);
                 CourseManager.sharedInstance().updateCurrentSemester(classYear);
             }
         }

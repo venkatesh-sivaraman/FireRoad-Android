@@ -365,7 +365,20 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
                                     }, new View.OnLongClickListener() {
                                         @Override
                                         public boolean onLongClick(View view) {
-                                            addCourse(course);
+                                            TaskDispatcher.perform(new TaskDispatcher.Task<Boolean>() {
+                                                @Override
+                                                public Boolean perform() {
+                                                    Course realCourse = CourseManager.sharedInstance().getSubjectByID(course.getSubjectID());
+                                                    return realCourse != null && realCourse.equals(course) && !realCourse.isGeneric;
+                                                }
+                                            }, new TaskDispatcher.CompletionBlock<Boolean>() {
+                                                @Override
+                                                public void completed(Boolean arg) {
+                                                    if (arg) {
+                                                        addCourse(course);
+                                                    }
+                                                }
+                                            });
                                             return true;
                                         }
                                     });

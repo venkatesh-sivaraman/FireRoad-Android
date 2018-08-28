@@ -88,7 +88,6 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
         listView.setLayoutManager(layoutManager);
         listView.setAdapter(listAdapter);
 
-        Log.d("DocumentBrowser", "Current document at launch: " + documentManager.getCurrent().file.getName());
         /*// Deletions
         ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
@@ -201,7 +200,6 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
 
     private void deleteDocument(int pos) {
         String fileName = documentManager.getDocumentName(pos);
-        Log.d("DocumentBrowser", "Deleting " + documentManager.getFileHandle(pos).getName());
         final File currentFile = documentManager.getCurrent().file;
         final File deletingFile = documentManager.getFileHandle(pos);
         boolean success = documentManager.deleteDocument(pos, false);

@@ -57,8 +57,10 @@
         android:layout_centerVertical="true"
         android:text="100%"
         android:elevation="2dp"
-        android:paddingHorizontal="6dp"
-        android:paddingVertical="2dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
         android:textAlignment="textEnd"
         android:textColor="@android:color/white"
         android:textStyle="bold" />

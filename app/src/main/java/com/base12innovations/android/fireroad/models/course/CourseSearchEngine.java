@@ -210,7 +210,6 @@ public class CourseSearchEngine {
         if (filters.contains(Filter.GIR_NONE)) {
             fulfillsGIR = true;
         } else if (filters.contains(Filter.GIR) && course.getGIRAttribute() != null) {
-            Log.d("CourseSearchEngine","Must require GIR");
             fulfillsGIR = true;
         } else if (filters.contains(Filter.GIR_LAB) && course.getGIRAttribute() == Course.GIRAttribute.LAB) {
             fulfillsGIR = true;

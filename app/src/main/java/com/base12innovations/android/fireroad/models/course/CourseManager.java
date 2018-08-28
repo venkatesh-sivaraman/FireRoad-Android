@@ -179,14 +179,13 @@ public class CourseManager {
                                 exec.execute(new Runnable() {
                                     @Override
                                     public void run() {
-                                        loadingProgress += 1.0f / (float) urls.size();
-
                                         // Determine the type of file and send to the appropriate parser
                                         if (urls.get(index).getPath().contains(requirementsPrefix)) {
                                             downloadRequirementsFile(urls.get(index));
                                         } else {
                                             loadCoursesFromURL(urls.get(index));
                                         }
+                                        loadingProgress += 1.0f / (float) urls.size();
                                     }
                                 });
                             }
@@ -329,7 +328,6 @@ public class CourseManager {
                 }
             }
         }
-        Log.d("CourseManager", "updating urls " + urls.toString());
         return urls;
 
     }
@@ -491,7 +489,6 @@ public class CourseManager {
     }
 
     private void loadCoursesFromURL(URL urlToRead) {
-        Log.d("CourseManager", "Reading from " + urlToRead.toString());
         String path = urlToRead.getPath();
         String fileName = path.substring(path.lastIndexOf('/') + 1);
         if (fileName.equals("courses.txt") || fileName.equals("features.txt") || fileName.equals("enrollment.txt")

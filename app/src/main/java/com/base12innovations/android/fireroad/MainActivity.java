@@ -162,7 +162,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     if (User.currentUser().getCurrentSchedule() == null) {
                         ScheduleFragment.createInitialDocument(MainActivity.this, null);
                     }
-                    Log.d("MainActivity", "Finishing post load block");
                     return null;
                 }
             };
@@ -174,7 +173,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 CourseManager.sharedInstance().waitForLoad(new Callable<Void>() {
                     @Override
                     public Void call() throws Exception {
-                        Log.d("MainActivity", "Done waiting for load");
                         if (loadingDialogFragment != null) {
                             loadingDialogFragment.dismiss();
                         }
@@ -186,9 +184,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 CourseManager.sharedInstance().loadCourses(new CourseManager.LoadCoursesListener() {
                     @Override
                     public void completion() {
-                        Log.d("MainActivity", "Completion " + (loadingDialogFragment != null ? loadingDialogFragment.toString() : "null"));
                         if (loadingDialogFragment != null && !isActivityPaused) {
-                            Log.d("MainActivity", "Dismissing");
                             loadingDialogFragment.dismiss();
                         }
                         loadingDialogFragment = null;
@@ -205,7 +201,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
                     @Override
                     public void needsFullLoad() {
-                        Log.d("MainActivity", "Needs full load");
                         if (!isActivityPaused) {
                             loadingDialogFragment = new CourseLoadingDialogFragment();
                             loadingDialogFragment.setCancelable(false);
@@ -231,7 +226,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     String json = data.getStringExtra(AuthenticationActivity.AUTH_RESULT_EXTRA);
                     json = json.substring(json.indexOf('{'), json.lastIndexOf('}') + 1);
                     json = json.replaceAll("\\\\[\"]", "\"");
-                    Log.d("MainActivity", json);
                     JSONObject result = new JSONObject(json);
                     authenticationCompletion.success(result);
                 } catch (JSONException e) {
@@ -431,7 +425,6 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                         performSync();
                     }
                 }, 5, 60, TimeUnit.SECONDS);
-                Log.d("MainActivity", "Logged in");
                 performSync();
             }
 
@@ -911,7 +904,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     private void dimViewOn() {
-        Log.d("MainActivity", "Dimming on");
+        //Log.d("MainActivity", "Dimming on");
         final View dimmer = findViewById(R.id.backgroundDimmer);
         dimmer.setClickable(true);
         dimmer.setVisibility(View.VISIBLE);
@@ -933,7 +926,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     private void dimViewOff() {
-        Log.d("MainActivity", "Dimming off");
+        //Log.d("MainActivity", "Dimming off");
         final View dimmer = findViewById(R.id.backgroundDimmer);
         dimmer.setClickable(false);
         if (dimmer.getVisibility() == View.VISIBLE) {
@@ -1043,7 +1036,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     public void showSearchCoursesView(String query, EnumSet<CourseSearchEngine.Filter> filters) {
-        Log.d("MainActivity", "Search courses filters: " + filters.toString());
+        //Log.d("MainActivity", "Search courses filters: " + filters.toString());
         SearchCoursesFragment fragment = SearchCoursesFragment.newInstance(query, filters);
         searchCoursesFragment = fragment;
         currentDetailsFragment = null;

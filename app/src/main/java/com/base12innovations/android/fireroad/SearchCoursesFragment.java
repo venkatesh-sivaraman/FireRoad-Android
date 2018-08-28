@@ -118,7 +118,7 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
         if (isSearching) {
             return;
         }
-        Log.d("SearchCourses", query + ", " + filters.toString() + CourseSearchEngine.Filter.noFilter().toString() + Boolean.toString(filters.equals(CourseSearchEngine.Filter.noFilter())));
+        //Log.d("SearchCourses", query + ", " + filters.toString() + CourseSearchEngine.Filter.noFilter().toString() + Boolean.toString(filters.equals(CourseSearchEngine.Filter.noFilter())));
         if (query.length() == 0 && filters.equals(CourseSearchEngine.Filter.noFilter())) {
             toolbar.setTitle("No Results");
             listAdapter.setCourses(new ArrayList<Course>());

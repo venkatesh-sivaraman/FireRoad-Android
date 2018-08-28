@@ -184,7 +184,6 @@ public class CourseLayoutBuilder {
         ratingBar.setOnRatingBarChangeListener(new RatingBar.OnRatingBarChangeListener() {
             @Override
             public void onRatingChanged(RatingBar ratingBar, float newValue, boolean b) {
-                Log.d("RatingBar", "Changed to " + Float.toString(newValue));
                 CourseManager.sharedInstance().setRatingForCourse(course, (int)Math.round(newValue * 2.0f - 5.0f));
             }
         });

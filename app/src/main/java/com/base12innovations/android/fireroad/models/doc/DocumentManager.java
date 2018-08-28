@@ -548,7 +548,7 @@ public class DocumentManager {
 
                     if (getDocumentID(myFileName) == null) {
                         // Upload the file
-                        Log.d("DocumentManager", "Uploading my file " + myFileName);
+                        //Log.d("DocumentManager", "Uploading my file " + myFileName);
                         Document doc = initializeDocument(getFileHandle(myFileName), false);
                         doc.read();
 
@@ -559,11 +559,11 @@ public class DocumentManager {
                         }
 
                         boolean worked = syncDocument(doc, true, false, false, null);
-                        Log.d("DocumentManager", "Uploaded " + myFileName + " successfully: " + Boolean.toString(worked));
+                        //Log.d("DocumentManager", "Uploaded " + myFileName + " successfully: " + Boolean.toString(worked));
 
                     } else if (state.files.containsKey(getDocumentID(myFileName))) {
                         // Sync the file
-                        Log.d("DocumentManager", "Syncing my file " + myFileName);
+                        //Log.d("DocumentManager", "Syncing my file " + myFileName);
                         Document doc = initializeDocument(getFileHandle(myFileName), false);
                         doc.read();
                         syncDocument(doc, justModifiedFile(myFileName), false, false, listener);
@@ -576,13 +576,13 @@ public class DocumentManager {
                             getFileHandle(getDocumentNameByID(id)).exists()) {
                         // Sync the file
                         String name = getDocumentNameByID(id);
-                        Log.d("DocumentManager", "Syncing " + name + " part 2");
+                        //Log.d("DocumentManager", "Syncing " + name + " part 2");
                         Document doc = initializeDocument(getFileHandle(name), false);
                         doc.read();
                         syncDocument(doc, justModifiedFile(name), false, false, listener);
                     } else {
                         // Download the new file
-                        Log.d("DocumentManager", "Downloading new file " + fileID);
+                        //Log.d("DocumentManager", "Downloading new file " + fileID);
                         CloudSyncState downloadInput = new CloudSyncState();
                         downloadInput.id = id;
                         CloudSyncState downloadResult = networkHelper.get().cloudDownloadFile(DocumentManager.this, downloadInput);
@@ -611,7 +611,7 @@ public class DocumentManager {
                 }
 
                 if (deletedInitial != null && fileListener.get() != null) {
-                    Log.d("DocumentManager", "Notifying deleted file " + deletedInitial);
+                    //Log.d("DocumentManager", "Notifying deleted file " + deletedInitial);
                     final String deletedName = deletedInitial;
                     TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
                         @Override
@@ -727,7 +727,7 @@ public class DocumentManager {
                         });
                     } else {
                         // File was deleted on server - delete it locally
-                        Log.d("DocumentManager", "Deleting local version of " + name);
+                        //Log.d("DocumentManager", "Deleting local version of " + name);
                         setDownloadDate(name, null);
                         setCloudModifiedDate(name, null);
                         finishCloudSync(doc, name, result, listener);
@@ -755,7 +755,7 @@ public class DocumentManager {
         if (getDocumentID(name) == null || networkHelper.get() == null) {
             if (listener != null)
                 listener.documentManagerSyncError(this, null);
-            Log.d("DocumentManager", this.toString() + "No document ID or network helper");
+            //Log.d("DocumentManager", this.toString() + "No document ID or network helper");
             return;
         }
         final int id = getDocumentID(name);
@@ -767,12 +767,12 @@ public class DocumentManager {
             public void perform() {
                 CloudSyncState input = new CloudSyncState();
                 input.id = id;
-                Log.d("DocumentManager", "Deleting " + Integer.toString(id) + " from cloud");
+                //Log.d("DocumentManager", "Deleting " + Integer.toString(id) + " from cloud");
                 CloudSyncState result = networkHelper.get().cloudDeleteFile(DocumentManager.this, input);
                 if (result == null || result.success == null || !result.success) {
                     handleSyncError(result, listener);
                 } else {
-                    Log.d("DocumentManager", "Successfully deleted " + name + " from the cloud");
+                    //Log.d("DocumentManager", "Successfully deleted " + name + " from the cloud");
                     if (listener != null)
                         listener.documentManagerSyncedSuccessfully(DocumentManager.this);
                 }
@@ -835,7 +835,7 @@ public class DocumentManager {
 
         syncInProgress = false;
         if (state.result.equals(UPDATE_LOCAL) && state.contents != null) {
-            Log.d("DocumentManager", "Updating contents");
+            //Log.d("DocumentManager", "Updating contents");
             String contentsString = new Gson().toJson(state.contents);
             doc.parse(contentsString);
             if (state.name != null && !state.name.equals(name)) {
@@ -895,9 +895,9 @@ public class DocumentManager {
 
         Document doc = initializeDocument(getFileHandle(newName), false);
         doc.read();
-        Log.d("DocumentManager","Syncing renamed document with name " + doc.getFileName() + doc.getAllCourses().toString());
+        //Log.d("DocumentManager","Syncing renamed document with name " + doc.getFileName() + doc.getAllCourses().toString());
         boolean worked = syncDocument(doc, true, false, false, null);
-        Log.d("DocumentManager", "Upload worked: " + Boolean.toString(worked));
+        //Log.d("DocumentManager", "Upload worked: " + Boolean.toString(worked));
     }
 
     private void handleSyncError(CloudSyncState state, final SyncResponseHandler listener) {
