@@ -220,7 +220,10 @@ public class ForYouFragment extends Fragment implements AddCourseDialog.AddCours
         if (NetworkManager.sharedInstance().isLoggedIn()) {
             String username = AppSettings.shared().getString(AppSettings.RECOMMENDER_USERNAME, "<no username>");
             layoutBuilder.addCenteredDescriptionItem(layout, "You are currently logged in as " + username + ". " +
-                    "To log out, turn off Sync and Recommendations in the Settings pane.");
+                    "To log out, go to the Settings pane.");
+        } else {
+            layoutBuilder.addCenteredDescriptionItem(layout, "You are not currently logged in. To log in, toggle " +
+                    "Sync and Recommendations in the Settings pane.");
         }
     }
 

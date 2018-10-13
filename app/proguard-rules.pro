@@ -27,3 +27,4 @@
 -dontwarn retrofit2.**
 -dontwarn okhttp3.**
 -dontwarn okio.**
+-keepattributes SourceFile,LineNumberTable

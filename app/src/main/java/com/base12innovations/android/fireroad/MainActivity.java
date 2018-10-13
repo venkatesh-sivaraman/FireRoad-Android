@@ -102,6 +102,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     private CourseLoadingDialogFragment loadingDialogFragment;
     private boolean isActivityPaused = false;
 
+    private String courseLoadErrorMessage;
+
     //region Lifecycle
 
     @Override
@@ -151,7 +153,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     private void loadCourseManagerIfNeeded() {
-        if (!CourseManager.sharedInstance().isLoaded()) {
+        if (!CourseManager.sharedInstance().isLoaded() || CourseManager.sharedInstance().needsUpdateOnLaunch()) {
             CourseManager.sharedInstance().postLoadBlock = new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
@@ -192,11 +194,16 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     }
 
                     @Override
-                    public void error() {
+                    public void error(String message) {
                         if (loadingDialogFragment != null && !isActivityPaused) {
                             loadingDialogFragment.dismiss();
                         }
                         loadingDialogFragment = null;
+                        if (message != null) {
+                            courseLoadErrorMessage = message;
+                            if (!isActivityPaused)
+                                showCourseLoadErrorMessage();
+                        }
                     }
 
                     @Override
@@ -212,6 +219,25 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         }
     }
 
+    private void showCourseLoadErrorMessage() {
+        TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Courses failed to load")
+                        .setMessage(courseLoadErrorMessage)
+                        .setNegativeButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        })
+                        .show();
+                courseLoadErrorMessage = null;
+            }
+        });
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == ROAD_BROWSER_REQUEST && resultCode == RESULT_OK) {
@@ -224,11 +250,12 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             if (resultCode == RESULT_OK && data != null) {
                 try {
                     String json = data.getStringExtra(AuthenticationActivity.AUTH_RESULT_EXTRA);
-                    json = json.substring(json.indexOf('{'), json.lastIndexOf('}') + 1);
+                    json = json.substring(json.indexOf("{"), json.lastIndexOf("}") + 1);
                     json = json.replaceAll("\\\\[\"]", "\"");
                     JSONObject result = new JSONObject(json);
+                    Log.d("MainActivity", "Authentication worked, result is "+ json);
                     authenticationCompletion.success(result);
-                } catch (JSONException e) {
+                } catch (JSONException | StringIndexOutOfBoundsException e) {
                     e.printStackTrace();
                     authenticationCompletion.failure();
                 }
@@ -272,6 +299,13 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     return null;
                 }
             });
+        } else if (courseLoadErrorMessage != null)
+            showCourseLoadErrorMessage();
+        else {
+            loadCourseManagerIfNeeded();
+            if (!NetworkManager.sharedInstance().isLoggedIn() &&
+                    AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) == AppSettings.RECOMMENDATIONS_ALLOWED)
+                setupLogin();
         }
     }
 
@@ -299,7 +333,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 if (detailsStack.size() > 1) {
                     navFragmentWantsBack(null);
                 } else {
-                    collapseBottomSheet();
+                    hideBottomSheet();
                 }
                 return true;
             } else if (mDrawer.isDrawerOpen(GravityCompat.START)) {
@@ -985,6 +1019,10 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
     @Override
     public void courseNavigatorWantsCourseDetails(Fragment source, Course course) {
+        if (!source.equals(currentDetailsFragment) && !source.equals(searchCoursesFragment)) {
+            // Clear the navigation stack
+            detailsStack = null;
+        }
         onShowCourseDetails(course);
     }
 

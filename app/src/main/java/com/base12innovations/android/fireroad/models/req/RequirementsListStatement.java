@@ -497,7 +497,8 @@ public class RequirementsListStatement {
     }
 
     private FulfillmentProgress ceilingThreshold(int progress, int max) {
-        return new FulfillmentProgress(Math.min(Math.max(0, progress), max), max);
+        int maxFirstVal = max == 0 ? Integer.MAX_VALUE : max;
+        return new FulfillmentProgress(Math.min(Math.max(0, progress), maxFirstVal), max);
     }
 
     private int totalUnitsInCourses(Collection<Course> courses) {
@@ -611,7 +612,7 @@ public class RequirementsListStatement {
         Collections.sort(sortedProgresses, new Comparator<RequirementsListStatement>() {
             @Override
             public int compare(RequirementsListStatement t1, RequirementsListStatement t2) {
-                float p1 = t1.percentageFulfilled(), p2 = t2.percentageFulfilled();
+                float p1 = t1.rawPercentageFulfilled(), p2 = t2.rawPercentageFulfilled();
                 return -Float.compare(p1, p2);
             }
         });
@@ -706,6 +707,12 @@ public class RequirementsListStatement {
         fulfillmentProgress = (threshold != null && threshold.criterion == ThresholdCriterion.UNITS) ? unitProgress : subjectProgress;
 
         return totalSat;
+    }
+
+    private float rawPercentageFulfilled() {
+        if ((connectionType == ConnectionType.NONE && getManualProgress() == 0) || fulfillmentProgress == null)
+            return 0.0f;
+        return (float)fulfillmentProgress.progress / (float)Math.max(fulfillmentProgress.max, threshold != null && threshold.criterion == ThresholdCriterion.UNITS ? DEFAULT_UNIT_COUNT: 1) * 100.0f;
     }
 
     public float percentageFulfilled() {

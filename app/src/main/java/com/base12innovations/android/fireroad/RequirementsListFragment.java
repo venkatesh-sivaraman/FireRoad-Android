@@ -31,9 +31,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -181,6 +183,7 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
     private Map<RequirementsListStatement, View> headerCells;
     private Map<RequirementsListStatement, View> courseListCells;
     private CourseLayoutBuilder layoutBuilder;
+    private Set<RequirementsListStatement> visibleNestedReqs;
 
     private void buildRequirementsListLayout(LinearLayout layout) {
         layout.removeAllViews();
@@ -271,8 +274,8 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
         }
     }
 
-    private void addCard(final LinearLayout layout, List<PresentationItem> items, boolean nested, int rowIndex) {
-        LinearLayout card = layoutBuilder.addCard(layout, nested, rowIndex);
+    private void addCard(final LinearLayout layout, List<PresentationItem> items, int rowIndex, View.OnClickListener nestedListener) {
+        LinearLayout card = layoutBuilder.addCard(layout, rowIndex, nestedListener);
 
         // Add the presentation items
         for (PresentationItem item : items) {
@@ -301,7 +304,7 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
     }
 
     private void addCard(LinearLayout layout, List<PresentationItem> items) {
-        addCard(layout, items, false, -1);
+        addCard(layout, items, -1, null);
     }
 
     private float textSize(CellType cellType) {
@@ -318,7 +321,7 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
     }
 
     private void addCourseListItem(final LinearLayout layout, final List<RequirementsListStatement> requirements) {
-        final int rowIndex = layout.getChildCount() - 1;
+        final int rowIndex = layout.getChildCount();
         final LinearLayout listLayout = layoutBuilder.addCourseListItem(layout);
         TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
@@ -473,11 +476,31 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
                     }
                 } else {
                     // Sub-requirements page
-                    addCard(layout, presentationItemsForRequirement(req, 1, false), true, rowIndex + 1);
+                    if (visibleNestedReqs == null)
+                        visibleNestedReqs = new HashSet<>();
+                    if (!visibleNestedReqs.contains(req)) {
+                        visibleNestedReqs.add(req);
+                        addCard(layout, presentationItemsForRequirement(req, 1, false), rowIndex + 1, new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                if (visibleNestedReqs != null) {
+                                    markNestedReqsInvisible(req);
+                                }
+                            }
+                        });
+                    }
                 }
             }
         });
         //addCard(layout, Arrays.asList(new PresentationItem(CellType.COURSE_LIST, req, null)), true);
+    }
+
+    private void markNestedReqsInvisible(RequirementsListStatement req) {
+        visibleNestedReqs.remove(req);
+        if (req.getRequirements() != null) {
+            for (RequirementsListStatement subReq : req.getRequirements())
+                markNestedReqsInvisible(subReq);
+        }
     }
 
     private void showManualProgressSelector(final RequirementsListStatement req) {

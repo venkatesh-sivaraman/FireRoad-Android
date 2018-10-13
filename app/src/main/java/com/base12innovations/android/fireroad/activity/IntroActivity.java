@@ -135,6 +135,7 @@ public class IntroActivity extends AppCompatActivity {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         AppSettings.shared().edit().putInt(AppSettings.CLASS_YEAR, i + 1).apply();
+                        AppSettings.shared().edit().putString(AppSettings.CLASS_YEAR_STRING, Integer.toString(i + 1)).apply();
                         CourseManager.sharedInstance().updateCurrentSemester(Integer.toString(i + 1));
                     }
                 });

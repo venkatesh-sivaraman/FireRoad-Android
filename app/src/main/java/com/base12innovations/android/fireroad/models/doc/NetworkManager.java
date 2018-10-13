@@ -15,6 +15,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -231,6 +232,17 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
         });
     }
 
+    public void logout() {
+        isLoggedIn = false;
+        setAccessToken(null);
+        SharedPreferences.Editor editor = AppSettings.shared().edit();
+        editor.putString(AppSettings.RECOMMENDER_USERNAME, null);
+        editor.putString(AppSettings.RECOMMENDER_USER_ID, null);
+        editor.putInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_DISALLOWED);
+        editor.putBoolean(AppSettings.ALLOWS_RECOMMENDATIONS_BOOL, false);
+        editor.apply();
+    }
+
     private boolean extractAccessInfo(JSONObject response) {
         try {
             if (!response.has("success") || !response.getBoolean("success"))
@@ -312,7 +324,7 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
         }
     }
 
-    public Response<String> determineCurrentSemester() {
+    public Response<String> determineCurrentSemester() throws ConnectException {
         CourseUpdaterAPI api = retrofit.create(CourseUpdaterAPI.class);
 
         Call<List<HashMap<String, Object>>> req = api.getSemesters();
@@ -324,6 +336,8 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
                 return Response.error(resp.code(), null, false);
             }
         } catch (IOException e) {
+            if (e instanceof ConnectException)
+                throw (ConnectException)e;
             return Response.error(JSON_ERROR, null, false);
         }
     }

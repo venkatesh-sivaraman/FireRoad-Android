@@ -43,7 +43,7 @@ public class Document {
     }
 
     public void save() {
-        if (isReadOnly()) return;
+        if (isReadOnly() || file == null) return;
         try {
             this.file.createNewFile();
             String contents = contentsString();

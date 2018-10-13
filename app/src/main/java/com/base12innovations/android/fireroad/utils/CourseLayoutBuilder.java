@@ -137,7 +137,7 @@ public class CourseLayoutBuilder {
 
     // Card views
 
-    public LinearLayout addCard(final LinearLayout layout, boolean nested, int rowIndex) {
+    public LinearLayout addCard(final LinearLayout layout, int rowIndex, final View.OnClickListener nestedCloseListener) {
         int margin = defaultMargin;
 
         LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
@@ -149,13 +149,14 @@ public class CourseLayoutBuilder {
             layout.addView(card);
         else
             layout.addView(card, rowIndex);
-        if (nested) {
+        if (nestedCloseListener != null) {
             card.setBackgroundResource(R.drawable.requirements_nested_card_background);
             card.setElevation(0.0f);
             addCloseButtonItem(card, new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     layout.removeView(card);
+                    nestedCloseListener.onClick(view);
                 }
             });
         }
@@ -165,7 +166,7 @@ public class CourseLayoutBuilder {
     }
 
     public LinearLayout addCard(LinearLayout layout) {
-        return addCard(layout, false, -1);
+        return addCard(layout, -1, null);
     }
 
     // Specialized views

@@ -11,6 +11,8 @@
     <string name="no_suggestions_message">Press Enter to search.</string>
     <string name="more_suggestions">More results…</string>
 
+    <string name="course_network_error_message">"Could not connect to the network. Please restart the app with a network connection to complete the update."</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_course_details">CourseDetailsActivity</string>

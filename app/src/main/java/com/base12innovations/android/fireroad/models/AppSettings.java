@@ -36,7 +36,7 @@ public class AppSettings {
 
     public static void setCurrentSemester(int semester) {
         SharedPreferences.Editor editor = AppSettings.shared().edit();
-        int classYear = (semester - 1) / 3;
+        int classYear = ((semester - 1) / 3) + 1;
         editor.putString(CLASS_YEAR_STRING, Integer.toString(classYear));
         editor.putInt(CURRENT_SEMESTER, semester);
         editor.apply();

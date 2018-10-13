@@ -6,6 +6,8 @@
             android:summary="Your course selections will be synced across your devices and securely used to generate helpful recommendations. MIT login is required."
             android:title="Sync and Recommendations"
             android:defaultValue="false" />
+        <Preference android:title="Logout"
+            android:key="logout"/>
         <ListPreference
             android:key="class_year_str"
             android:summary="Choose your current or upcoming class year."
@@ -26,6 +28,8 @@
             android:summary="Turn off Allow Corequisites Together to display a warning when corequisites are taken in the same semester."
             android:title="Allow Corequisites Together"
             android:defaultValue="true" />
+        <Preference android:title="Update Course Database"
+            android:key="database_update"/>
     </PreferenceCategory>
 
     <PreferenceCategory android:title="About">

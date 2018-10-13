@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.doc.NetworkManager;
 import com.base12innovations.android.fireroad.models.req.RequirementsListManager;
@@ -18,6 +19,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -47,6 +49,8 @@ public class CourseManager {
 
     private static String RATINGS_PREFS = "com.base12innovations.android.fireroad.ratingsPreferences";
     private SharedPreferences ratingsPreferences;
+
+    private Context context;
 
     // During debugging, use to force a database update
     private boolean forceUpdate = false;
@@ -83,6 +87,7 @@ public class CourseManager {
             Log.d("CourseManager", "Already initialized this database!");
             return;
         }
+        this.context = context;
         courseDatabase = Room.databaseBuilder(context,
                 CourseDatabase.class, DATABASE_NAME).fallbackToDestructiveMigration().build();
 
@@ -142,7 +147,7 @@ public class CourseManager {
 
     public interface LoadCoursesListener {
         void completion();
-        void error();
+        void error(String userMessage);
         void needsFullLoad();
     }
 
@@ -154,10 +159,18 @@ public class CourseManager {
         TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
             public void perform() {
-                final List<URL> urls = determineURLsToUpdate();
+                List<URL> myURLs;
+                try {
+                    myURLs = determineURLsToUpdate();
+                } catch (ConnectException e) {
+                    _isLoading = false;
+                    listener.error(context.getResources().getString(R.string.course_network_error_message));
+                    return;
+                }
+                final List<URL> urls = myURLs;
                 if (urls == null) {
                     _isLoading = false;
-                    listener.error();
+                    listener.error(null);
                     return;
                 }
 
@@ -179,11 +192,20 @@ public class CourseManager {
                                 exec.execute(new Runnable() {
                                     @Override
                                     public void run() {
+                                        if (!_isLoading) // Has broken because of an error
+                                            return;
+
                                         // Determine the type of file and send to the appropriate parser
+                                        URLLoadResult result;
                                         if (urls.get(index).getPath().contains(requirementsPrefix)) {
-                                            downloadRequirementsFile(urls.get(index));
+                                            result = downloadRequirementsFile(urls.get(index));
                                         } else {
-                                            loadCoursesFromURL(urls.get(index));
+                                            result = loadCoursesFromURL(urls.get(index));
+                                        }
+                                        if (result == URLLoadResult.CONNECT_ERROR && _isLoading) {
+                                            _isLoading = false;
+                                            listener.error(context.getResources().getString(R.string.course_network_error_message));
+                                            return;
                                         }
                                         loadingProgress += 1.0f / (float) urls.size();
                                     }
@@ -196,6 +218,10 @@ public class CourseManager {
                                 e.printStackTrace();
                                 Log.e("CourseManagerUpdate", e.getMessage());
                             }
+                            if (!_isLoading) {
+                                _isUpdatingDB = false;
+                                return null;
+                            }
                         }
 
                         SharedPreferences.Editor editor = dbPreferences.edit();
@@ -207,6 +233,7 @@ public class CourseManager {
                             editor.putString(prefsDatabaseSemesterKey, newSemester);
                         editor.putBoolean(hasPerformedFullLoad, true);
                         editor.apply();
+                        setUpdatedOnLaunch();
 
                         RequirementsListManager.sharedInstance().loadRequirementsFiles();
                         _isUpdatingDB = false;
@@ -245,6 +272,22 @@ public class CourseManager {
         if (loadingCompletionHandlers != null) {
             loadingCompletionHandlers.add(completionHandler);
         }
+    }
+
+    private static String NEEDS_UPDATE_ON_LAUNCH_KEY = "needsUpdateOnLaunch";
+    // Increment the cutoff value to set update on launch
+    private static int UPDATE_ON_LAUNCH_CUTOFF = 1;
+
+    public boolean needsUpdateOnLaunch() {
+        return dbPreferences.getInt(NEEDS_UPDATE_ON_LAUNCH_KEY, 0) < UPDATE_ON_LAUNCH_CUTOFF;
+    }
+
+    private void setUpdatedOnLaunch() {
+        dbPreferences.edit().putInt(NEEDS_UPDATE_ON_LAUNCH_KEY, UPDATE_ON_LAUNCH_CUTOFF).apply();
+    }
+
+    public void setNeedsDatabaseUpdate() {
+        dbPreferences.edit().putInt(NEEDS_UPDATE_ON_LAUNCH_KEY, 0).apply();
     }
 
     // Internet
@@ -291,7 +334,7 @@ public class CourseManager {
         return deltaList;
     }
 
-    private List<URL> determineURLsToUpdate() {
+    private List<URL> determineURLsToUpdate() throws ConnectException {
         newSemester = NetworkManager.sharedInstance().determineCurrentSemester().result;
         if (newSemester == null)
             return new ArrayList<>();
@@ -300,16 +343,16 @@ public class CourseManager {
         if (delta == null)
             return new ArrayList<>();
 
-        boolean needUpdate = !dbPreferences.getBoolean(hasPerformedFullLoad, false) || forceUpdate;
+        boolean needUpdate = !dbPreferences.getBoolean(hasPerformedFullLoad, false) || forceUpdate || needsUpdateOnLaunch();
         int currentDBVersion = needUpdate ? 0 : dbPreferences.getInt(prefsDatabaseVersionKey, 0);
         int currentReqVersion = needUpdate ? 0 : dbPreferences.getInt(prefsRequirementsVersionKey, 0);
         List<URL> urls = new ArrayList<>();
         if (newDatabaseVersion != currentDBVersion || newRequirementsVersion != currentReqVersion) {
             String relatedPath = null;
             for (String path : delta) {
-                if (newDatabaseVersion == currentDBVersion && !path.contains(requirementsPrefix)) {
+                /*if (newDatabaseVersion == currentDBVersion && !path.contains(requirementsPrefix)) {
                     continue;
-                }
+                }*/
                 if (path.contains(relatedCoursesFileIdentifier)) {
                     relatedPath = path;
                     continue;
@@ -488,12 +531,16 @@ public class CourseManager {
         courseDatabase.daoAccess().updateCourse(course);
     }
 
-    private void loadCoursesFromURL(URL urlToRead) {
+    private enum URLLoadResult {
+        SUCCESS, CONNECT_ERROR, OTHER_ERROR, SKIPPING;
+    }
+
+    private URLLoadResult loadCoursesFromURL(URL urlToRead) {
         String path = urlToRead.getPath();
         String fileName = path.substring(path.lastIndexOf('/') + 1);
         if (fileName.equals("courses.txt") || fileName.equals("features.txt") || fileName.equals("enrollment.txt")
                 || fileName.contains("condensed")) {
-            return;
+            return URLLoadResult.SKIPPING;
         }
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(urlToRead.openStream()));
@@ -509,13 +556,18 @@ public class CourseManager {
                 }
             }
             in.close();
+            return URLLoadResult.SUCCESS;
         } catch (IOException e) {
             Log.d("CourseManager", "Error loading from URL " + urlToRead.toString());
             e.printStackTrace();
+            if (e instanceof ConnectException)
+                return URLLoadResult.CONNECT_ERROR;
+            else
+                return URLLoadResult.OTHER_ERROR;
         }
     }
 
-    private void downloadRequirementsFile(URL url) {
+    private URLLoadResult downloadRequirementsFile(URL url) {
         try {
             URLConnection ucon = url.openConnection();
             ucon.setReadTimeout(5000);
@@ -534,7 +586,7 @@ public class CourseManager {
             success = file.createNewFile();
             if (!success) {
                 Log.d("CourseManager", "Failed to create file to download requirements file");
-                return;
+                return URLLoadResult.OTHER_ERROR;
             }
 
             FileOutputStream outStream = new FileOutputStream(file);
@@ -549,8 +601,12 @@ public class CourseManager {
             outStream.close();
             inStream.close();
 
+            return URLLoadResult.SUCCESS;
         } catch (Exception e) {
             e.printStackTrace();
+            if (e instanceof ConnectException)
+                return URLLoadResult.CONNECT_ERROR;
+            return URLLoadResult.OTHER_ERROR;
         }
     }
 
@@ -634,7 +690,7 @@ public class CourseManager {
             public void perform() {
                 NetworkManager.Response<List<String>> resp = NetworkManager.sharedInstance().getFavorites();
                 if (resp.result != null && resp.result.size() > 0) {
-                    favoriteCourses = resp.result;
+                    favoriteCourses = new ArrayList<>(resp.result);
                     if (favoritesChangedListener != null) {
                         TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
                             @Override
@@ -698,7 +754,7 @@ public class CourseManager {
             if (raw.length() == 0) {
                 favoriteCourses = new ArrayList<>();
             } else {
-                favoriteCourses = Arrays.asList(raw.split(","));
+                favoriteCourses = new ArrayList<>(Arrays.asList(raw.split(",")));
             }
         }
         return favoriteCourses;
