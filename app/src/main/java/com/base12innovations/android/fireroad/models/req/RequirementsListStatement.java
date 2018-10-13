@@ -25,7 +25,7 @@ public class RequirementsListStatement {
     public String title;
     public String contentDescription;
 
-    public WeakReference<RequirementsListStatement> parent;
+    public WeakReference<RequirementsListStatement> parent = new WeakReference<>(null);
 
     public enum ConnectionType {
         ALL, ANY, NONE
@@ -420,6 +420,7 @@ public class RequirementsListStatement {
                 // Turns out this requirement is a variable
                 RequirementsListStatement subReq = dictionary.get(requirement);
                 subReq.substituteVariableDefinitions(dictionary);
+                requirement = null;
                 requirements = new ArrayList<>(Arrays.asList(subReq));
             }
         } else if (requirements != null) {

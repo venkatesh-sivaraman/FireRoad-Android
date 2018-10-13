@@ -25,6 +25,7 @@ import com.base12innovations.android.fireroad.models.req.RequirementsListManager
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.CourseLayoutBuilder;
+import com.base12innovations.android.fireroad.utils.ListHelper;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.util.ArrayList;
@@ -146,17 +147,23 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
             items.add(new PresentationItem(CellType.TITLE_2, requirement, desc.substring(0, 1).toUpperCase() + desc.substring(1) + ":"));
         }
         boolean added = false;
-        if (requirement.minimumNestDepth() <= 1 && (requirement.maximumNestDepth() <= 2 || level > 0)) {
-            boolean hasTitle = false;
+        if (requirement.minimumNestDepth() <= 1 ||
+                (requirement.getRequirements() != null && ListHelper.containsElement(requirement.getRequirements(), new ListHelper.Predicate<RequirementsListStatement>() {
+            @Override
+            public boolean test(RequirementsListStatement element) {
+                return element.requirement != null;
+            }
+        }))) {
+            boolean shouldCollapse = true; // Whether to show on one row
             if (requirement.getRequirements() != null) {
                 for (RequirementsListStatement req : requirement.getRequirements()) {
-                    if (req.title != null && req.title.length() > 0) {
-                        hasTitle = true;
+                    if ((req.title != null && req.title.length() > 0)) {
+                        shouldCollapse = false;
                         break;
                     }
                 }
             }
-            if (!hasTitle) {
+            if (shouldCollapse) {
                 added = true;
                 items.add(new PresentationItem(CellType.COURSE_LIST, requirement, null));
             }
