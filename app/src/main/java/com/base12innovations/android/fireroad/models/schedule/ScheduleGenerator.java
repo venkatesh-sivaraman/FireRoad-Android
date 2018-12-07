@@ -38,6 +38,10 @@ public class ScheduleGenerator {
                 allowedSections.get(course).get(section).size() == 0) {
             return allItems;
         }
+        // If any of the section indexes are no longer available, pretend the course is unconstrained
+        if (ListHelper.maximum(allowedSections.get(course).get(section), -1) >= allItems.size()) {
+            return allItems;
+        }
         return ListHelper.map(allowedSections.get(course).get(section),
                 new ListHelper.Function<Integer, List<Course.ScheduleItem>>() {
                     @Override
@@ -45,6 +49,20 @@ public class ScheduleGenerator {
                         return allItems.get(integer);
                     }
                 });
+    }
+
+    // Update the allowedSections list for the given course/section, resetting the sections if some of them are invalid
+    private void updateAllowedSections(Course course, String section, List<List<Course.ScheduleItem>> allItems) {
+        if (allowedSections == null ||
+                !allowedSections.containsKey(course) ||
+                !allowedSections.get(course).containsKey(section) ||
+                allowedSections.get(course).get(section).size() == 0) {
+            return;
+        }
+        // If any of the section indexes are no longer available, unconstrain the course
+        if (ListHelper.maximum(allowedSections.get(course).get(section), -1) >= allItems.size()) {
+            allowedSections.get(course).remove(section);
+        }
     }
 
     public List<ScheduleConfiguration> generateSchedules(List<Course> courses, Map<Course, Map<String, List<Integer>>> sections) {
@@ -60,6 +78,7 @@ public class ScheduleGenerator {
             if (schedule == null) continue;
 
             for (String section : schedule.keySet()) {
+                updateAllowedSections(course, section, schedule.get(section));
                 List<List<Course.ScheduleItem>> filteredOptions = allowedSectionsForCourse(course, section, schedule.get(section));
 
                 // Filter out sections with the same exact days and times

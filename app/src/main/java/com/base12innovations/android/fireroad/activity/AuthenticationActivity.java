@@ -17,8 +17,10 @@ import android.view.Window;
 import android.webkit.ValueCallback;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ProgressBar;
 
 import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.AppSettings;
@@ -36,6 +38,7 @@ public class AuthenticationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_authentication);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        final ProgressBar progressBar = findViewById(R.id.toolbar_progress_bar);
         setSupportActionBar(toolbar);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -45,12 +48,19 @@ public class AuthenticationActivity extends AppCompatActivity {
             String url = i.getStringExtra(AUTH_URL_EXTRA);
             WebView wv = findViewById(R.id.webView);
             wv.loadUrl(url);
-            wv.getSettings().setJavaScriptEnabled(true);
+            WebSettings mWebSettings = wv.getSettings();
+            mWebSettings.setJavaScriptEnabled(true);
+            mWebSettings.setDomStorageEnabled(true);
+            mWebSettings.setSupportZoom(false);
+            mWebSettings.setAllowFileAccess(true);
+            mWebSettings.setAllowContentAccess(true);
             wv.setWebViewClient(new WebViewClient() {
 
                 @Override
                 public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                     super.onReceivedError(view, request, error);
+
+                    progressBar.setVisibility(View.GONE);
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         new AlertDialog.Builder(AuthenticationActivity.this).setTitle(error.getDescription()).setNegativeButton("Dismiss", new DialogInterface.OnClickListener() {
@@ -66,6 +76,7 @@ public class AuthenticationActivity extends AppCompatActivity {
                 public void onPageFinished(WebView view, String url) {
                     super.onPageFinished(view, url);
 
+                    progressBar.setVisibility(View.GONE);
                     if (url.contains("decline")) {
                         setResult(RESULT_CANCELED);
                         finish();
@@ -85,6 +96,12 @@ public class AuthenticationActivity extends AppCompatActivity {
                                     }
                                 }
                             });
+                }
+
+                @Override
+                public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                    super.onPageStarted(view, url, favicon);
+                    progressBar.setVisibility(View.VISIBLE);
                 }
             });
         }

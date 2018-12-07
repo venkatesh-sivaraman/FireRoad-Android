@@ -249,6 +249,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         } else if (requestCode == AUTHENTICATION_INTENT_TAG && authenticationCompletion != null) {
             if (resultCode == RESULT_OK && data != null) {
                 try {
+                    Log.d("MainActivity", "result OK");
                     String json = data.getStringExtra(AuthenticationActivity.AUTH_RESULT_EXTRA);
                     json = json.substring(json.indexOf("{"), json.lastIndexOf("}") + 1);
                     json = json.replaceAll("\\\\[\"]", "\"");
@@ -260,6 +261,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     authenticationCompletion.failure();
                 }
             } else {
+                Log.d("MainActivity", "result fail");
                 authenticationCompletion.failure();
             }
         } else if (requestCode == INTRO_INTENT_TAG && resultCode == RESULT_OK) {
