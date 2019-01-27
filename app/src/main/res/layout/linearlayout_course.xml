@@ -89,4 +89,15 @@
         android:layout_marginTop="-16dp"
         android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"/>
+    <ImageView
+        android:id="@+id/markerView"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        app:srcCompat="@drawable/marker_easy"
+        android:visibility="gone"
+        android:elevation="5dp"
+        android:layout_marginStart="-10dp"
+        android:layout_marginTop="-16dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"/>
 </RelativeLayout>

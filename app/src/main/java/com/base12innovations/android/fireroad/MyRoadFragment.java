@@ -24,6 +24,7 @@ import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.adapter.MyRoadCoursesAdapter;
 import com.base12innovations.android.fireroad.dialog.CourseWarningsDialogFragment;
+import com.base12innovations.android.fireroad.dialog.MarkerDialogFragment;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.doc.Document;
@@ -37,12 +38,7 @@ import java.util.concurrent.Callable;
 
 
 /**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link MyRoadFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link MyRoadFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * Handles displaying the course road within the main activity.
  */
 public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClickListener {
     private static final String ARG_TEST_PARAM = "param1";
@@ -339,7 +335,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             if (pos >= 0 && gridAdapter.isSectionHeader(pos))
                 gridAdapter.notifyItemChanged(pos);
             else
-                gridAdapter.updateWarningsView(holder);
+                gridAdapter.updateCourseDecorations(holder);
         }
     }
 
@@ -399,6 +395,24 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             case R.id.overrideWarningsOff:
                 User.currentUser().getCurrentDocument().setOverrideWarningsForCourse(currentlySelectedCourse, false);
                 gridAdapter.notifyItemChanged(currentlySelectedPosition);
+                return true;
+            case R.id.addMarker:
+                // Show marker dialog
+                final MarkerDialogFragment dialog = new MarkerDialogFragment();
+                dialog.subjectID = currentlySelectedCourse.getSubjectID();
+                dialog.currentValue = User.currentUser().getCurrentDocument().subjectMarkerForCourse(currentlySelectedCourse, currentlySelectedSemester);
+                dialog.listener = new MarkerDialogFragment.OnCompleteListener() {
+                    @Override
+                    public void selectedMarker(RoadDocument.SubjectMarker newValue) {
+                        User.currentUser().getCurrentDocument().setSubjectMarker(newValue, currentlySelectedCourse, currentlySelectedSemester, true);
+                        dialog.dismiss();
+                        updateRecyclerView();
+                    }
+                };
+                FragmentActivity a = getActivity();
+                if (a != null) {
+                    dialog.show(a.getSupportFragmentManager(), "MarkerDialogFragment");
+                }
                 return true;
             case R.id.createSchedule:
                 if (mListener != null)

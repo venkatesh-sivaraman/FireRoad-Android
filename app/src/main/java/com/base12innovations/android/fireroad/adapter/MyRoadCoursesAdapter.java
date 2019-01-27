@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.R;
@@ -287,37 +288,56 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
                 }
             });
 
-            updateWarningsView(viewHolder);
+            updateCourseDecorations(viewHolder);
         }
     }
 
-    public void updateWarningsView(final ViewHolder viewHolder) {
+    // Update warning view and marker view decorations for the course cell
+    public void updateCourseDecorations(final ViewHolder viewHolder) {
         if (viewHolder.getAdapterPosition() < 0 || viewHolder.getAdapterPosition() >= getItemCount() ||
                 isSectionHeader(viewHolder.getAdapterPosition()))
             return;
         final View warningView = viewHolder.cellView.findViewById(R.id.warningView);
-        if (AppSettings.shared().getBoolean(AppSettings.HIDE_ALL_WARNINGS, false))
-            warningView.setVisibility(View.GONE);
-        else
-            TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
-                @Override
-                public void perform() {
-                    final Course course = courseForGridPosition(viewHolder.getAdapterPosition());
-                    if (course == null)
-                        return;
-                    int pos = viewHolder.getAdapterPosition();
-                    final boolean showWarnings = document.warningsForCourse(course, semesterForGridPosition(pos)).size() > 0 && !document.overrideWarningsForCourse(course);
+        final ImageView markerView = viewHolder.cellView.findViewById(R.id.markerView);
+
+        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                final Course course = courseForGridPosition(viewHolder.getAdapterPosition());
+                if (AppSettings.shared().getBoolean(AppSettings.HIDE_ALL_WARNINGS, false) || course == null) {
                     TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
                         @Override
                         public void perform() {
-                            if (showWarnings)
-                                warningView.setVisibility(View.VISIBLE);
-                            else
-                                warningView.setVisibility(View.GONE);
+                            warningView.setVisibility(View.GONE);
+                            if (course == null)
+                                markerView.setVisibility(View.GONE);
                         }
                     });
+                    if (course == null) // If non-null, we may want to add a marker, so don't return
+                        return;
                 }
-            });
+
+                int pos = viewHolder.getAdapterPosition();
+                final boolean showWarnings = document.warningsForCourse(course, semesterForGridPosition(pos)).size() > 0 && !document.overrideWarningsForCourse(course);
+                final RoadDocument.SubjectMarker marker = document.subjectMarkerForCourse(course, semesterForGridPosition(pos));
+
+                TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                    @Override
+                    public void perform() {
+                        if (showWarnings)
+                            warningView.setVisibility(View.VISIBLE);
+                        else
+                            warningView.setVisibility(View.GONE);
+
+                        if (marker != null) {
+                            markerView.setVisibility(View.VISIBLE);
+                            markerView.setImageResource(marker.getImageResource());
+                        } else
+                            markerView.setVisibility(View.GONE);
+                    }
+                });
+            }
+        });
     }
 
     @Override

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:context=".dialog.MarkerDialogFragment">
+
+
+    <RadioGroup
+        android:id="@+id/markersRadioGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp">
+
+        <RadioButton
+            android:id="@+id/buttonNone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_weight="1"
+            android:text="  None" />
+
+        <RadioButton
+            android:id="@+id/buttonPNR"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/marker_pnr"
+            android:text="  P/NR" />
+
+        <RadioButton
+            android:id="@+id/buttonABCNR"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/marker_abcnr"
+            android:text="  A/B/C/NR" />
+
+        <RadioButton
+            android:id="@+id/buttonExp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/marker_exp"
+            android:text="  Exploratory" />
+
+        <RadioButton
+            android:id="@+id/buttonPDF"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/marker_pdf"
+            android:text="  P/D/F" />
+
+        <RadioButton
+            android:id="@+id/buttonListener"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/marker_listener"
+            android:text="  Listener" />
+
+        <RadioButton
+            android:id="@+id/buttonEasy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/marker_easy"
+            android:text="  Easy" />
+
+        <RadioButton
+            android:id="@+id/buttonDifficult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/marker_hard"
+            android:text="  Difficult" />
+
+        <RadioButton
+            android:id="@+id/buttonMaybe"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/marker_maybe"
+            android:text="  Maybe" />
+    </RadioGroup>
+</FrameLayout>

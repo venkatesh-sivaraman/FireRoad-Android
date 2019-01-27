@@ -2,10 +2,12 @@ package com.base12innovations.android.fireroad.models.doc;
 
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
+import com.base12innovations.android.fireroad.utils.ListHelper;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import org.json.JSONArray;
@@ -16,9 +18,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import javax.security.auth.Subject;
 
 public class RoadDocument extends Document {
 
@@ -50,11 +55,91 @@ public class RoadDocument extends Document {
         static String subjectID = "subject_id";
         static String subjectIDAlt = "id";
         static String units = "units";
+        static String marker = "marker";
+    }
+
+    public enum SubjectMarker {
+        PNR("pnr"), ABCNR("abcnr"), EXPLORATORY("exp"), PDF("pdf"),
+        LISTENER("listener"), EASY("easy"), DIFFICULT("difficult"), MAYBE("maybe");
+
+        private final String rawValue;
+        SubjectMarker(String rv) {
+            rawValue = rv;
+        }
+
+        private static List<SubjectMarker> allValues = new ArrayList<>();
+        static {
+            allValues.add(PNR);
+            allValues.add(ABCNR);
+            allValues.add(EXPLORATORY);
+            allValues.add(PDF);
+            allValues.add(LISTENER);
+            allValues.add(EASY);
+            allValues.add(DIFFICULT);
+            allValues.add(MAYBE);
+        }
+
+        public static SubjectMarker fromRaw(final String raw) {
+            int index = ListHelper.indexOfElement(allValues, new ListHelper.Predicate<SubjectMarker>() {
+                @Override
+                public boolean test(SubjectMarker element) {
+                    return element.rawValue.equals(raw);
+                }
+            });
+            if (index != ListHelper.NOT_FOUND)
+                return allValues.get(index);
+            return null;
+        }
+
+        public String readableName() {
+            switch (this) {
+                case PNR:
+                    return "P/NR";
+                case ABCNR:
+                    return "A/B/C/NR";
+                case EXPLORATORY:
+                    return "Exploratory";
+                case PDF:
+                    return "P/D/F";
+                case LISTENER:
+                    return "Listener";
+                case EASY:
+                    return "Easy";
+                case DIFFICULT:
+                    return "Difficult";
+                case MAYBE:
+                    return "Maybe";
+            }
+            return "None";
+        }
+
+        public int getImageResource() {
+            switch (this) {
+                case PNR:
+                    return R.drawable.marker_pnr;
+                case ABCNR:
+                    return R.drawable.marker_abcnr;
+                case EXPLORATORY:
+                    return R.drawable.marker_exp;
+                case PDF:
+                    return R.drawable.marker_pdf;
+                case LISTENER:
+                    return R.drawable.marker_listener;
+                case EASY:
+                    return R.drawable.marker_easy;
+                case DIFFICULT:
+                    return R.drawable.marker_hard;
+                case MAYBE:
+                    return R.drawable.marker_maybe;
+            }
+            return R.drawable.marker_exp;
+        }
     }
 
     Map<Integer, List<Course>> courses = new HashMap<>();
     public List<String> coursesOfStudy = new ArrayList<>();
     private Map<Course, Boolean> overrides = new HashMap<>();
+    private Map<Integer, Map<Course, SubjectMarker>> markers = new HashMap<>();
 
     public RoadDocument(File location) {
         super(location);
@@ -107,11 +192,15 @@ public class RoadDocument extends Document {
                     courses.put(semester, new ArrayList<Course>());
                 }
                 Course course = CourseManager.sharedInstance().getSubjectByID(subjectID);
-                if (course != null) {
-                    courses.get(semester).add(course);
-                    overrides.put(course, ignoreWarnings);
-                } else {
+                if (course == null) {
                     Log.d("RoadDocument", "Couldn't find course with ID " + subjectID);
+                    continue;
+                }
+                courses.get(semester).add(course);
+                overrides.put(course, ignoreWarnings);
+                if (subjectInfo.has(RoadJSON.marker)) {
+                    SubjectMarker marker = SubjectMarker.fromRaw(subjectInfo.getString(RoadJSON.marker));
+                    setSubjectMarker(marker, course, semester, false);
                 }
             }
 
@@ -148,6 +237,9 @@ public class RoadDocument extends Document {
                     } else {
                         courseObj.put(RoadJSON.overrideWarnings, false);
                     }
+                    SubjectMarker marker = subjectMarkerForCourse(course, semesterIndex);
+                    if (marker != null)
+                        courseObj.put(RoadJSON.marker, marker.rawValue);
                     subjects.put(courseObj);
                 }
             }
@@ -238,6 +330,7 @@ public class RoadDocument extends Document {
             courses.put(semester, new ArrayList<Course>());
         }
         boolean ret = courses.get(semester).remove(course);
+        setSubjectMarker(null, course, semester, false);
         save();
         return ret;
     }
@@ -247,6 +340,8 @@ public class RoadDocument extends Document {
             return;
         }
         courses.get(semester).clear();
+        if (markers.containsKey(semester))
+            markers.remove(semester);
         save();
     }
 
@@ -254,8 +349,15 @@ public class RoadDocument extends Document {
         if (!courses.containsKey(startSemester)) {
             return;
         }
+
         List<Course> semCourses = courses.get(startSemester);
         Course course = semCourses.get(startPos);
+
+        // Update subject markers before moving
+        SubjectMarker marker = subjectMarkerForCourse(course, startSemester);
+        setSubjectMarker(null, course, startSemester, false);
+        setSubjectMarker(marker, course, endSemester, false);
+
         semCourses.remove(startPos);
         if (startSemester == endSemester) {
             semCourses.add(endPos, course);
@@ -293,6 +395,30 @@ public class RoadDocument extends Document {
             coursesOfStudy.remove(listID);
             save();
         }
+    }
+
+    // Markers
+
+    public void setSubjectMarker(SubjectMarker marker, Course course, int semester, boolean shouldSave) {
+        if (semester < 0 || semester >= semesterNames.length)
+            return;
+
+        if (!markers.containsKey(semester))
+            markers.put(semester, new HashMap<Course, SubjectMarker>());
+        if (marker != null)
+            markers.get(semester).put(course, marker);
+        else
+            markers.get(semester).remove(course);
+        if (shouldSave)
+            save();
+    }
+
+    public SubjectMarker subjectMarkerForCourse(Course course, int semester) {
+        if (!markers.containsKey(semester))
+            return null;
+        if (!markers.get(semester).containsKey(course))
+            return null;
+        return markers.get(semester).get(course);
     }
 
     // Warnings

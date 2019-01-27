@@ -4,6 +4,8 @@
         android:title="View"/>
     <item android:id="@+id/deleteCourse"
         android:title="Delete"/>
+    <item android:id="@+id/addMarker"
+        android:title="Mark..."/>
     <item android:id="@+id/courseWarnings"
         android:title="Warnings..."/>
     <item android:id="@+id/overrideWarningsOn"
