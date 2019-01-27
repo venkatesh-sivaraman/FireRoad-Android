@@ -87,8 +87,8 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
 
     // URLs
 
-    public static String CATALOG_BASE_URL = "https://venkats.scripts.mit.edu/";
-    public static String BASE_URL = "https://venkats.scripts.mit.edu/fireroad/";
+    public static String CATALOG_BASE_URL = "https://fireroad.mit.edu/";
+    public static String BASE_URL = "https://fireroad.mit.edu/";
     private static String recommenderLoginURL = BASE_URL + "login/";
     private static String recommenderSignupURL = BASE_URL + "signup/";
 

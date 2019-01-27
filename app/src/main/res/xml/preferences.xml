@@ -49,7 +49,7 @@
         <Preference android:title="Requirements Editor"
             android:summary="Visit the online editor to browse and submit edits for major and minor requirements files.">
             <intent android:action="android.intent.action.VIEW"
-                android:data="https://venkats.scripts.mit.edu/fireroad/requirements">
+                android:data="https://fireroad.mit.edu/requirements">
             </intent>
         </Preference>
     </PreferenceCategory>

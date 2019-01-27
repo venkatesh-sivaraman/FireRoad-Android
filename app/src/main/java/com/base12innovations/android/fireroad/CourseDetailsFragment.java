@@ -8,13 +8,17 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.view.ScrollingView;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.ScaleAnimation;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
@@ -22,8 +26,12 @@ import com.base12innovations.android.fireroad.models.course.ColorManager;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.User;
+import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
 import com.base12innovations.android.fireroad.utils.BottomSheetNavFragment;
 import com.base12innovations.android.fireroad.utils.CourseLayoutBuilder;
+import com.base12innovations.android.fireroad.utils.RequirementsListDisplay;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
@@ -40,8 +48,21 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
     public Course course;
     private AddCourseDialog addCourseDialog;
     private View mContentView;
+    private NestedScrollView scrollView;
     private FloatingActionButton fab;
     public boolean canGoBack = false;
+
+    private int cacheScrollOffset = 0;
+
+    public int getScrollOffset() {
+        return cacheScrollOffset;
+    }
+
+    public void setScrollOffset(int offset) {
+        cacheScrollOffset = offset;
+    }
+
+    private RequirementsListDisplay prereqDisplay, coreqDisplay;
 
     private CourseLayoutBuilder layoutBuilder;
 
@@ -66,6 +87,13 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         final View layout = inflater.inflate(R.layout.fragment_course_details, container, false);
 
         mContentView = layout.findViewById(R.id.content);
+        scrollView = (NestedScrollView)mContentView;
+        scrollView.setOnScrollChangeListener(new NestedScrollView.OnScrollChangeListener() {
+            @Override
+            public void onScrollChange(NestedScrollView nestedScrollView, int scrollX, int scrollY, int oldX, int oldY) {
+                cacheScrollOffset = scrollY;
+            }
+        });
 
         if (course != null) {
             setupContentView(mContentView);
@@ -215,18 +243,22 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             addCourseListItem(layout, subjectList);
         }
 
-        List<List<String>> prereqs = course.getPrerequisitesList();
-        if (prereqs != null && prereqs.size() > 0) {
+        RequirementsListStatement prereqs = course.getPrerequisites();
+        int courseSemester = RoadDocument.semesterNames.length;
+        if (User.currentUser().getCurrentDocument() != null)
+            courseSemester = User.currentUser().getCurrentDocument().firstSemesterForCourse(course);
+
+        if (prereqs != null) {
             layoutBuilder.addHeaderItem(layout, "Prerequisites");
             if (course.getEitherPrereqOrCoreq()) {
                 layoutBuilder.addDescriptionItem(layout, "Fulfill either the prerequisites or the corequisites.\n\nPrereqs: ");
             }
-            addNestedCourseListItem(layout, prereqs);
+            prereqDisplay = addRequirementsStatementItem(layout, prereqs, courseSemester - 1);
         }
-        List<List<String>> coreqs = course.getCorequisitesList();
-        if (coreqs != null && coreqs.size() > 0) {
+        RequirementsListStatement coreqs = course.getCorequisites();
+        if (coreqs != null) {
             layoutBuilder.addHeaderItem(layout, "Corequisites");
-            addNestedCourseListItem(layout, coreqs);
+            coreqDisplay = addRequirementsStatementItem(layout, coreqs, courseSemester);
         }
 
         List<String> related = course.getRelatedSubjectsList();
@@ -280,6 +312,16 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
                 }
             }
         });
+
+        if (cacheScrollOffset != 0 && scrollView != null) {
+            // Scroll after delay
+            scrollView.post(new Runnable() {
+                @Override
+                public void run() {
+                    scrollView.scrollTo(0, cacheScrollOffset);
+                }
+            });
+        }
     }
 
     // Adding information types
@@ -384,6 +426,31 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         for (List<String> group : newCourses) {
             addCourseListItem(layout, group);
         }
+    }
+
+    private RequirementsListDisplay addRequirementsStatementItem(LinearLayout layout, RequirementsListStatement requirement, int maxSemester) {
+        RequirementsListDisplay display = new RequirementsListDisplay(requirement, getContext());
+        display.singleCard = true;
+        display.delegate = new RequirementsListDisplay.Delegate() {
+            @Override public void addCourse(Course course) {
+                CourseDetailsFragment.this.addCourse(course);
+            }
+            @Override public void showDetails(Course course) {
+                showCourseDetails(course);
+            }
+            @Override public void searchCourses(String searchTerm, EnumSet<CourseSearchEngine.Filter> filters) {
+                if (delegate.get() != null) {
+                    delegate.get().courseNavigatorWantsSearchCourses(CourseDetailsFragment.this, searchTerm, filters);
+                }
+            }
+            @Override public void showManualProgressSelector(RequirementsListStatement req) {
+                // Do nothing - manual progress is disabled for prereqs/coreqs
+            }
+        };
+        if (User.currentUser().getCurrentDocument() != null)
+            requirement.computeRequirementStatus(User.currentUser().getCurrentDocument().coursesTakenBeforeCourse(course, maxSemester, true));
+        display.layoutInView(layout);
+        return display;
     }
 
     // Layout

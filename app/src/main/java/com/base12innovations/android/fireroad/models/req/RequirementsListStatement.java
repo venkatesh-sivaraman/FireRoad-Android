@@ -293,7 +293,7 @@ public class RequirementsListStatement {
         }
 
         for (int i = 0; i < components.size(); i++) {
-            components.set(i, undecoratedComponent(components.get(i)));
+            components.set(i, components.get(i).trim());
         }
 
         return new TopLevelItemsResult(connectionType, components);
@@ -317,9 +317,26 @@ public class RequirementsListStatement {
 
     protected String unwrappedComponent(String component) {
         String unwrapping = component.trim();
+        /*while (unwrapping.charAt(0) == '(' && unwrapping.charAt(unwrapping.length() - 1) == ')') {
+            unwrapping = unwrapping.substring(1, unwrapping.length() - 1);
+        }*/
+        outer:
         while (unwrapping.charAt(0) == '(' && unwrapping.charAt(unwrapping.length() - 1) == ')') {
+            // Make sure these parentheses are not closed within the string
+            int indentLevel = 0;
+            for (int i = 0; i < unwrapping.length(); i++) {
+                if (unwrapping.charAt(i) == '(') {
+                    indentLevel += 1;
+                } else if (unwrapping.charAt(i) == ')') {
+                    indentLevel -= 1;
+                    if (indentLevel == 0 && i < unwrapping.length() - 1) {
+                        break outer;
+                    }
+                }
+            }
             unwrapping = unwrapping.substring(1, unwrapping.length() - 1);
         }
+
         return unwrapping;
     }
 
@@ -404,7 +421,7 @@ public class RequirementsListStatement {
         isPlainString = (connectionType == ConnectionType.NONE);
 
         if (topLevelItems.items.size() == 1) {
-            requirement = topLevelItems.items.get(0);
+            requirement = undecoratedComponent(topLevelItems.items.get(0));
         } else {
             List<RequirementsListStatement> reqs = new ArrayList<>();
             for (String item : topLevelItems.items) {
@@ -543,7 +560,8 @@ public class RequirementsListStatement {
      * which indicate the progress toward completion. The percentageFulfilled() value is computed
      * using these quantities.
      *
-     - Returns: The set of courses that satisfy this requirement.
+     * @param courses the courses to use to determine whether each requirement has been satisfied
+     * @return the set of courses that satisfy this requirement
      */
     public Set<Course> computeRequirementStatus(List<Course> courses) {
         if (requirement != null) {

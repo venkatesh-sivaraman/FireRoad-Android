@@ -60,8 +60,10 @@ public class CourseWarningsDialogFragment extends DialogFragment {
                         base += "According to the course catalog, " + course.getSubjectID() + " is not offered in " + warning.semester + ".";
                         break;
                     case UNSATISFIED_COREQ:
+                        base += "One or more corequisites are not yet fulfilled.";
+                        break;
                     case UNSATISFIED_PREREQ:
-                        base += "The following requisites are not yet fulfilled: " + TextUtils.join(", ", warning.courses) + ".";
+                        base += "One or more prerequisites are not yet fulfilled.";
                         break;
                     default:
                         break;

@@ -38,6 +38,17 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
     public EnumSet<CourseSearchEngine.Filter> filters;
     public boolean canGoBack = false;
 
+    private int cacheScrollOffset = 0;
+
+    public int getScrollOffset() {
+        LinearLayoutManager manager = (LinearLayoutManager)resultsView.getLayoutManager();
+        return manager.findFirstVisibleItemPosition();
+    }
+
+    public void setScrollOffset(int offset) {
+        cacheScrollOffset = offset;
+    }
+
     private ProgressBar progressIndicator;
 
     public SearchCoursesFragment() {
@@ -149,6 +160,8 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
                         if (!searchQuery.equals(query)) {
                             loadSearchResults(searchQuery);
                         }
+                        if (cacheScrollOffset != 0)
+                            resultsView.scrollToPosition(cacheScrollOffset);
                     }
                 });
             }

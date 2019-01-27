@@ -864,6 +864,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         String searchQuery;
         EnumSet<CourseSearchEngine.Filter> filters;
         Course course;
+        int scrollOffset;
 
         BottomSheetItem(String query, EnumSet<CourseSearchEngine.Filter> filters) {
             this.searchQuery = query;
@@ -872,6 +873,16 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
         BottomSheetItem(Course course) {
             this.course = course;
+        }
+
+        @Override
+        public String toString() {
+            if (searchQuery != null) {
+                return "<Search \"" + searchQuery + "\", offset " + scrollOffset + ">";
+            } else if (course != null) {
+                return "<Details for " + course.getSubjectID() + ", offset " + scrollOffset + ">";
+            }
+            return "<BottomSheetItem???>";
         }
     }
 
@@ -1030,13 +1041,15 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
     @Override
     public void navFragmentWantsBack(BottomSheetNavFragment fragment) {
+        Log.d("MainActivity", "Nav wants back, stack is " + detailsStack);
         if (detailsStack != null && detailsStack.size() >= 2) {
             detailsStack.remove(detailsStack.size() - 1);
             BottomSheetItem last = detailsStack.remove(detailsStack.size() - 1);
+            Log.d("MainActivity", "Last scroll offset: " + last.scrollOffset);
             if (last.searchQuery != null) {
-                showSearchCoursesView(last.searchQuery, last.filters);
+                showSearchCoursesView(last.searchQuery, last.filters, last.scrollOffset);
             } else if (last.course != null) {
-                onShowCourseDetails(last.course);
+                onShowCourseDetails(last.course, last.scrollOffset);
             }
         }
     }
@@ -1072,12 +1085,15 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     public void courseNavigatorWantsSearchCourses(Fragment source, String searchTerm, EnumSet<CourseSearchEngine.Filter> filters) {
         currentDetailsFragment = null;
         searchCoursesFragment = null;
-        showSearchCoursesView(searchTerm, filters);
+        showSearchCoursesView(searchTerm, filters, 0);
     }
 
-    public void showSearchCoursesView(String query, EnumSet<CourseSearchEngine.Filter> filters) {
+    public void showSearchCoursesView(String query, EnumSet<CourseSearchEngine.Filter> filters, int scrollOffset) {
         //Log.d("MainActivity", "Search courses filters: " + filters.toString());
         SearchCoursesFragment fragment = SearchCoursesFragment.newInstance(query, filters);
+        fragment.setScrollOffset(scrollOffset);
+        updateLastScrollIndex();
+        Log.d("MainActivity", "Searching courses, stack is " + detailsStack);
         searchCoursesFragment = fragment;
         currentDetailsFragment = null;
         if (detailsStack == null) {
@@ -1089,9 +1105,20 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         presentBottomSheet(fragment);
     }
 
+    private void updateLastScrollIndex() {
+        if (detailsStack != null && detailsStack.size() > 0) {
+            BottomSheetItem last = detailsStack.get(detailsStack.size() - 1);
+            if (searchCoursesFragment != null && searchCoursesFragment.searchQuery != null && searchCoursesFragment.searchQuery.equals(last.searchQuery)) {
+                last.scrollOffset = searchCoursesFragment.getScrollOffset();
+            } else if (currentDetailsFragment != null && currentDetailsFragment.course != null && currentDetailsFragment.course.equals(last.course)) {
+                last.scrollOffset = currentDetailsFragment.getScrollOffset();
+            }
+        }
+    }
+
     public void showSearchCoursesView(String query) {
         // Get the current selected filter here
-        showSearchCoursesView(query, filters);
+        showSearchCoursesView(query, filters, 0);
     }
 
     @Override
@@ -1119,7 +1146,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             scheduleFragment.addAllCourses(courses, fileName);
     }
 
-    public void onShowCourseDetails(Course course) {
+    public void onShowCourseDetails(Course course, int scrollOffset) {
         if (detailsStack != null && detailsStack.size() > 0) {
             Course lastCourse = detailsStack.get(detailsStack.size() - 1).course;
             if (lastCourse != null && lastCourse.getSubjectID().equals(course.getSubjectID())) {
@@ -1128,6 +1155,9 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             }
         }
         CourseDetailsFragment fragment = CourseDetailsFragment.newInstance(course);
+        fragment.setScrollOffset(scrollOffset);
+        updateLastScrollIndex();
+        Log.d("MainActivity", "Showing course details, stack is " + detailsStack);
         currentDetailsFragment = fragment;
         searchCoursesFragment = null;
         if (detailsStack == null) {
@@ -1137,6 +1167,10 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         detailsStack.add(new BottomSheetItem(course));
         fragment.delegate = new WeakReference<BottomSheetNavFragment.Delegate>(this);
         presentBottomSheet(fragment);
+    }
+
+    public void onShowCourseDetails(Course course) {
+        onShowCourseDetails(course, 0);
     }
 
     // Requirements
@@ -1236,7 +1270,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             @Override
             public void onClick(DialogInterface dialogInterface, int index) {
                 Intent i = new Intent(Intent.ACTION_VIEW);
-                i.setData(Uri.parse("https://venkats.scripts.mit.edu/fireroad/requirements"));
+                i.setData(Uri.parse("https://fireroad.mit.edu/requirements"));
                 startActivity(i);
             }
         });

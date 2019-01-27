@@ -9,6 +9,7 @@ import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
 import com.base12innovations.android.fireroad.utils.ListHelper;
 
 import java.util.ArrayList;
@@ -347,26 +348,24 @@ public class Course implements Parcelable {
     }
 
     public String prerequisites = "";
-    public List<List<String>> getPrerequisitesList() {
-        List<String> topLevel = nonemptyComponents(prerequisites, ";");
-        List<List<String>> result = new ArrayList<>();
-        for (String top : topLevel) {
-            List<String> item = nonemptyComponents(top, ",");
-            if (item.size() > 0)
-                result.add(item);
+    @Ignore
+    private RequirementsListStatement _prereqs = null;
+    public RequirementsListStatement getPrerequisites() {
+        if (_prereqs == null && prerequisites != null && prerequisites.length() > 0) {
+            _prereqs = RequirementsListStatement.fromStatement(prerequisites.replace("'", "\""), null);
+            Log.d("Course", "Prereqs: " + prerequisites.replace("'", "\"") + "->" + _prereqs);
         }
-        return result;
+        return _prereqs;
     }
     public String corequisites = "";
-    public List<List<String>> getCorequisitesList() {
-        List<String> topLevel = nonemptyComponents(corequisites, ";");
-        List<List<String>> result = new ArrayList<>();
-        for (String top : topLevel) {
-            List<String> item = nonemptyComponents(top, ",");
-            if (item.size() > 0)
-                result.add(item);
+    @Ignore
+    private RequirementsListStatement _coreqs = null;
+    public RequirementsListStatement getCorequisites() {
+        if (_coreqs == null && corequisites != null && corequisites.length() > 0) {
+            _coreqs = RequirementsListStatement.fromStatement(corequisites.replace("'", "\""), null);
+            Log.d("Course", "Coreqs: " + corequisites.replace("'", "\"") + "->" + _coreqs);
         }
-        return result;
+        return _coreqs;
     }
 
     public String relatedSubjects;
@@ -422,7 +421,7 @@ public class Course implements Parcelable {
 
     @Override
     public boolean equals(Object obj) {
-        if (!obj.getClass().equals(this.getClass())) {
+        if (obj == null || !obj.getClass().equals(this.getClass())) {
             return false;
         }
         Course other = (Course)obj;

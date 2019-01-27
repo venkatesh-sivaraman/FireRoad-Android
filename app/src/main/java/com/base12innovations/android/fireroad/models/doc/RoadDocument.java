@@ -5,6 +5,7 @@ import android.util.Log;
 import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
+import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import org.json.JSONArray;
@@ -46,7 +47,8 @@ public class RoadDocument extends Document {
         static String overrideWarnings = "overrideWarnings";
         static String semester = "semester";
         static String subjectTitle = "title";
-        static String subjectID = "id";
+        static String subjectID = "subject_id";
+        static String subjectIDAlt = "id";
         static String units = "units";
     }
 
@@ -86,7 +88,13 @@ public class RoadDocument extends Document {
             overrides = new HashMap<>();
             for (int i = 0; i < selectedSubjects.length(); i++) {
                 JSONObject subjectInfo = selectedSubjects.getJSONObject(i);
-                String subjectID = subjectInfo.getString(RoadJSON.subjectID);
+                String subjectID = null;
+                if (subjectInfo.has(RoadJSON.subjectID)) {
+                    subjectID = subjectInfo.getString(RoadJSON.subjectID);
+                } else if (subjectInfo.has(RoadJSON.subjectIDAlt)) {
+                    subjectID = subjectInfo.getString(RoadJSON.subjectIDAlt);
+                }
+                if (subjectID == null) continue;
 //                String subjectTitle = subjectInfo.getString(RoadJSON.subjectTitle);
 //                int units = subjectInfo.getInt(RoadJSON.units);
                 int semester = subjectInfo.getInt(RoadJSON.semester);
@@ -309,64 +317,65 @@ public class RoadDocument extends Document {
 
     public static class Warning {
         public WarningType type;
-        public List<String> courses;
         public String semester;
 
-        private Warning(WarningType type, List<String> courses, String semester) {
+        private Warning(WarningType type, String semester) {
             this.type = type;
-            this.courses = courses;
             this.semester = semester;
         }
 
         public static Warning notOffered(String semester) {
-            return new Warning(WarningType.NOT_OFFERED, null, semester);
+            return new Warning(WarningType.NOT_OFFERED, semester);
         }
 
-        public static Warning unsatisfiedPrereq(List<String> courses) {
-            return new Warning(WarningType.UNSATISFIED_PREREQ, courses, null);
+        public static Warning unsatisfiedPrereq() {
+            return new Warning(WarningType.UNSATISFIED_PREREQ, null);
         }
 
-        public static Warning unsatisfiedCoreq(List<String> courses) {
-            return new Warning(WarningType.UNSATISFIED_COREQ, courses, null);
+        public static Warning unsatisfiedCoreq() {
+            return new Warning(WarningType.UNSATISFIED_COREQ, null);
         }
     }
 
-    private List<String> unsatisfiedRequirements(Course course, List<List<String>> reqs, int maxSemester, boolean useQuarter) {
-        List<String> unsatisfiedReqs = new ArrayList<>();
-        for (List<String> reqList : reqs) {
-            boolean satisfied = false, satisfiedByNonAuto = false, containsNonAuto = false;
+    private boolean hasUnsatisfiedRequirements(Course course, RequirementsListStatement statement, int maxSemester, boolean useQuarter) {
+        if (statement == null)
+            return false;
 
-            for (String prereq : reqList) {
-                for (int i = 0; i <= maxSemester + 1; i++) {
-                    for (Course otherCourse : coursesForSemester(i)) {
-                        if (otherCourse.satisfiesRequirement(prereq, null) &&
-                                (i <= maxSemester ||
-                                        (useQuarter && course.getQuarterOffered() != Course.QuarterOffered.BeginningOnly &&
-                                                otherCourse.getQuarterOffered() == Course.QuarterOffered.BeginningOnly))) {
-                            satisfied = true;
-                            break;
-                        }
-                    }
-                    if (satisfied)
-                        break;
+        List<Course> takenCourses = coursesTakenBeforeCourse(course, maxSemester, useQuarter);
+        statement.computeRequirementStatus(takenCourses);
+        return !statement.isFulfilled();
+    }
+
+    /**
+     * Compiles the list of courses taken before the given course, with maxSemester as the maximum
+     * inclusive semester for comparison.
+     */
+    public List<Course> coursesTakenBeforeCourse(Course course, int maxSemester, boolean useQuarter) {
+        List<Course> takenCourses = new ArrayList<>();
+        for (int i = 0; i <= maxSemester + 1; i++) {
+            for (Course otherCourse : coursesForSemester(i)) {
+                if ((i <= maxSemester ||
+                        (useQuarter && course.getQuarterOffered() != Course.QuarterOffered.BeginningOnly &&
+                                otherCourse.getQuarterOffered() == Course.QuarterOffered.BeginningOnly))) {
+                    takenCourses.add(otherCourse);
                 }
-                boolean auto = Course.isRequirementAutomaticallySatisfied(prereq);
-                if (!auto) {
-                    if (satisfied)
-                        satisfiedByNonAuto = true;
-                    containsNonAuto = true;
-                }
-                if (!satisfied) {
-                    satisfied = auto;
-                }
-                if (satisfied)
-                    break;
-            }
-            if (!satisfied || (satisfied && !satisfiedByNonAuto && containsNonAuto)) {
-                unsatisfiedReqs.addAll(reqList);
             }
         }
-        return unsatisfiedReqs;
+        return takenCourses;
+    }
+
+    /**
+     * Returns the maximum semester index if the course isn't found. Excludes prior credit from the
+     * search.
+     */
+    public int firstSemesterForCourse(Course course) {
+        // Exclude prior credit
+        for (int i = 1; i < semesterNames.length; i++) {
+            if (coursesForSemester(i).contains(course)) {
+                return i;
+            }
+        }
+        return semesterNames.length;
     }
 
     private Map<Course, Map<Integer, List<Warning>>> warningsCache;
@@ -382,9 +391,9 @@ public class RoadDocument extends Document {
         if (warningsCache != null && warningsCache.containsKey(course) && warningsCache.get(course).containsKey(semester))
             return warningsCache.get(course).get(semester);
 
-        List<String> unsatisfiedPrereqs = unsatisfiedRequirements(course, course.getPrerequisitesList(), semester - 1, true);
+        boolean unsatisfiedPrereqs = hasUnsatisfiedRequirements(course, course.getPrerequisites(), semester - 1, true);
         int coreqCutoff = AppSettings.shared().getBoolean(AppSettings.ALLOW_COREQUISITES_TOGETHER, true) ? semester : semester - 1;
-        List<String> unsatisfiedCoreqs = unsatisfiedRequirements(course, course.getCorequisitesList(), coreqCutoff, false);
+        boolean unsatisfiedCoreqs = hasUnsatisfiedRequirements(course, course.getCorequisites(), coreqCutoff, false);
 
         List<Warning> result = new ArrayList<>();
         if (semester % 3 == 1 && !course.isOfferedFall) {
@@ -394,11 +403,11 @@ public class RoadDocument extends Document {
         } else if (semester % 3 == 0 && !course.isOfferedSpring) {
             result.add(Warning.notOffered("spring"));
         }
-        if (!course.getEitherPrereqOrCoreq() || (unsatisfiedPrereqs.size() != 0 && unsatisfiedCoreqs.size() != 0)) {
-            if (unsatisfiedPrereqs.size() > 0)
-                result.add(Warning.unsatisfiedPrereq(unsatisfiedPrereqs));
-            if (unsatisfiedCoreqs.size() > 0)
-                result.add(Warning.unsatisfiedCoreq(unsatisfiedCoreqs));
+        if (!course.getEitherPrereqOrCoreq() || (unsatisfiedPrereqs && unsatisfiedCoreqs)) {
+            if (unsatisfiedPrereqs)
+                result.add(Warning.unsatisfiedPrereq());
+            if (unsatisfiedCoreqs)
+                result.add(Warning.unsatisfiedCoreq());
         }
 
         if (warningsCache == null)

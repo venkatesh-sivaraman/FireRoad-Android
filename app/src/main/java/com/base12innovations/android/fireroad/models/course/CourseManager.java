@@ -276,7 +276,7 @@ public class CourseManager {
 
     private static String NEEDS_UPDATE_ON_LAUNCH_KEY = "needsUpdateOnLaunch";
     // Increment the cutoff value to set update on launch
-    private static int UPDATE_ON_LAUNCH_CUTOFF = 1;
+    private static int UPDATE_ON_LAUNCH_CUTOFF = 2;
 
     public boolean needsUpdateOnLaunch() {
         return dbPreferences.getInt(NEEDS_UPDATE_ON_LAUNCH_KEY, 0) < UPDATE_ON_LAUNCH_CUTOFF;
@@ -413,10 +413,10 @@ public class CourseManager {
                 case "Meets With Subjects":
                     course.setMeetsWithSubjects(component.replace(" ", ""));
                     break;
-                case "Prerequisites":
+                case "Prereqs":
                     course.prerequisites = component;
                     break;
-                case "Corequisites":
+                case "Coreqs":
                     course.corequisites = component;
                     break;
                 case "Gir Attribute":

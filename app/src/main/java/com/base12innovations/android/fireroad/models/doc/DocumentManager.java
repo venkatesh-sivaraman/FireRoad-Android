@@ -312,13 +312,16 @@ public class DocumentManager {
     private void loadCloudSyncAttributes() {
         if (documentIDs == null) {
             String raw = prefs.getString(DOCUMENT_IDS_KEY, "");
+            Log.d("DocumentManager", "Document ids: " + raw);
             if (raw.length() == 0) {
                 documentIDs = new HashMap<>();
             } else {
                 documentIDs = new HashMap<>();
                 for (String comp : raw.split(";")) {
                     String[] subcomps = comp.split(",");
-                    documentIDs.put(subcomps[0], Integer.parseInt(subcomps[1]));
+                    // Take the LAST comma and use its split point
+                    String idNum = subcomps[subcomps.length - 1];
+                    documentIDs.put(comp.substring(0, comp.length() - idNum.length() - 1), Integer.parseInt(idNum));
                 }
             }
         }
