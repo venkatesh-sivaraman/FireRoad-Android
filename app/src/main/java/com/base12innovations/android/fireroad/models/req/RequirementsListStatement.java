@@ -264,7 +264,7 @@ public class RequirementsListStatement {
 
     private TopLevelItemsResult separateTopLevelItems(String text) {
         String trimmed = text.trim();
-        if (trimmed.length() >= 4 && trimmed.substring(0, 2).equals("\"\"") && trimmed.substring(trimmed.length() - 2).equals("\"\"")) {
+        if (trimmed.length() >= 4 && trimmed.matches("^\"\"[^\"]\"\"$")) {
             List<String> items = new ArrayList<>();
             items.add(undecoratedComponent(trimmed));
             return new TopLevelItemsResult(ConnectionType.NONE, items);
@@ -622,7 +622,7 @@ public class RequirementsListStatement {
         int numReqsSatisfied = 0;
         for (RequirementsListStatement req : requirements) {
             Set<Course> sat = req.computeRequirementStatus(courses);
-            if (req.isFulfilled)
+            if (req.isFulfilled && sat.size() > 0)
                 numReqsSatisfied += 1;
             satByCategory.put(req, sat);
             totalSat.addAll(sat);
@@ -656,10 +656,6 @@ public class RequirementsListStatement {
             if (distinctThreshold != null) {
                 // Clip the progresses to the ones which the user is closest to completing
                 sortedProgresses = sortedProgresses.subList(0, Math.min(distinctThreshold.getActualCutoff(), sortedProgresses.size()));
-                totalSat = new HashSet<>();
-                for (RequirementsListStatement req : sortedProgresses) {
-                    totalSat.addAll(satByCategory.get(req));
-                }
             }
 
             if (threshold == null && distinctThreshold != null) {
@@ -691,18 +687,7 @@ public class RequirementsListStatement {
                                 distinctThreshold.type == ThresholdType.GREATER_THAN_OR_EQUAL)) {
                     isFulfilled = numberSatisfiesThreshold(subjectProgress.progress, unitProgress.progress, threshold) && numReqsSatisfied >= distinctThreshold.getActualCutoff();
                     if (numReqsSatisfied < distinctThreshold.getActualCutoff()) {
-                        subjectProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.SUBJECTS, new ListHelper.Function<Integer, Integer>() {
-                            @Override
-                            public Integer apply(Integer integer) {
-                                return Math.max(integer, 1);
-                            }
-                        });
-                        unitProgress = sumFulfillmentProgresses(sortedProgresses, ThresholdCriterion.UNITS, new ListHelper.Function<Integer, Integer>() {
-                            @Override
-                            public Integer apply(Integer integer) {
-                                return integer == 0 ? DEFAULT_UNIT_COUNT : integer;
-                            }
-                        });
+                        forceUnfulfillProgresses(sortedProgresses, satByCategory, totalSat);
                     }
                 } else {
                     isFulfilled = numberSatisfiesThreshold(subjectProgress.progress, unitProgress.progress, threshold);
@@ -726,6 +711,79 @@ public class RequirementsListStatement {
         fulfillmentProgress = (threshold != null && threshold.criterion == ThresholdCriterion.UNITS) ? unitProgress : subjectProgress;
 
         return totalSat;
+    }
+
+    /**
+     Makes sure that a requirement with a distinct threshold that has not been
+     met, but a threshold that *has* been met, is not counted as satisfied.
+
+     @param sortedProgresses the child requirements sorted by their
+            fulfillment progress, and clipped to the distinct threshold
+     @param satByCategory courses satisfying each child requirement
+     @param totalSat the precomputed set union of satisfyingPerCategory
+     */
+    private void forceUnfulfillProgresses(List<RequirementsListStatement> sortedProgresses, final Map<RequirementsListStatement, Set<Course>> satByCategory, Set<Course> totalSat) {
+        if (threshold == null) return;
+
+        int subjectCutoff = threshold.cutoff / (threshold.criterion == ThresholdCriterion.UNITS ? DEFAULT_UNIT_COUNT : 1);
+        int unitCutoff = threshold.cutoff * (threshold.criterion == ThresholdCriterion.SUBJECTS ? DEFAULT_UNIT_COUNT : 1);
+
+        // Strategy: partition the threshold's worth of subjects/units into two
+        // sections: fixed and free. Fixed means we need at least one subject
+        // from each child requirement, and free means we can choose any maximally
+        // satisfying courses. To fill the fixed portion, we choose the maximum-
+        // unit course from each child requirement. To fill the free portion, we
+        // choose the maximum-unit courses from any child requirement.
+        //   > Example: threshold = 7, distinct = 2, among 3 child requirements
+        //   The input to this function would contain the 2 most-fulfilled child
+        //   requirements. We would fill 2 subjects worth of progress with the
+        //   maximum-unit course for each of those requirements, then fill the
+        //   remaining 5 with "free" courses from any requirement.
+
+        // List that contains some nulls (Optional not supported with API level)
+        List<Course> maxUnitSubjects = ListHelper.map(sortedProgresses, new ListHelper.Function<RequirementsListStatement, Course>() {
+            @Override
+            public Course apply(RequirementsListStatement elem) {
+                return ListHelper.maximum(satByCategory.get(elem), new Comparator<Course>() {
+                    @Override
+                    public int compare(Course c1, Course c2) {
+                        return Integer.compare(c1.totalUnits, c2.totalUnits);
+                    }
+                }, null);
+            }
+        });
+
+        // Compute fixed item counts
+        int fixedSubjectProgress = 0, fixedSubjectMax = 0, fixedUnitProgress = 0, fixedUnitMax = 0;
+        for (Course course: maxUnitSubjects) {
+            fixedSubjectProgress += course != null ? 1 : 0;
+            fixedSubjectMax++;
+            fixedUnitProgress += course != null ? course.totalUnits : 0;
+            fixedUnitMax += course != null ? course.totalUnits : DEFAULT_UNIT_COUNT;
+        }
+
+        // Determine what courses are left
+        Set<Course> freeCourses = new HashSet<>(totalSat);
+        freeCourses.removeAll(ListHelper.filter(maxUnitSubjects, new ListHelper.Predicate<Course>() {
+            @Override
+            public boolean test(Course element) {
+                return element != null;
+            }
+        }));
+
+        // Compute free item counts
+        int freeSubjectProgress = Math.min(freeCourses.size(), subjectCutoff - fixedSubjectMax);
+        int freeSubjectMax = subjectCutoff - fixedSubjectMax;
+        int freeUnitProgress = Math.min(ListHelper.reduce(freeCourses, 0, new ListHelper.Reducer<Course, Integer>() {
+            @Override
+            public Integer concat(Integer running, Course elem) {
+                return running + elem.totalUnits;
+            }
+        }), unitCutoff - fixedUnitMax);
+        int freeUnitMax = unitCutoff - fixedUnitMax;
+
+        subjectProgress = new FulfillmentProgress(fixedSubjectProgress + freeSubjectProgress, fixedSubjectMax + freeSubjectMax);
+        unitProgress = new FulfillmentProgress(fixedUnitProgress + freeUnitProgress, fixedUnitMax + freeUnitMax);
     }
 
     private float rawPercentageFulfilled() {
