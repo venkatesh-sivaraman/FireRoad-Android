@@ -12,6 +12,9 @@ import android.util.Log;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
 import com.base12innovations.android.fireroad.utils.ListHelper;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -353,7 +356,6 @@ public class Course implements Parcelable {
     public RequirementsListStatement getPrerequisites() {
         if (_prereqs == null && prerequisites != null && prerequisites.length() > 0) {
             _prereqs = RequirementsListStatement.fromStatement(prerequisites.replace("'", "\""), null);
-            Log.d("Course", "Prereqs: " + prerequisites.replace("'", "\"") + "->" + _prereqs);
         }
         return _prereqs;
     }
@@ -363,7 +365,6 @@ public class Course implements Parcelable {
     public RequirementsListStatement getCorequisites() {
         if (_coreqs == null && corequisites != null && corequisites.length() > 0) {
             _coreqs = RequirementsListStatement.fromStatement(corequisites.replace("'", "\""), null);
-            Log.d("Course", "Coreqs: " + corequisites.replace("'", "\"") + "->" + _coreqs);
         }
         return _coreqs;
     }
@@ -377,6 +378,107 @@ public class Course implements Parcelable {
 
     @Ignore
     public boolean isGeneric = false;
+
+    // Items used for custom subjects
+    public boolean isPublic = true;
+    public String creator = null;
+    public String customColor = null;
+
+    // JSON read/write (currently limited)
+
+    private static class JSONConstants {
+        static String subjectID = "subject_id";
+        static String title = "title";
+        static String totalUnits = "total_units";
+        static String units = "units";
+        static String level = "level";
+        static String offeredFall = "offered_fall";
+        static String offeredIAP = "offered_IAP";
+        static String offeredSpring = "offered_spring";
+        static String offeredSummer = "offered_summer";
+        static String schedule = "schedule";
+        static String inClassHours = "in_class_hours";
+        static String outOfClassHours = "out_of_class_hours";
+        static String isPublic = "public";
+        static String creator = "creator";
+        static String customColor = "custom_color";
+    }
+
+    // Read and overwrite properties of this Course object based on the given JSON
+    public void readJSON(JSONObject json) {
+        try {
+            if (json.has(JSONConstants.subjectID))
+                setSubjectID(json.getString(JSONConstants.subjectID));
+            if (json.has(JSONConstants.title))
+                subjectTitle = json.getString(JSONConstants.title);
+            if (json.has(JSONConstants.level))
+                subjectLevel = json.getString(JSONConstants.level);
+            if (json.has(JSONConstants.schedule))
+                rawSchedule = json.getString(JSONConstants.schedule);
+            if (json.has(JSONConstants.creator))
+                creator = json.getString(JSONConstants.creator);
+            if (json.has(JSONConstants.customColor))
+                customColor = json.getString(JSONConstants.customColor);
+
+            if (json.has(JSONConstants.totalUnits))
+                totalUnits = json.getInt(JSONConstants.totalUnits);
+            if (json.has(JSONConstants.units))
+                totalUnits = json.getInt(JSONConstants.units);
+
+            if (json.has(JSONConstants.offeredFall))
+                isOfferedFall = json.getBoolean(JSONConstants.offeredFall);
+            if (json.has(JSONConstants.offeredIAP))
+                isOfferedIAP = json.getBoolean(JSONConstants.offeredIAP);
+            if (json.has(JSONConstants.offeredSpring))
+                isOfferedSpring = json.getBoolean(JSONConstants.offeredSpring);
+            if (json.has(JSONConstants.offeredSummer))
+                isOfferedSummer = json.getBoolean(JSONConstants.offeredSummer);
+            if (json.has(JSONConstants.isPublic))
+                isPublic = json.getBoolean(JSONConstants.isPublic);
+
+            if (json.has(JSONConstants.inClassHours))
+                inClassHours = (float)json.getDouble(JSONConstants.inClassHours);
+            if (json.has(JSONConstants.outOfClassHours))
+                outOfClassHours = (float)json.getDouble(JSONConstants.outOfClassHours);
+        } catch (JSONException e) {
+            Log.e("Course", "Couldn't read JSON");
+            e.printStackTrace();
+        }
+
+    }
+
+    public JSONObject toJSON() {
+        JSONObject ret = new JSONObject();
+        try {
+            ret.put(JSONConstants.subjectID, getSubjectID());
+            ret.put(JSONConstants.title, subjectTitle);
+            if (subjectLevel != null && subjectLevel.length() > 0)
+                ret.put(JSONConstants.level, subjectLevel);
+            if (customColor != null && customColor.length() > 0)
+                ret.put(JSONConstants.customColor, customColor);
+            ret.put(JSONConstants.units, totalUnits);
+
+            if (creator != null && creator.length() > 0) {
+                ret.put(JSONConstants.creator, creator);
+
+                if (rawSchedule != null && rawSchedule.length() > 0)
+                    ret.put(JSONConstants.schedule, rawSchedule);
+                ret.put(JSONConstants.offeredFall, isOfferedFall);
+                ret.put(JSONConstants.offeredIAP, isOfferedIAP);
+                ret.put(JSONConstants.offeredSpring, isOfferedSpring);
+                ret.put(JSONConstants.offeredSummer, isOfferedSummer);
+                ret.put(JSONConstants.isPublic, isPublic);
+                ret.put(JSONConstants.inClassHours, inClassHours);
+                ret.put(JSONConstants.outOfClassHours, outOfClassHours);
+            }
+            return ret;
+
+        } catch (JSONException e) {
+            Log.e("Course", "Couldn't write JSON");
+            e.printStackTrace();
+        }
+        return ret;
+    }
 
     public Course() {}
 

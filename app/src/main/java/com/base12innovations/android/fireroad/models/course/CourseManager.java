@@ -276,7 +276,7 @@ public class CourseManager {
 
     private static String NEEDS_UPDATE_ON_LAUNCH_KEY = "needsUpdateOnLaunch";
     // Increment the cutoff value to set update on launch
-    private static int UPDATE_ON_LAUNCH_CUTOFF = 2;
+    private static int UPDATE_ON_LAUNCH_CUTOFF = 3;
 
     public boolean needsUpdateOnLaunch() {
         return dbPreferences.getInt(NEEDS_UPDATE_ON_LAUNCH_KEY, 0) < UPDATE_ON_LAUNCH_CUTOFF;

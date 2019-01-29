@@ -126,37 +126,42 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
 
                 final MenuItem owOn = menu.getMenu().findItem(R.id.overrideWarningsOn);
                 final MenuItem owOff = menu.getMenu().findItem(R.id.overrideWarningsOff);
+                menu.getMenu().findItem(R.id.viewCourse).setVisible(currentlySelectedCourse.isPublic);
+                menu.getMenu().findItem(R.id.courseWarnings).setVisible(currentlySelectedCourse.isPublic);
+                owOn.setVisible(currentlySelectedCourse.isPublic);
+                owOff.setVisible(currentlySelectedCourse.isPublic);
 
-                List<RoadDocument.Warning> warnings = User.currentUser().getCurrentDocument().warningsForCourseCached(currentlySelectedCourse, currentlySelectedSemester);
-                if (warnings == null) {
-                    TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
-                        @Override
-                        public void perform() {
-                            final List<RoadDocument.Warning> newWarnings = User.currentUser().getCurrentDocument().warningsForCourse(currentlySelectedCourse, currentlySelectedSemester);
-                            TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
-                                @Override
-                                public void perform() {
-                                    menu.getMenu().findItem(R.id.courseWarnings).setEnabled(newWarnings.size() > 0);
-                                    if (newWarnings.size() == 0) {
-                                        owOn.setEnabled(false);
-                                        owOff.setEnabled(false);
+                if (currentlySelectedCourse.isPublic) {
+                    List<RoadDocument.Warning> warnings = User.currentUser().getCurrentDocument().warningsForCourseCached(currentlySelectedCourse, currentlySelectedSemester);
+                    if (warnings == null) {
+                        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+                            @Override
+                            public void perform() {
+                                final List<RoadDocument.Warning> newWarnings = User.currentUser().getCurrentDocument().warningsForCourse(currentlySelectedCourse, currentlySelectedSemester);
+                                TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                                    @Override
+                                    public void perform() {
+                                        menu.getMenu().findItem(R.id.courseWarnings).setEnabled(newWarnings.size() > 0);
+                                        if (newWarnings.size() == 0) {
+                                            owOn.setEnabled(false);
+                                            owOff.setEnabled(false);
+                                        }
                                     }
-                                }
-                            });
+                                });
+                            }
+                        });
+                    } else {
+                        menu.getMenu().findItem(R.id.courseWarnings).setEnabled(warnings.size() > 0);
+                        if (warnings.size() == 0) {
+                            owOn.setEnabled(false);
+                            owOff.setEnabled(false);
                         }
-                    });
-                } else {
-                    menu.getMenu().findItem(R.id.courseWarnings).setEnabled(warnings.size() > 0);
-                    if (warnings.size() == 0) {
-                        owOn.setEnabled(false);
-                        owOff.setEnabled(false);
                     }
-                }
-
-                if (User.currentUser().getCurrentDocument().overrideWarningsForCourse(course)) {
-                    owOn.setVisible(false);
-                } else {
-                    owOff.setVisible(false);
+                    if (User.currentUser().getCurrentDocument().overrideWarningsForCourse(course)) {
+                        owOn.setVisible(false);
+                    } else {
+                        owOff.setVisible(false);
+                    }
                 }
 
                 menu.setOnMenuItemClickListener(MyRoadFragment.this);

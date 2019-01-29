@@ -204,7 +204,7 @@ public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAd
             public Float perform() {
                 if (User.currentUser().getCurrentDocument() != null) {
                     rList.loadIfNeeded();
-                    rList.computeRequirementStatus(User.currentUser().getCurrentDocument().getAllCourses());
+                    rList.computeRequirementStatus(User.currentUser().getCurrentDocument().getCreditCourses());
                     return rList.percentageFulfilled();
                 }
                 return 0.0f;

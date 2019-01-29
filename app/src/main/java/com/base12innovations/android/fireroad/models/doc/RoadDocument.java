@@ -56,6 +56,7 @@ public class RoadDocument extends Document {
         static String subjectIDAlt = "id";
         static String units = "units";
         static String marker = "marker";
+        static String creator = "creator";
     }
 
     public enum SubjectMarker {
@@ -191,10 +192,16 @@ public class RoadDocument extends Document {
                 if (!courses.containsKey(semester)) {
                     courses.put(semester, new ArrayList<Course>());
                 }
-                Course course = CourseManager.sharedInstance().getSubjectByID(subjectID);
-                if (course == null) {
-                    Log.d("RoadDocument", "Couldn't find course with ID " + subjectID);
-                    continue;
+                Course course;
+                if (subjectInfo.has(RoadJSON.creator) && subjectInfo.getString(RoadJSON.creator).length() > 0) {
+                    course = new Course();
+                    course.readJSON(subjectInfo);
+                } else {
+                    course = CourseManager.sharedInstance().getSubjectByID(subjectID);
+                    if (course == null) {
+                        Log.d("RoadDocument", "Couldn't find course with ID " + subjectID);
+                        continue;
+                    }
                 }
                 courses.get(semester).add(course);
                 overrides.put(course, ignoreWarnings);
@@ -227,10 +234,7 @@ public class RoadDocument extends Document {
             for (int semesterIndex : courses.keySet()) {
                 List<Course> semCourses = courses.get(semesterIndex);
                 for (Course course : semCourses) {
-                    JSONObject courseObj = new JSONObject();
-                    courseObj.put(RoadJSON.subjectID, course.getSubjectID());
-                    courseObj.put(RoadJSON.subjectTitle, course.subjectTitle);
-                    courseObj.put(RoadJSON.units, course.totalUnits);
+                    JSONObject courseObj = course.toJSON();
                     courseObj.put(RoadJSON.semester, semesterIndex);
                     if (overrides.containsKey(course)) {
                         courseObj.put(RoadJSON.overrideWarnings, overrides.get(course));
@@ -297,10 +301,23 @@ public class RoadDocument extends Document {
     @Override
     public List<Course> getAllCourses() {
         List<Course> allCourses = new ArrayList<>();
-        for (int semester : this.courses.keySet()) {
-            allCourses.addAll(this.courses.get(semester));
+        for (int semester : courses.keySet()) {
+            allCourses.addAll(courses.get(semester));
         }
         return allCourses;
+    }
+
+    // Lists just courses that aren't marked as listener
+    public List<Course> getCreditCourses() {
+        List<Course> creditCourses = new ArrayList<>();
+        for (int semester : courses.keySet()) {
+            for (Course course: courses.get(semester)) {
+                SubjectMarker marker = subjectMarkerForCourse(course, semester);
+                if (marker != null && marker == SubjectMarker.LISTENER) continue;
+                creditCourses.add(course);
+            }
+        }
+        return creditCourses;
     }
 
     public List<Course> coursesForSemester(int semester) {

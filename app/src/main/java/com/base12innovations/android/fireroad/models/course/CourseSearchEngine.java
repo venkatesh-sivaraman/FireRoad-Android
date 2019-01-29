@@ -157,7 +157,7 @@ public class CourseSearchEngine {
     public List<Course> searchSubjects(String query, EnumSet<Filter> filters) {
         String[] queryComps = query.toLowerCase().split("[ ;:,]");
         searchProgress = 0.0f;
-        List<Course> allCourses = CourseManager.sharedInstance().courseDatabase.daoAccess().allCourses();
+        List<Course> allCourses = CourseManager.sharedInstance().courseDatabase.daoAccess().publicCourses();
         allCourses.addAll(CourseManager.genericCourses.values());
         float interval = 1.0f / (float)allCourses.size();
         List<SearchItem> searchItems = new ArrayList<>();

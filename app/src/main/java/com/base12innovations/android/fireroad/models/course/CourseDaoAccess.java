@@ -20,8 +20,8 @@ public interface CourseDaoAccess {
     @Query("SELECT * FROM Course WHERE subjectID = :subjectID")
     Course findCourseWithSubjectID(String subjectID);
 
-    @Query("SELECT * FROM Course")
-    List<Course> allCourses();
+    @Query("SELECT * FROM Course WHERE isPublic = 1")
+    List<Course> publicCourses();
 
     @Query("SELECT * FROM Course WHERE subjectID LIKE '%' || :query || '%' OR " +
             "subjectTitle LIKE '%' || :query || '%'")

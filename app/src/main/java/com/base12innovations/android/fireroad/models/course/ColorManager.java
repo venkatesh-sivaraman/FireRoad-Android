@@ -1,8 +1,11 @@
 package com.base12innovations.android.fireroad.models.course;
 
 import android.graphics.Color;
+import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ColorManager {
@@ -136,7 +139,9 @@ public class ColorManager {
 
     public static int colorForCourse(Course course, int alpha) {
         if (course.getSubjectID() != null) {
-            if (specialColors.containsKey(course.getSubjectID()))
+            if (course.customColor != null && course.customColor.length() > 0)
+                return colorByCustomColorLabel(course.customColor);
+            else if (specialColors.containsKey(course.getSubjectID()))
                 return specialColors.get(course.getSubjectID());
             else if (course.isGeneric)
                 return specialColors.get("GIR");
@@ -147,14 +152,18 @@ public class ColorManager {
         return colorForDepartment(department, alpha);
     }
 
+    private static int colorByDirective(float hue, int directive, int alpha) {
+        float saturation = saturations[directive];
+        float brightness = brightnesses[directive];
+        return Color.HSVToColor(alpha, new float[] {hue, saturation, brightness});
+    }
+
     public static int colorForDepartment(String department, int alpha) {
         if (!hueMap.containsKey(department)) {
             return Color.parseColor("#FFBBBBBB");
         }
         float hue = hueMap.get(department);
-        float saturation = saturations[svMap.get(department)];
-        float brightness = brightnesses[svMap.get(department)];
-        return Color.HSVToColor(alpha, new float[] {hue, saturation, brightness});
+        return colorByDirective(hue, svMap.get(department), alpha);
     }
 
     public static int darkenColor(int color, int alpha) {
@@ -167,5 +176,73 @@ public class ColorManager {
         float[] values = new float[] { 0.0f, 0.0f, 0.0f };
         Color.colorToHSV(color, values);
         return Color.HSVToColor(alpha, new float[] {values[0], values[1], Math.min(1.0f, values[2] * 1.3f)});
+    }
+
+    // Custom course colors
+
+    private static List<Integer> colorTemplates = new ArrayList<>();
+    static {
+        colorTemplates.add(colorByDirective(0.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(30.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(60.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(90.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(120.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(150.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(0.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(30.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(60.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(90.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(120.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(150.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(0.0f, 2, 0xFF));
+        colorTemplates.add(colorByDirective(30.0f, 2, 0xFF));
+        colorTemplates.add(colorByDirective(60.0f, 2, 0xFF));
+        colorTemplates.add(colorByDirective(90.0f, 2, 0xFF));
+        colorTemplates.add(colorByDirective(120.0f, 2, 0xFF));
+        colorTemplates.add(colorByDirective(150.0f, 2, 0xFF));
+        
+        colorTemplates.add(colorByDirective(180.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(210.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(240.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(270.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(300.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(330.0f, 1, 0xFF));
+        colorTemplates.add(colorByDirective(180.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(210.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(240.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(270.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(300.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(330.0f, 0, 0xFF));
+        colorTemplates.add(colorByDirective(180.0f, 2, 0xFF));
+        colorTemplates.add(colorByDirective(210.0f, 2, 0xFF));
+        colorTemplates.add(colorByDirective(240.0f, 2, 0xFF));
+        colorTemplates.add(colorByDirective(270.0f, 2, 0xFF));
+        colorTemplates.add(colorByDirective(300.0f, 2, 0xFF));
+        colorTemplates.add(colorByDirective(330.0f, 2, 0xFF));
+        colorTemplates.add(Color.HSVToColor(new float[] { 0.0f, 0.0f, 0.0f }));
+        colorTemplates.add(Color.HSVToColor(new float[] { 0.0f, 0.0f, 0.15f }));
+        colorTemplates.add(Color.HSVToColor(new float[] { 0.0f, 0.0f, 0.3f }));
+        colorTemplates.add(Color.HSVToColor(new float[] { 0.0f, 0.0f, 0.45f }));
+        colorTemplates.add(Color.HSVToColor(new float[] { 0.0f, 0.0f, 0.6f }));
+        colorTemplates.add(Color.HSVToColor(new float[] { 0.0f, 0.0f, 0.75f }));
+    }
+
+    /**
+     * Retrieves a color based on a color label. Currently supports a label integer prefixed by '@'.
+     * @param label the label defining which color to use
+     * @return a color integer, which may be gray if the color cannot be found
+     */
+    public static int colorByCustomColorLabel(String label) {
+        if (label.startsWith("@")) {
+            try {
+                int templateIndex = Integer.parseInt(label.substring(1));
+                if (templateIndex < 0 || templateIndex >= colorTemplates.size())
+                    return Color.parseColor("#FFBBBBBB");
+                return colorTemplates.get(templateIndex);
+            } catch (NumberFormatException e) {
+                Log.e("ColorManager", "invalid color template name " + label);
+            }
+        }
+        return Color.parseColor("#FFBBBBBB");
     }
 }
