@@ -457,6 +457,13 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
         Call<HashMap<String, Object>> getProgressOverrides(@Header("Authorization") String authorization);
         @POST("prefs/set_progress_overrides/")
         Call<HashMap<String, Object>> setProgressOverrides(@Header("Authorization") String authorization, @Body HashMap<String, Integer> overrides);
+
+        @GET("prefs/custom_courses")
+        Call<HashMap<String, Object>> getCustomCourses(@Header("Authorization") String authorization);
+        @POST("prefs/set_custom_course/")
+        Call<HashMap<String, Object>> setCustomCourse(@Header("Authorization") String authorization, @Body HashMap<String, Object> courseInfo);
+        @POST("prefs/remove_custom_course/")
+        Call<HashMap<String, Object>> removeCustomCourse(@Header("Authorization") String authorization, @Body HashMap<String, Object> courseInfo);
     }
 
     public Response<List<String>> getFavorites() {
@@ -579,6 +586,67 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
             }
         });
     }
+
+    /*public Response<List<Map<String, Object>>> getCustomCourses() {
+        if (AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) != AppSettings.RECOMMENDATIONS_ALLOWED ||
+                !isLoggedIn)
+            return Response.error(0, null, false);
+
+        SyncedPreferenceAPI api = retrofit.create(SyncedPreferenceAPI.class);
+        Call<HashMap<String, Object>> req = api.getCustomCourses(getAuthorizationString());
+        try {
+            retrofit2.Response<HashMap<String, Object>> resp = req.execute();
+            if (resp.isSuccessful() && resp.body() != null &&
+                    (Boolean)resp.body().get("success")) {
+                List<Map<String, Object>> coursesList = (List<Map<String, Object>>)resp.body().get("custom_courses");
+                return Response.success(coursesList);
+            } else {
+                return Response.error(resp.code(), null, false);
+            }
+        } catch (IOException | ClassCastException e) {
+            return Response.error(JSON_ERROR, null, false);
+        }
+    }
+
+    public void setCustomCourse(HashMap<String, Object> customCourse) {
+        if (AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) != AppSettings.RECOMMENDATIONS_ALLOWED ||
+                !isLoggedIn)
+            return;
+
+        SyncedPreferenceAPI api = retrofit.create(SyncedPreferenceAPI.class);
+        Call<HashMap<String, Object>> req = api.setCustomCourse(getAuthorizationString(), customCourse);
+        req.enqueue(new Callback<HashMap<String, Object>>() {
+            @Override
+            public void onResponse(Call<HashMap<String, Object>> call, retrofit2.Response<HashMap<String, Object>> response) {
+                Log.d("NetworkManager", "Successfully set custom course");
+            }
+
+            @Override
+            public void onFailure(Call<HashMap<String, Object>> call, Throwable t) {
+                Log.d("NetworkManager", "Failed to set custom course");
+            }
+        });
+    }
+
+    public void removeCustomCourse(HashMap<String, Object> customCourse) {
+        if (AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) != AppSettings.RECOMMENDATIONS_ALLOWED ||
+                !isLoggedIn)
+            return;
+
+        SyncedPreferenceAPI api = retrofit.create(SyncedPreferenceAPI.class);
+        Call<HashMap<String, Object>> req = api.removeCustomCourse(getAuthorizationString(), customCourse);
+        req.enqueue(new Callback<HashMap<String, Object>>() {
+            @Override
+            public void onResponse(Call<HashMap<String, Object>> call, retrofit2.Response<HashMap<String, Object>> response) {
+                Log.d("NetworkManager", "Successfully set custom course");
+            }
+
+            @Override
+            public void onFailure(Call<HashMap<String, Object>> call, Throwable t) {
+                Log.d("NetworkManager", "Failed to set custom course");
+            }
+        });
+    }*/
 
     // Cloud file sync
 

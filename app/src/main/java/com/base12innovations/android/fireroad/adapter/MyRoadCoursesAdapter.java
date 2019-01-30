@@ -21,19 +21,7 @@ import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 import java.util.List;
 import java.util.Locale;
 
-public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdapter.ViewHolder> { //BaseAdapter {
-
-    public interface ClickListener {
-        void onClick(Course course, int position, View view);
-    }
-
-    public interface HeaderClickListener {
-        void onHeaderButtonClick(int semester, View view);
-    }
-
-    public ClickListener itemClickListener;
-    public ClickListener itemLongClickListener;
-    public HeaderClickListener onHeaderClickListener;
+public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapter {
 
     private RoadDocument document;
 
@@ -42,24 +30,12 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
         notifyDataSetChanged();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        // each data item is just a string in this case
-        public View cellView;
-
-        public ViewHolder(View v) {
-            super(v);
-            this.cellView = v;
-        }
-    }
-
-    private int numColumns;
-
     public MyRoadCoursesAdapter(RoadDocument document, int numColumns) {
+        super(numColumns);
         this.document = document;
-        this.numColumns = numColumns;
     }
 
-    public Course courseForGridPosition(int position) {
+    @Override public Course courseForGridPosition(int position) {
         if (document == null) {
             return null;
         }
@@ -109,7 +85,7 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
         return cursor - 1;
     }
 
-    public boolean isSectionHeader(int position) {
+    @Override public boolean isSectionHeader(int position) {
         if (document == null) {
             return false;
         }
@@ -130,7 +106,7 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
         return false;
     }
 
-    public int semesterForGridPosition(int position) {
+    @Override public int semesterForGridPosition(int position) {
         if (document == null) {
             return 0;
         }
@@ -207,92 +183,29 @@ public class MyRoadCoursesAdapter extends RecyclerView.Adapter<MyRoadCoursesAdap
     }
 
     @Override
-    public int getItemViewType(int position) {
-        return isSectionHeader(position) ? 1 : 0;
-    }
-
-    @NonNull
-    @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
-        if (i == 1) {   // Header
-            final LayoutInflater layoutInflater = LayoutInflater.from(viewGroup.getContext());
-            View convertView = layoutInflater.inflate(R.layout.header_myroad, null);
-            ViewHolder vh = new ViewHolder(convertView);
-            return vh;
-        } else {    // Normal cell
-            final LayoutInflater layoutInflater = LayoutInflater.from(viewGroup.getContext());
-            View convertView = layoutInflater.inflate(R.layout.linearlayout_course, null);
-            ViewHolder vh = new ViewHolder(convertView);
-            return vh;
-        }
-    }
-
-    @Override
-    public void onBindViewHolder(@NonNull final ViewHolder viewHolder, int position) {
-        final View view = viewHolder.cellView;
-        if (isSectionHeader(position)) {
-            final TextView textView = (TextView)view.findViewById(R.id.headerTextView);
-            final int semester = semesterForGridPosition(position);
-            textView.setText(RoadDocument.semesterNames[semester]);
-            List<Course> courses = document.coursesForSemester(semester);
-            TextView hoursView = view.findViewById(R.id.hoursTextView);
-            if (courses.size() > 0 && semester != 0) {
-                int units = 0;
-                double hours = 0.0;
-                for (Course course : courses) {
-                    units += course.totalUnits;
-                    double courseHours = course.inClassHours + course.outOfClassHours;
-                    hours += (course.getQuarterOffered() != null && course.getQuarterOffered() != Course.QuarterOffered.WholeSemester) ? courseHours * 0.5 : courseHours;
-                }
-                hoursView.setText(String.format(Locale.US, "%d units, %.1f hours", units, hours));
-            } else {
-                hoursView.setText("");
+    public void formatSectionHeader(View view, int semester) {
+        final TextView textView = (TextView)view.findViewById(R.id.headerTextView);
+        textView.setText(RoadDocument.semesterNames[semester]);
+        List<Course> courses = document.coursesForSemester(semester);
+        TextView hoursView = view.findViewById(R.id.hoursTextView);
+        if (courses.size() > 0 && semester != 0) {
+            int units = 0;
+            double hours = 0.0;
+            for (Course course : courses) {
+                units += course.totalUnits;
+                double courseHours = course.inClassHours + course.outOfClassHours;
+                hours += (course.getQuarterOffered() != null && course.getQuarterOffered() != Course.QuarterOffered.WholeSemester) ? courseHours * 0.5 : courseHours;
             }
-
-            view.findViewById(R.id.moreButton).setVisibility(document.coursesForSemester(semester).size() > 0 ? View.VISIBLE : View.INVISIBLE);
-            if (onHeaderClickListener != null) {
-                view.findViewById(R.id.moreButton).setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        onHeaderClickListener.onHeaderButtonClick(semester, view.findViewById(R.id.moreButton));
-                    }
-                });
-            }
+            hoursView.setText(String.format(Locale.US, "%d units, %.1f hours", units, hours));
         } else {
-            final Course course = courseForGridPosition(position);
-            ((GradientDrawable)view.getBackground()).setColor(ColorManager.colorForCourse(course));
-
-            final TextView idTextView = (TextView)view.findViewById(R.id.subjectIDLabel);
-            final TextView titleTextView = (TextView)view.findViewById(R.id.subjectTitleLabel);
-            idTextView.setText(course.getSubjectID());
-            titleTextView.setText(course.subjectTitle);
-
-            view.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (itemClickListener != null) {
-                        int newPos = viewHolder.getAdapterPosition();
-                        itemClickListener.onClick(course, newPos, view);
-                    }
-                }
-            });
-            view.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View view) {
-                    if (itemLongClickListener != null) {
-                        int newPos = viewHolder.getAdapterPosition();
-                        itemLongClickListener.onClick(course, newPos, view);
-                        return true;
-                    }
-                    return false;
-                }
-            });
-
-            updateCourseDecorations(viewHolder);
+            hoursView.setText("");
         }
+
+        view.findViewById(R.id.moreButton).setVisibility(document.coursesForSemester(semester).size() > 0 ? View.VISIBLE : View.INVISIBLE);
     }
 
     // Update warning view and marker view decorations for the course cell
+    @Override
     public void updateCourseDecorations(final ViewHolder viewHolder) {
         if (viewHolder.getAdapterPosition() < 0 || viewHolder.getAdapterPosition() >= getItemCount() ||
                 isSectionHeader(viewHolder.getAdapterPosition()))

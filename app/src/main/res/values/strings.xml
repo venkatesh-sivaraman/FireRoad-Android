@@ -32,6 +32,7 @@
     </string>
     <string name="title_activity_document_browser">DocumentBrowserActivity</string>
     <string name="title_activity_authentication">AuthenticationActivity</string>
+    <string name="title_activity_custom_courses">CustomCoursesActivity</string>
 
     <string-array name="allows_recommendations_titles">
         <item>Off</item>
@@ -64,4 +65,6 @@
     <string name="intro_page_2">Search for subjects and add them to your roads. You can keep subjects as "favorites" and view subject evaluations within the app.</string>
     <string name="intro_page_3">Browse up-to-date listings for majors and minors available at MIT, and add their requirements directly.</string>
     <string name="intro_page_4">Generate, customize, and share schedules for the upcoming semester.</string>
+    <string name="title_activity_custom_course_edit">CustomCourseEditActivity</string>
+
 </resources>

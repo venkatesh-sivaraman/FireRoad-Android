@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -387,64 +388,96 @@ public class Course implements Parcelable {
     // JSON read/write (currently limited)
 
     private static class JSONConstants {
-        static String subjectID = "subject_id";
-        static String title = "title";
-        static String totalUnits = "total_units";
-        static String units = "units";
-        static String level = "level";
-        static String offeredFall = "offered_fall";
-        static String offeredIAP = "offered_IAP";
-        static String offeredSpring = "offered_spring";
-        static String offeredSummer = "offered_summer";
-        static String schedule = "schedule";
-        static String inClassHours = "in_class_hours";
-        static String outOfClassHours = "out_of_class_hours";
-        static String isPublic = "public";
-        static String creator = "creator";
-        static String customColor = "custom_color";
+        static final String subjectID = "subject_id";
+        static final String title = "title";
+        static final String totalUnits = "total_units";
+        static final String units = "units";
+        static final String level = "level";
+        static final String offeredFall = "offered_fall";
+        static final String offeredIAP = "offered_IAP";
+        static final String offeredSpring = "offered_spring";
+        static final String offeredSummer = "offered_summer";
+        static final String schedule = "schedule";
+        static final String inClassHours = "in_class_hours";
+        static final String outOfClassHours = "out_of_class_hours";
+        static final String isPublic = "public";
+        static final String creator = "creator";
+        static final String customColor = "custom_color";
     }
 
     // Read and overwrite properties of this Course object based on the given JSON
     public void readJSON(JSONObject json) {
         try {
-            if (json.has(JSONConstants.subjectID))
-                setSubjectID(json.getString(JSONConstants.subjectID));
-            if (json.has(JSONConstants.title))
-                subjectTitle = json.getString(JSONConstants.title);
-            if (json.has(JSONConstants.level))
-                subjectLevel = json.getString(JSONConstants.level);
-            if (json.has(JSONConstants.schedule))
-                rawSchedule = json.getString(JSONConstants.schedule);
-            if (json.has(JSONConstants.creator))
-                creator = json.getString(JSONConstants.creator);
-            if (json.has(JSONConstants.customColor))
-                customColor = json.getString(JSONConstants.customColor);
-
-            if (json.has(JSONConstants.totalUnits))
-                totalUnits = json.getInt(JSONConstants.totalUnits);
-            if (json.has(JSONConstants.units))
-                totalUnits = json.getInt(JSONConstants.units);
-
-            if (json.has(JSONConstants.offeredFall))
-                isOfferedFall = json.getBoolean(JSONConstants.offeredFall);
-            if (json.has(JSONConstants.offeredIAP))
-                isOfferedIAP = json.getBoolean(JSONConstants.offeredIAP);
-            if (json.has(JSONConstants.offeredSpring))
-                isOfferedSpring = json.getBoolean(JSONConstants.offeredSpring);
-            if (json.has(JSONConstants.offeredSummer))
-                isOfferedSummer = json.getBoolean(JSONConstants.offeredSummer);
-            if (json.has(JSONConstants.isPublic))
-                isPublic = json.getBoolean(JSONConstants.isPublic);
-
-            if (json.has(JSONConstants.inClassHours))
-                inClassHours = (float)json.getDouble(JSONConstants.inClassHours);
-            if (json.has(JSONConstants.outOfClassHours))
-                outOfClassHours = (float)json.getDouble(JSONConstants.outOfClassHours);
+            Iterator<String> keys = json.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                setAttribute(key, json.get(key));
+            }
         } catch (JSONException e) {
             Log.e("Course", "Couldn't read JSON");
             e.printStackTrace();
         }
+    }
 
+    public void setAttribute(String key, Object value) {
+        try {
+            switch (key) {
+                case JSONConstants.subjectID:
+                    setSubjectID((String) value);
+                    break;
+                case JSONConstants.title:
+                    subjectTitle = (String) value;
+                    break;
+                case JSONConstants.level:
+                    subjectLevel = (String) value;
+                    break;
+                case JSONConstants.schedule:
+                    rawSchedule = (String) value;
+                    break;
+                case JSONConstants.creator:
+                    creator = (String) value;
+                    break;
+                case JSONConstants.customColor:
+                    customColor = (String) value;
+                    break;
+                case JSONConstants.totalUnits:
+                case JSONConstants.units:
+                    if (value instanceof Double)
+                        totalUnits = ((Double)value).intValue();
+                    else if (value instanceof Integer)
+                        totalUnits = (Integer) value;
+                    break;
+                case JSONConstants.offeredFall:
+                    isOfferedFall = (Boolean) value;
+                    break;
+                case JSONConstants.offeredIAP:
+                    isOfferedIAP = (Boolean) value;
+                    break;
+                case JSONConstants.offeredSpring:
+                    isOfferedSpring = (Boolean) value;
+                    break;
+                case JSONConstants.offeredSummer:
+                    isOfferedSummer = (Boolean) value;
+                    break;
+                case JSONConstants.isPublic:
+                    isPublic = (Boolean) value;
+                    break;
+                case JSONConstants.inClassHours:
+                    if (value instanceof Double)
+                        inClassHours = ((Double)value).floatValue();
+                    else if (value instanceof Float)
+                        inClassHours = (Float) value;
+                    break;
+                case JSONConstants.outOfClassHours:
+                    if (value instanceof Double)
+                        outOfClassHours = ((Double)value).floatValue();
+                    else if (value instanceof Float)
+                        outOfClassHours = (Float) value;
+                    break;
+            }
+        } catch (ClassCastException e) {
+            Log.e("Course", "Can't set key value " + key + " with this value");
+        }
     }
 
     public JSONObject toJSON() {

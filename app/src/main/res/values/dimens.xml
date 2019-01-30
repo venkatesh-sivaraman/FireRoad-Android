@@ -45,4 +45,8 @@
     <dimen name="schedule_line_width">1dp</dimen>
     <dimen name="schedule_hour_label_margin">4dp</dimen>
     <dimen name="schedule_day_label_height">26dp</dimen>
+
+    <!-- Custom courses -->
+    <dimen name="custom_course_color_button_dim">40dp</dimen>
+    <dimen name="color_button_margin">4dp</dimen>
 </resources>

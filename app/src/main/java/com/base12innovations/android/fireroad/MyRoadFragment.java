@@ -62,6 +62,8 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
 
     public interface Delegate extends CourseNavigatorDelegate {
         void myRoadFragmentAddedCoursesToSchedule(List<Course> courses, String fileName);
+        // If editCourse is null, then show the main menu
+        void myRoadFragmentWantsCustomCoursesActivity(Course editCourse);
     }
 
     /**
@@ -127,6 +129,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 final MenuItem owOn = menu.getMenu().findItem(R.id.overrideWarningsOn);
                 final MenuItem owOff = menu.getMenu().findItem(R.id.overrideWarningsOff);
                 menu.getMenu().findItem(R.id.viewCourse).setVisible(currentlySelectedCourse.isPublic);
+                menu.getMenu().findItem(R.id.editCourse).setVisible(!currentlySelectedCourse.isPublic || currentlySelectedCourse.creator != null);
                 menu.getMenu().findItem(R.id.courseWarnings).setVisible(currentlySelectedCourse.isPublic);
                 owOn.setVisible(currentlySelectedCourse.isPublic);
                 owOff.setVisible(currentlySelectedCourse.isPublic);
@@ -378,6 +381,12 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             case R.id.viewCourse:
                 showCourseDetails(currentlySelectedCourse);
                 return true;
+            case R.id.editCourse:
+                if (currentlySelectedCourse.creator == null)
+                    return true;
+                if (mListener != null)
+                    mListener.myRoadFragmentWantsCustomCoursesActivity(currentlySelectedCourse);
+                return true;
             case R.id.deleteCourse:
                 final Handler handler = new Handler();
                 handler.postDelayed(new Runnable() {
@@ -422,6 +431,10 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             case R.id.createSchedule:
                 if (mListener != null)
                     mListener.myRoadFragmentAddedCoursesToSchedule(User.currentUser().getCurrentDocument().coursesForSemester(currentlySelectedSemester), RoadDocument.semesterNames[currentlySelectedSemester]);
+                return true;
+            case R.id.addCustomCourse:
+                if (mListener != null)
+                    mListener.myRoadFragmentWantsCustomCoursesActivity(null);
                 return true;
             case R.id.clearCourses:
                 /*final Handler handler2 = new Handler();

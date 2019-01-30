@@ -181,7 +181,7 @@ public class RoadDocument extends Document {
                     subjectID = subjectInfo.getString(RoadJSON.subjectIDAlt);
                 }
                 if (subjectID == null) continue;
-//                String subjectTitle = subjectInfo.getString(RoadJSON.subjectTitle);
+                String subjectTitle = subjectInfo.getString(RoadJSON.subjectTitle);
 //                int units = subjectInfo.getInt(RoadJSON.units);
                 int semester = subjectInfo.getInt(RoadJSON.semester);
                 boolean ignoreWarnings = subjectInfo.getBoolean(RoadJSON.overrideWarnings);
@@ -194,8 +194,12 @@ public class RoadDocument extends Document {
                 }
                 Course course;
                 if (subjectInfo.has(RoadJSON.creator) && subjectInfo.getString(RoadJSON.creator).length() > 0) {
-                    course = new Course();
-                    course.readJSON(subjectInfo);
+                    course = CourseManager.sharedInstance().getCustomCourse(subjectID, subjectTitle);
+                    if (course == null) {
+                        course = new Course();
+                        course.readJSON(subjectInfo);
+                        CourseManager.sharedInstance().setCustomCourse(course);
+                    }
                 } else {
                     course = CourseManager.sharedInstance().getSubjectByID(subjectID);
                     if (course == null) {

@@ -39,6 +39,8 @@ import com.arlib.floatingsearchview.FloatingSearchView;
 import com.arlib.floatingsearchview.suggestions.SearchSuggestionsAdapter;
 import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
 import com.base12innovations.android.fireroad.activity.AuthenticationActivity;
+import com.base12innovations.android.fireroad.activity.CustomCourseEditActivity;
+import com.base12innovations.android.fireroad.activity.CustomCoursesActivity;
 import com.base12innovations.android.fireroad.activity.DocumentBrowserActivity;
 import com.base12innovations.android.fireroad.activity.IntroActivity;
 import com.base12innovations.android.fireroad.activity.SettingsActivity;
@@ -77,15 +79,17 @@ import java.util.concurrent.TimeUnit;
 public class MainActivity extends AppCompatActivity implements RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate,
         FilterDialogFragment.Delegate, ForYouFragment.Delegate, MyRoadFragment.Delegate, DocumentManager.SyncResponseHandler, DocumentManager.SyncFileListener {
 
-    private static String CURRENT_FRAGMENT_TAG = "currentlyDisplayedFragment";
+    private static final String CURRENT_FRAGMENT_TAG = "currentlyDisplayedFragment";
 
-    private static int ROAD_BROWSER_REQUEST = 1234;
-    private static int SCHEDULE_BROWSER_REQUEST = 5678;
+    private static final int ROAD_BROWSER_REQUEST = 1234;
+    private static final int SCHEDULE_BROWSER_REQUEST = 5678;
 
-    private static int AUTHENTICATION_INTENT_TAG = 1425;
+    private static final int AUTHENTICATION_INTENT_TAG = 1425;
     private NetworkManager.AsyncResponse<JSONObject> authenticationCompletion;
 
-    private static int INTRO_INTENT_TAG = 2514;
+    private static final int INTRO_INTENT_TAG = 2514;
+    private static final int CUSTOM_COURSES_INTENT_TAG = 1928;
+    private static final int CUSTOM_COURSE_EDIT_INTENT_TAG = 12073;
 
     private DrawerLayout mDrawer;
     private Toolbar toolbar;
@@ -267,6 +271,22 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         } else if (requestCode == INTRO_INTENT_TAG && resultCode == RESULT_OK) {
             AppSettings.shared().edit().putBoolean(AppSettings.SHOWN_INTRO, true).apply();
             setupLogin();
+        } else if (requestCode == CUSTOM_COURSES_INTENT_TAG) {
+            if (data != null &&
+                    data.hasExtra(CustomCoursesActivity.ADDED_SUBJECT_ID_RESULT) &&
+                    data.hasExtra(CustomCoursesActivity.ADDED_SUBJECT_TITLE_RESULT) &&
+                    data.hasExtra(CustomCoursesActivity.ADDED_SEMESTER_RESULT)) {
+                Course course = CourseManager.sharedInstance().getCustomCourse(
+                        data.getStringExtra(CustomCoursesActivity.ADDED_SUBJECT_ID_RESULT),
+                        data.getStringExtra(CustomCoursesActivity.ADDED_SUBJECT_TITLE_RESULT));
+                courseNavigatorAddedCourse(null, course, data.getIntExtra(CustomCoursesActivity.ADDED_SEMESTER_RESULT, 0));
+            }
+        } else if (requestCode == CUSTOM_COURSE_EDIT_INTENT_TAG && resultCode == RESULT_OK) {
+            if (myRoadFragment != null) {
+                myRoadFragment.reloadView();
+            } else if (scheduleFragment != null) {
+                scheduleFragment.loadSchedules(false);
+            }
         }
     }
 
@@ -776,6 +796,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     String fileName = base.substring(0, base.lastIndexOf('.'));
                     String text = doc.plainTextRepresentation();
                     shareText(text, fileName);
+                } else if (item.getItemId() == R.id.action_custom_courses) {
+                    showCustomCourses(null);
                 }
             }
         });
@@ -1146,6 +1168,11 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             scheduleFragment.addAllCourses(courses, fileName);
     }
 
+    @Override
+    public void myRoadFragmentWantsCustomCoursesActivity(Course editCourse) {
+        showCustomCourses(editCourse);
+    }
+
     public void onShowCourseDetails(Course course, int scrollOffset) {
         if (detailsStack != null && detailsStack.size() > 0) {
             Course lastCourse = detailsStack.get(detailsStack.size() - 1).course;
@@ -1197,6 +1224,22 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         return scheduleFragment;
     }
 
+    //endregion
+    //region Custom Courses
+
+    private void showCustomCourses(Course editCourse) {
+        if (editCourse == null) {
+            // Show the main custom course view
+            Intent i = new Intent(MainActivity.this, CustomCoursesActivity.class);
+            startActivityForResult(i, CUSTOM_COURSES_INTENT_TAG);
+        } else {
+            // Edit a specific custom course
+            Intent i = new Intent(MainActivity.this, CustomCourseEditActivity.class);
+            i.putExtra(CustomCourseEditActivity.SUBJECT_ID_EXTRA, editCourse.getSubjectID());
+            i.putExtra(CustomCourseEditActivity.SUBJECT_TITLE_EXTRA, editCourse.subjectTitle);
+            startActivityForResult(i, CUSTOM_COURSE_EDIT_INTENT_TAG);
+        }
+    }
     //endregion
     //region Preferences
 

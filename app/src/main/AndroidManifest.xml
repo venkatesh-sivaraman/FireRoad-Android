@@ -41,6 +41,15 @@
                 android:value="com.base12innovations.android.fireroad.MainActivity" />
         </activity>
         <activity
+            android:name=".activity.CustomCoursesActivity"
+            android:label="@string/title_activity_custom_courses"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.base12innovations.android.fireroad.MainActivity" />
+        </activity>
+        <activity
             android:name=".activity.SettingsActivity"
             android:label="@string/title_activity_settings"
             android:parentActivityName=".MainActivity"
@@ -99,6 +108,15 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.base12innovations.android.fireroad.MainActivity" />
+        </activity>
+        <activity
+            android:name=".activity.CustomCourseEditActivity"
+            android:label="@string/title_activity_custom_course_edit"
+            android:parentActivityName=".activity.CustomCoursesActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.base12innovations.android.fireroad.activity.CustomCoursesActivity" />
         </activity>
     </application>
 

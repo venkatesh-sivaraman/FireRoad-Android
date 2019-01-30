@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context=".activity.CustomCourseEditActivity"
+    tools:showIn="@layout/activity_custom_course_edit">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:clipChildren="false"
+        android:paddingBottom="20dp">
+
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/subject_id_input_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:hint="Short Name (max 8 characters)">
+
+            <EditText
+                android:id="@+id/subjectIDField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapCharacters"
+                android:maxLength="8"
+                android:singleLine="true" />
+
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/title_input_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:hint="Title">
+
+            <EditText
+                android:id="@+id/titleField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapWords"
+                android:singleLine="true" />
+
+        </android.support.design.widget.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="12dp"
+            android:text="UNITS/HOURS"
+            android:textStyle="bold" />
+
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/units_input_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:hint="Units">
+
+            <EditText
+                android:id="@+id/unitsField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:selectAllOnFocus="true"
+                android:singleLine="true" />
+
+        </android.support.design.widget.TextInputLayout>
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/in_class_input_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:hint="In-Class Hours">
+
+            <EditText
+                android:id="@+id/inClassHoursField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:selectAllOnFocus="true"
+                android:singleLine="true" />
+
+        </android.support.design.widget.TextInputLayout>
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/out_class_input_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:hint="Out-of-Class Hours">
+
+            <EditText
+                android:id="@+id/outOfClassHoursField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:selectAllOnFocus="true"
+                android:singleLine="true" />
+
+        </android.support.design.widget.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="12dp"
+            android:text="COLOR"
+            android:textStyle="bold" />
+        <GridLayout
+            android:layout_width="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:columnCount="6">
+            <ImageButton
+                android:id="@+id/colorButton1"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton2"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton3"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton4"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton5"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton6"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton7"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+
+            <ImageButton
+                android:id="@+id/colorButton11"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton12"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton13"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton14"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton15"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton16"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton17"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+
+            <ImageButton
+                android:id="@+id/colorButton21"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton22"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton23"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton24"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton25"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton26"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton27"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+
+            <ImageButton
+                android:id="@+id/colorButton31"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton32"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton33"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton34"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton35"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton36"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton37"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+
+            <ImageButton
+                android:id="@+id/colorButton41"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton42"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton43"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton44"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton45"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton46"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton47"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+
+            <ImageButton
+                android:id="@+id/colorButton51"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton52"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton53"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton54"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton55"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton56"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+            <ImageButton
+                android:id="@+id/colorButton57"
+                android:layout_width="@dimen/custom_course_color_button_dim"
+                android:layout_height="@dimen/custom_course_color_button_dim"
+                android:background="@drawable/round_button"
+                android:gravity="center_horizontal"
+                android:layout_margin="@dimen/color_button_margin" />
+        </GridLayout>
+    </LinearLayout>
+</android.support.v4.widget.NestedScrollView>

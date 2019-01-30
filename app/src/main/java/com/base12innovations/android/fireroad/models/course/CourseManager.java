@@ -10,7 +10,12 @@ import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.doc.NetworkManager;
 import com.base12innovations.android.fireroad.models.req.RequirementsListManager;
+import com.base12innovations.android.fireroad.utils.ListHelper;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -27,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -733,14 +739,25 @@ public class CourseManager {
                 }
             }
         });
+        /*TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                NetworkManager.Response<List<Map<String, Object>>> resp = NetworkManager.sharedInstance().getCustomCourses();
+                if (resp.result != null && resp.result.size() > 0) {
+                    loadCustomCourseCache(resp.result);
+                }
+            }
+        });*/
     }
 
     private static String FAVORITE_COURSES_KEY = "favoriteCourses";
+    private static String CUSTOM_COURSES_KEY = "customCourses";
     private static String NOTES_KEY = "notes";
     private static String PROGRESS_OVERRIDES_KEY = "progressOverrides";
     private List<String> favoriteCourses;
     private Map<String, String> notes;
     private Map<String, Integer> progressOverrides;
+    private List<Course> customCourses;
 
     public interface FavoritesChangedListener {
         void changed(List<String> newCourses);
@@ -841,6 +858,108 @@ public class CourseManager {
         }
         dbPreferences.edit().putString(PROGRESS_OVERRIDES_KEY, TextUtils.join(";", comps)).apply();
         NetworkManager.sharedInstance().setProgressOverrides(new HashMap<>(progressOverrides));
+    }
+
+    private void loadCustomCourseCache() {
+        // Load from preferences first
+        String raw = dbPreferences.getString(CUSTOM_COURSES_KEY, "");
+        customCourses = new ArrayList<>();
+        if (raw.length() > 0) {
+            try {
+                JSONArray courseList = new JSONArray(raw);
+                for (int i = 0; i < courseList.length(); i++) {
+                    JSONObject courseJSON = courseList.getJSONObject(i);
+                    Course course = new Course();
+                    course.readJSON(courseJSON);
+                    customCourses.add(course);
+                }
+            } catch (JSONException e) {
+                Log.e("CourseManager", "Couldn't read custom course preferences JSON");
+                e.printStackTrace();
+            }
+        }
+
+        /*for (Map<String, Object> courseObj: coursesFromNetwork) {
+            Course course = new Course();
+            for (String key: courseObj.keySet()) {
+                course.setAttribute(key, courseObj.get(key));
+            }
+        }*/
+    }
+
+    private void saveCustomCourses() {
+        JSONArray ret = new JSONArray();
+        for (Course course: customCourses) {
+            ret.put(course.toJSON());
+        }
+        dbPreferences.edit().putString(CUSTOM_COURSES_KEY, ret.toString()).apply();
+    }
+
+    // Custom courses will be indexed by their subject ID AND title
+    public Course getCustomCourse(final String subjectID, final String title) {
+        List<Course> courses = getCustomCourses();
+        int index = ListHelper.indexOfElement(courses, new ListHelper.Predicate<Course>() {
+            @Override
+            public boolean test(Course element) {
+                return element.getSubjectID().equals(subjectID) && element.subjectTitle.equals(title);
+            }
+        });
+        if (index != ListHelper.NOT_FOUND)
+            return courses.get(index);
+        return null;
+    }
+
+    public List<Course> getCustomCourses() {
+        if (customCourses == null)
+            loadCustomCourseCache();
+        return new ArrayList<>(customCourses);
+    }
+
+    public void setCustomCourse(Course course) {
+        if (!customCourses.contains(course))
+            customCourses.add(course);
+        saveCustomCourses();
+        /*// Convert JSONObject to HashMap
+        try {
+            JSONObject courseData = course.toJSON();
+            HashMap<String, Object> courseMap = new HashMap<>();
+            Iterator<String> it = courseData.keys();
+            while (it.hasNext()) {
+                String key = it.next();
+                courseMap.put(key, courseData.get(key));
+            }
+            NetworkManager.sharedInstance().setCustomCourse(new HashMap<>(courseMap));
+        } catch (JSONException e) {
+            Log.e("CourseManager", "Can't convert course JSON to hash map");
+            e.printStackTrace();
+        }*/
+    }
+
+    public void removeCustomCourse(final Course course) {
+        List<Course> courses = getCustomCourses();
+        int index = ListHelper.indexOfElement(courses, new ListHelper.Predicate<Course>() {
+            @Override
+            public boolean test(Course element) {
+                return element.getSubjectID().equals(course.getSubjectID()) && element.subjectTitle.equals(course.subjectTitle);
+            }
+        });
+        if (index != ListHelper.NOT_FOUND)
+            customCourses.remove(index);
+        saveCustomCourses();
+        /*HashMap<String, Object> info = new HashMap<>();
+        try {
+            JSONObject courseData = course.toJSON();
+            HashMap<String, Object> courseMap = new HashMap<>();
+            Iterator<String> it = courseData.keys();
+            while (it.hasNext()) {
+                String key = it.next();
+                courseMap.put(key, courseData.get(key));
+            }
+            NetworkManager.sharedInstance().removeCustomCourse(new HashMap<>(courseMap));
+        } catch (JSONException e) {
+            Log.e("CourseManager", "Can't convert course JSON to hash map");
+            e.printStackTrace();
+        }*/
     }
 
     // Current semester

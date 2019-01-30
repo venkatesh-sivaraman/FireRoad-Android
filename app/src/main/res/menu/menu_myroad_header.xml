@@ -2,6 +2,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/createSchedule"
         android:title="Create schedule..."/>
+    <item android:id="@+id/addCustomCourse"
+        android:title="Add custom activity"/>
     <item android:id="@+id/clearCourses"
         android:title="Clear courses"/>
 </menu>
