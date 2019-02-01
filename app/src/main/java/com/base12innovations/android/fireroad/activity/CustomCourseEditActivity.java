@@ -1,6 +1,7 @@
 package com.base12innovations.android.fireroad.activity;
 
 import android.content.DialogInterface;
+import android.content.res.ColorStateList;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -15,11 +16,14 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.NumberPicker;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.R;
@@ -29,9 +33,11 @@ import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.doc.NetworkManager;
 import com.base12innovations.android.fireroad.models.doc.User;
+import com.base12innovations.android.fireroad.models.schedule.ScheduleSlots;
 
 import org.json.JSONObject;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,6 +48,8 @@ public class CustomCourseEditActivity extends AppCompatActivity {
     public static final String SUBJECT_TITLE_EXTRA = "com.base12innovations.android.fireroad.subject_title";
     private Course course = null;
     private Course courseCopy = null;
+    private LinearLayout layout;
+    private Button addScheduleItemButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +83,9 @@ public class CustomCourseEditActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        layout = findViewById(R.id.editItemsLinearLayout);
+        addScheduleItemButton = findViewById(R.id.addScheduleItem);
 
         EditText idView = findViewById(R.id.subjectIDField);
         idView.setText(courseCopy.getSubjectID());
@@ -169,6 +180,8 @@ public class CustomCourseEditActivity extends AppCompatActivity {
         formatTextViewForFocusChange(outClassView, "Enter a number...");
 
         formatColorButtons();
+
+        addScheduleItems();
     }
 
     private void formatTextViewForFocusChange(final EditText textView, final String placeholder) {
@@ -226,6 +239,158 @@ public class CustomCourseEditActivity extends AppCompatActivity {
         }
     }
 
+    private Map<Integer, Integer> colorCache = new HashMap<>();
+
+    private void addScheduleItems() {
+
+        Button addButton = findViewById(R.id.addScheduleItem);
+        addButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Course.ScheduleItem newItem = courseCopy.addScheduleItem(Course.ScheduleType.CUSTOM);
+                insertScheduleItem(newItem);
+            }
+        });
+
+        Map<String, List<List<Course.ScheduleItem>>> schedule = courseCopy.getSchedule();
+        if (schedule == null || !schedule.containsKey(Course.ScheduleType.CUSTOM) ||
+                schedule.get(Course.ScheduleType.CUSTOM).size() < 1)
+            return;
+
+        List<Course.ScheduleItem> scheduleItems = schedule.get(Course.ScheduleType.CUSTOM).get(0);
+        for (Course.ScheduleItem item: scheduleItems) {
+            insertScheduleItem(item);
+        }
+    }
+
+    private void insertScheduleItem(final Course.ScheduleItem item) {
+        int insertIndex = layout.indexOfChild(addScheduleItemButton);
+
+        final View view = getLayoutInflater().inflate(R.layout.cell_custom_course_schedule, null);
+        layout.addView(view, insertIndex);
+
+        Button[] buttons = { view.findViewById(R.id.buttonMonday), view.findViewById(R.id.buttonTuesday),
+                view.findViewById(R.id.buttonWednesday), view.findViewById(R.id.buttonThursday),
+                view.findViewById(R.id.buttonFriday) };
+        for (int i = 0; i < buttons.length; i++) {
+            final Button btn = buttons[i];
+            final int day = Course.ScheduleDay.ordering[i];
+            updateButton(btn, item, day);
+            btn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if ((item.days & day) != 0) {
+                        item.days = item.days - day;
+                    } else {
+                        item.days = (item.days | day);
+                    }
+                    updateButton(btn, item, day);
+                }
+            });
+        }
+
+        Spinner startTime = view.findViewById(R.id.startTimeSpinner);
+        for (int i = 0; i < ScheduleSlots.slots.size(); i++) {
+            Course.ScheduleTime time = ScheduleSlots.slots.get(i);
+            if (time.hour24() == item.startTime.hour24() && time.minute == item.startTime.minute) {
+                startTime.setSelection(i);
+                break;
+            }
+        }
+        startTime.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int selectedPosition, long l) {
+                item.startTime = ScheduleSlots.slots.get(selectedPosition);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
+        Spinner endTime = view.findViewById(R.id.endTimeSpinner);
+        for (int i = 0; i < ScheduleSlots.slots.size(); i++) {
+            Course.ScheduleTime time = ScheduleSlots.slots.get(i);
+            if (time.hour24() == item.endTime.hour24() && time.minute == item.endTime.minute) {
+                endTime.setSelection(i);
+                break;
+            }
+        }
+        endTime.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int selectedPosition, long l) {
+                item.endTime = ScheduleSlots.slots.get(selectedPosition);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
+        ImageButton deleteButton = view.findViewById(R.id.deleteScheduleItem);
+        deleteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Map<String, List<List<Course.ScheduleItem>>> schedule = courseCopy.getSchedule();
+                if (schedule == null || !schedule.containsKey(Course.ScheduleType.CUSTOM) ||
+                        schedule.get(Course.ScheduleType.CUSTOM).size() < 1) {
+                    return;
+                }
+                List<Course.ScheduleItem> scheduleItems = schedule.get(Course.ScheduleType.CUSTOM).get(0);
+                if (scheduleItems.contains(item)) {
+                    scheduleItems.remove(item);
+                    layout.removeView(view);
+                } else {
+                    Log.e("CustomCourseEdit", "Schedule doesn't contain the item being deleted");
+                }
+            }
+        });
+    }
+
+    private void updateButton(Button button, Course.ScheduleItem item, int day) {
+        int resId = button.getId();
+        if ((item.days & day) != 0) {
+            if (colorCache.containsKey(resId)) {
+                ColorStateList myColorStateList = new ColorStateList(
+                        new int[][]{
+                                new int[]{android.R.attr.state_enabled}
+                        },
+                        new int[] {
+                                colorCache.get(resId)
+                        }
+                );
+                button.setBackgroundTintList(myColorStateList);
+            }
+            button.setTextColor(0xFFFFFFFF);
+        } else {
+            if (!colorCache.containsKey(resId)) {
+                try {
+                    int color = button.getBackgroundTintList().getDefaultColor();
+                    if (color != 0xFFFFFFFF) {
+                        colorCache.put(resId, color);
+                    }
+                } catch (NullPointerException e) {
+                    e.printStackTrace();
+                }
+            }
+            ColorStateList myColorStateList = new ColorStateList(
+                    new int[][]{
+                            new int[]{android.R.attr.state_enabled}
+                    },
+                    new int[] {
+                            0xFFFFFFFF
+                    }
+            );
+            button.setBackgroundTintList(myColorStateList);
+            if (colorCache.containsKey(resId))
+                button.setTextColor(colorCache.get(resId));
+            else
+                button.setTextColor(0xFF000000);
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_custom_course_edit, menu);
@@ -234,9 +399,7 @@ public class CustomCourseEditActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Log.d("CustomCourseEdit", "Options Item selected");
         if (item.getItemId() == R.id.actionDone) {
-            Log.d("CustomCourseEdit", "Done");
             validateAndFinish();
             return true;
         }
@@ -274,7 +437,42 @@ public class CustomCourseEditActivity extends AppCompatActivity {
             return;
         }
 
+        Map<String, List<List<Course.ScheduleItem>>> schedule = courseCopy.getSchedule();
+        if (schedule != null && schedule.containsKey(Course.ScheduleType.CUSTOM) &&
+                schedule.get(Course.ScheduleType.CUSTOM).size() >= 1) {
+            List<Course.ScheduleItem> scheduleItems = schedule.get(Course.ScheduleType.CUSTOM).get(0);
+            for (Course.ScheduleItem item: scheduleItems) {
+                if (item.days == 0) {
+                    new AlertDialog.Builder(this)
+                            .setTitle("Invalid Schedule")
+                            .setMessage("Please choose at least one weekday for the schedule.")
+                            .setCancelable(true)
+                            .setNegativeButton("Dismiss", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    dialogInterface.dismiss();
+                                }
+                            }).show();
+                    return;
+                }
+                if (item.startTime.compareTo(item.endTime) >= 0) {
+                    new AlertDialog.Builder(this)
+                            .setTitle("Invalid Times")
+                            .setMessage("The start time must be before the end time.")
+                            .setCancelable(true)
+                            .setNegativeButton("Dismiss", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    dialogInterface.dismiss();
+                                }
+                            }).show();
+                    return;
+                }
+            }
+        }
+
         // Success - copy over the information to the course
+        courseCopy.updateRawSchedule();
         JSONObject data = courseCopy.toJSON();
         course.readJSON(data);
         CourseManager.sharedInstance().setCustomCourse(course);

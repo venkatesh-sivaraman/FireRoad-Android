@@ -2,6 +2,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/viewCourse"
         android:title="View"/>
+    <item android:id="@+id/editCourse"
+        android:title="Edit"
+        android:visible="false"/>
     <item android:id="@+id/deleteCourse"
         android:title="Delete"/>
     <item android:id="@+id/constrainCourse"

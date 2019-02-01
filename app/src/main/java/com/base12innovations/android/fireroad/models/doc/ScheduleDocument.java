@@ -25,11 +25,12 @@ public class ScheduleDocument extends Document {
 
     protected static class ScheduleJSON {
         static String selectedSubjects = "selectedSubjects";
-        static String subjectID = "id";
+        static String subjectID = "subject_id";
+        static String subjectIDAlt = "id";
         static String subjectTitle = "title";
         static String allowedSections = "allowedSections";
         static String selectedSections = "selectedSections";
-
+        static String creator = "creator";
     }
 
     private List<Course> courses = new ArrayList<>();
@@ -78,48 +79,65 @@ public class ScheduleDocument extends Document {
 
             for (int i = 0; i < selectedSubjects.length(); i++) {
                 JSONObject subjectInfo = selectedSubjects.getJSONObject(i);
-                String subjectID = subjectInfo.getString(ScheduleJSON.subjectID);
+                String subjectID = null;
+                if (subjectInfo.has(ScheduleJSON.subjectID)) {
+                    subjectID = subjectInfo.getString(ScheduleJSON.subjectID);
+                } else if (subjectInfo.has(ScheduleJSON.subjectIDAlt)) {
+                    subjectID = subjectInfo.getString(ScheduleJSON.subjectIDAlt);
+                }
+                if (subjectID == null) continue;
+                String subjectTitle = subjectInfo.getString(ScheduleJSON.subjectTitle);
 
-                Course course = CourseManager.sharedInstance().getSubjectByID(subjectID);
-                if (course != null) {
-                    newCourses.add(course);
-
-                    if (subjectInfo.has(ScheduleJSON.allowedSections)) {
-                        JSONObject allowedInfo = subjectInfo.getJSONObject(ScheduleJSON.allowedSections);
-                        Iterator<String> it = allowedInfo.keys();
-                        while (it.hasNext()) {
-                            String section = it.next();
-                            JSONArray allowed = allowedInfo.getJSONArray(section);
-                            List<Integer> res = new ArrayList<>();
-                            for (int j = 0; j < allowed.length(); j++) {
-                                res.add(allowed.getInt(j));
-                            }
-
-                            if (newAllowedSections == null)
-                                newAllowedSections = new HashMap<>();
-                            if (!newAllowedSections.containsKey(course))
-                                newAllowedSections.put(course, new HashMap<String, List<Integer>>());
-                            newAllowedSections.get(course).put(section, res);
-                        }
+                Course course;
+                if (subjectInfo.has(ScheduleJSON.creator) && subjectInfo.getString(ScheduleJSON.creator).length() > 0) {
+                    course = CourseManager.sharedInstance().getCustomCourse(subjectID, subjectTitle);
+                    if (course == null) {
+                        course = new Course();
+                        course.readJSON(subjectInfo);
+                        CourseManager.sharedInstance().setCustomCourse(course);
                     }
-
-                    if (subjectInfo.has(ScheduleJSON.selectedSections)) {
-                        JSONObject allowedInfo = subjectInfo.getJSONObject(ScheduleJSON.selectedSections);
-                        Iterator<String> iterator = allowedInfo.keys();
-                        while (iterator.hasNext()) {
-                            String section = iterator.next();
-                            int selectedSect = allowedInfo.getInt(section);
-
-                            if (newPreloadSections == null)
-                                newPreloadSections = new HashMap<>();
-                            if (!newPreloadSections.containsKey(course))
-                                newPreloadSections.put(course, new HashMap<String, Integer>());
-                            newPreloadSections.get(course).put(section, selectedSect);
-                        }
-                    }
-
                 } else {
-                    Log.d("ScheduleDocument", "Couldn't find course with ID " + subjectID);
+                    course = CourseManager.sharedInstance().getSubjectByID(subjectID);
+                    if (course == null) {
+                        Log.d("RoadDocument", "Couldn't find course with ID " + subjectID);
+                        continue;
+                    }
+                }
+
+                newCourses.add(course);
+
+                if (subjectInfo.has(ScheduleJSON.allowedSections)) {
+                    JSONObject allowedInfo = subjectInfo.getJSONObject(ScheduleJSON.allowedSections);
+                    Iterator<String> it = allowedInfo.keys();
+                    while (it.hasNext()) {
+                        String section = it.next();
+                        JSONArray allowed = allowedInfo.getJSONArray(section);
+                        List<Integer> res = new ArrayList<>();
+                        for (int j = 0; j < allowed.length(); j++) {
+                            res.add(allowed.getInt(j));
+                        }
+
+                        if (newAllowedSections == null)
+                            newAllowedSections = new HashMap<>();
+                        if (!newAllowedSections.containsKey(course))
+                            newAllowedSections.put(course, new HashMap<String, List<Integer>>());
+                        newAllowedSections.get(course).put(section, res);
+                    }
+                }
+
+                if (subjectInfo.has(ScheduleJSON.selectedSections)) {
+                    JSONObject allowedInfo = subjectInfo.getJSONObject(ScheduleJSON.selectedSections);
+                    Iterator<String> iterator = allowedInfo.keys();
+                    while (iterator.hasNext()) {
+                        String section = iterator.next();
+                        int selectedSect = allowedInfo.getInt(section);
+
+                        if (newPreloadSections == null)
+                            newPreloadSections = new HashMap<>();
+                        if (!newPreloadSections.containsKey(course))
+                            newPreloadSections.put(course, new HashMap<String, Integer>());
+                        newPreloadSections.get(course).put(section, selectedSect);
+                    }
                 }
             }
 
@@ -142,9 +160,7 @@ public class ScheduleDocument extends Document {
             // Write courses
             JSONArray subjects = new JSONArray();
             for (Course course : courses) {
-                JSONObject courseObj = new JSONObject();
-                courseObj.put(ScheduleJSON.subjectID, course.getSubjectID());
-                courseObj.put(ScheduleJSON.subjectTitle, course.subjectTitle);
+                JSONObject courseObj = course.toJSON();
 
                 if (allowedSections != null && allowedSections.containsKey(course)) {
                     JSONObject jAllowed = new JSONObject();

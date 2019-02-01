@@ -67,4 +67,37 @@
     <string name="intro_page_4">Generate, customize, and share schedules for the upcoming semester.</string>
     <string name="title_activity_custom_course_edit">CustomCourseEditActivity</string>
 
+    <!-- custom courses -->
+    <string-array name="custom_course_schedule_times">
+        <item>8 AM</item>
+        <item>8:30 AM</item>
+        <item>9 AM</item>
+        <item>9:30 AM</item>
+        <item>10 AM</item>
+        <item>10:30 AM</item>
+        <item>11 AM</item>
+        <item>11:30 AM</item>
+        <item>12 PM</item>
+        <item>12:30 PM</item>
+        <item>1 PM</item>
+        <item>1:30 PM</item>
+        <item>2 PM</item>
+        <item>2:30 PM</item>
+        <item>3 PM</item>
+        <item>3:30 PM</item>
+        <item>4 PM</item>
+        <item>4:30 PM</item>
+        <item>5 PM</item>
+        <item>5:30 PM</item>
+        <item>6 PM</item>
+        <item>6:30 PM</item>
+        <item>7 PM</item>
+        <item>7:30 PM</item>
+        <item>8 PM</item>
+        <item>8:30 PM</item>
+        <item>9 PM</item>
+        <item>9:30 PM</item>
+        <item>10 PM</item>
+    </string-array>
+
 </resources>

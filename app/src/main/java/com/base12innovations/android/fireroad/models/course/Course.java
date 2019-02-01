@@ -7,9 +7,11 @@ import android.arch.persistence.room.PrimaryKey;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
+import com.base12innovations.android.fireroad.models.schedule.ScheduleSlots;
 import com.base12innovations.android.fireroad.utils.ListHelper;
 
 import org.json.JSONException;
@@ -433,6 +435,7 @@ public class Course implements Parcelable {
                     break;
                 case JSONConstants.schedule:
                     rawSchedule = (String) value;
+                    _schedule = null; // force reload
                     break;
                 case JSONConstants.creator:
                     creator = (String) value;
@@ -866,9 +869,10 @@ public class Course implements Parcelable {
         public static String RECITATION = "Recitation";
         public static String LAB = "Lab";
         public static String DESIGN = "Design";
+        public static String CUSTOM = "Custom";
 
         public static String[] ordering = new String[] {
-                LECTURE, RECITATION, LAB, DESIGN
+                LECTURE, RECITATION, LAB, DESIGN, CUSTOM
         };
 
         private static Map<String, String> abbreviations;
@@ -878,6 +882,7 @@ public class Course implements Parcelable {
             abbreviations.put(RECITATION, "Rec");
             abbreviations.put(LAB, "Lab");
             abbreviations.put(DESIGN, "Des");
+            abbreviations.put(CUSTOM, "");
         }
 
         public static String abbreviationFor(String type) {
@@ -954,6 +959,50 @@ public class Course implements Parcelable {
             parseScheduleString();
         }
         return _schedule;
+    }
+
+    public void updateRawSchedule() {
+        if (_schedule == null)
+            return;
+        List<String> types = new ArrayList<>();
+        for (String type: _schedule.keySet()) {
+            StringBuilder b = new StringBuilder();
+            b.append(type).append(",");
+            for (List<ScheduleItem> option: _schedule.get(type)) {
+                if (option.size() > 0 && option.get(0).location != null)
+                    b.append(option.get(0).location);
+                b.append("/");
+                for (ScheduleItem item: option) {
+                    b.append(ScheduleDay.toString(item.days)).append("/");
+                    b.append(item.isEvening ? "1" : "0").append("/");
+                    b.append((item.startTime.toString() + "-" +
+                                    item.endTime.toString()).replace(":", ".")).append("/");
+                }
+                b.deleteCharAt(b.length() - 1);
+                b.append(",");
+            }
+            b.deleteCharAt(b.length() - 1);
+            types.add(b.toString());
+        }
+
+        rawSchedule = TextUtils.join(";", types);
+        Log.d("Course", "new schedule is " + rawSchedule);
+    }
+
+    // Adds a new item to the first schedule option of the type
+    public Course.ScheduleItem addScheduleItem(String type) {
+        if (_schedule == null)
+            parseScheduleString();
+        if (_schedule == null)
+            _schedule = new HashMap<>();
+        if (!_schedule.containsKey(type))
+            _schedule.put(type, new ArrayList<List<ScheduleItem>>());
+        if (_schedule.get(type).size() == 0)
+            _schedule.get(type).add(new ArrayList<ScheduleItem>());
+        Course.ScheduleItem newItem = new Course.ScheduleItem("", "12", "1", false, "");
+        _schedule.get(type).get(0).add(newItem);
+
+        return newItem;
     }
 
     public static boolean isRequirementAutomaticallySatisfied(String requirement) {

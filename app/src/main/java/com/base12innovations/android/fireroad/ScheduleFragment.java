@@ -77,15 +77,19 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
     private List<ScheduleConfiguration> scheduleConfigurations;
     private ScheduleConfiguration currentConfiguration;
 
-    private CourseNavigatorDelegate mListener;
+    private ScheduleFragmentDelegate mListener;
 
     private boolean needsDisplay = false;
+
+    interface ScheduleFragmentDelegate extends CourseNavigatorDelegate {
+        void scheduleFragmentWantsCustomCoursesActivity(Course editCourse);
+    }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof CourseNavigatorDelegate) {
-            mListener = (CourseNavigatorDelegate) context;
+        if (context instanceof ScheduleFragmentDelegate) {
+            mListener = (ScheduleFragmentDelegate) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
@@ -531,7 +535,12 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         TextView subjectTitleLabel = courseThumbnail.findViewById(R.id.subjectTitleLabel);
         subjectIDLabel.setText(course.getSubjectID());
         subjectIDLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.0f);
-        subjectTitleLabel.setText(sectionType + " (" + item.location + ")");
+        if (course.creator != null && course.subjectTitle.length() <= 10)
+            subjectTitleLabel.setText(course.subjectTitle);
+        else if (course.creator == null)
+            subjectTitleLabel.setText(sectionType + " (" + item.location + ")");
+        else
+            subjectTitleLabel.setText("");
         subjectTitleLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.0f);
 
         /*courseThumbnail.setOnClickListener(new View.OnClickListener() {
@@ -548,6 +557,9 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                 MenuInflater mInflater = menu.getMenuInflater();
                 mInflater.inflate(R.menu.menu_schedule_cell, menu.getMenu());
                 menu.setOnMenuItemClickListener(ScheduleFragment.this);
+                menu.getMenu().findItem(R.id.editCourse).setVisible(currentlySelectedCourse.creator != null);
+                menu.getMenu().findItem(R.id.viewCourse).setVisible(currentlySelectedCourse.creator == null);
+                menu.getMenu().findItem(R.id.constrainCourse).setVisible(currentlySelectedCourse.creator == null);
                 menu.show();
                 currentPopupMenu = menu;
             }
@@ -856,6 +868,12 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
             case R.id.deleteCourse:
                 document.removeCourse(course);
                 loadSchedules(false);
+                return true;
+            case R.id.editCourse:
+                if (course.creator == null)
+                    return true;
+                if (mListener != null)
+                    mListener.scheduleFragmentWantsCustomCoursesActivity(course);
                 return true;
             case R.id.constrainCourse:
                 // Show constrain sections view

@@ -13,7 +13,8 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:clipChildren="false"
-        android:paddingBottom="20dp">
+        android:paddingBottom="20dp"
+        android:id="@+id/editItemsLinearLayout">
 
         <android.support.design.widget.TextInputLayout
             android:id="@+id/subject_id_input_layout"
@@ -51,64 +52,94 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
+            android:layout_marginStart="16dp"
             android:layout_marginTop="12dp"
             android:text="UNITS/HOURS"
             android:textStyle="bold" />
 
-        <android.support.design.widget.TextInputLayout
-            android:id="@+id/units_input_layout"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="12dp"
-            android:hint="Units">
-
-            <EditText
-                android:id="@+id/unitsField"
-                android:layout_width="match_parent"
+            android:orientation="horizontal">
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/units_input_layout"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:selectAllOnFocus="true"
-                android:singleLine="true" />
+                android:layout_margin="12dp"
+                android:hint="Units">
 
-        </android.support.design.widget.TextInputLayout>
-        <android.support.design.widget.TextInputLayout
-            android:id="@+id/in_class_input_layout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="12dp"
-            android:hint="In-Class Hours">
+                <EditText
+                    android:id="@+id/unitsField"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:selectAllOnFocus="true"
+                    android:singleLine="true" />
 
-            <EditText
-                android:id="@+id/inClassHoursField"
-                android:layout_width="match_parent"
+            </android.support.design.widget.TextInputLayout>
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/in_class_input_layout"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:inputType="numberDecimal"
-                android:selectAllOnFocus="true"
-                android:singleLine="true" />
+                android:layout_margin="12dp"
+                android:hint="In-Class Hours">
 
-        </android.support.design.widget.TextInputLayout>
-        <android.support.design.widget.TextInputLayout
-            android:id="@+id/out_class_input_layout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="12dp"
-            android:hint="Out-of-Class Hours">
+                <EditText
+                    android:id="@+id/inClassHoursField"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:selectAllOnFocus="true"
+                    android:singleLine="true" />
 
-            <EditText
-                android:id="@+id/outOfClassHoursField"
-                android:layout_width="match_parent"
+            </android.support.design.widget.TextInputLayout>
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/out_class_input_layout"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:inputType="numberDecimal"
-                android:selectAllOnFocus="true"
-                android:singleLine="true" />
+                android:layout_margin="12dp"
+                android:hint="Out-of-Class Hours">
 
-        </android.support.design.widget.TextInputLayout>
+                <EditText
+                    android:id="@+id/outOfClassHoursField"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:selectAllOnFocus="true"
+                    android:singleLine="true" />
+
+            </android.support.design.widget.TextInputLayout>
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:text="SCHEDULE"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/addScheduleItem"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="4dp"
+            android:layout_marginTop="4dp"
+            android:text="Add Schedule Item"
+            style="@style/Widget.AppCompat.Button.Borderless.Colored"
+            android:textAlignment="center"
+            android:textAllCaps="true"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
             android:layout_marginTop="12dp"
             android:text="COLOR"
             android:textStyle="bold" />
@@ -418,5 +449,6 @@
                 android:gravity="center_horizontal"
                 android:layout_margin="@dimen/color_button_margin" />
         </GridLayout>
+
     </LinearLayout>
 </android.support.v4.widget.NestedScrollView>

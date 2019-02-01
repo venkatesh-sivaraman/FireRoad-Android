@@ -77,7 +77,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements RequirementsFragment.OnFragmentInteractionListener, BottomSheetNavFragment.Delegate,
-        FilterDialogFragment.Delegate, ForYouFragment.Delegate, MyRoadFragment.Delegate, DocumentManager.SyncResponseHandler, DocumentManager.SyncFileListener {
+        FilterDialogFragment.Delegate, ForYouFragment.Delegate, MyRoadFragment.Delegate, DocumentManager.SyncResponseHandler, DocumentManager.SyncFileListener, ScheduleFragment.ScheduleFragmentDelegate {
 
     private static final String CURRENT_FRAGMENT_TAG = "currentlyDisplayedFragment";
 
@@ -284,7 +284,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         } else if (requestCode == CUSTOM_COURSE_EDIT_INTENT_TAG && resultCode == RESULT_OK) {
             if (myRoadFragment != null) {
                 myRoadFragment.reloadView();
-            } else if (scheduleFragment != null) {
+            }
+            if (scheduleFragment != null && lastShownFragmentID() == R.id.schedule_menu_item) {
                 scheduleFragment.loadSchedules(false);
             }
         }
@@ -431,6 +432,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     private void showContentFragment(int id) {
+        if (isActivityPaused)
+            return;
         Fragment fragment;
         switch(id) {
             case R.id.for_you_menu_item:
@@ -1170,6 +1173,11 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
     @Override
     public void myRoadFragmentWantsCustomCoursesActivity(Course editCourse) {
+        showCustomCourses(editCourse);
+    }
+
+    @Override
+    public void scheduleFragmentWantsCustomCoursesActivity(Course editCourse) {
         showCustomCourses(editCourse);
     }
 
