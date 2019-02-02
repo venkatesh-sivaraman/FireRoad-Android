@@ -656,7 +656,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     //endregion
     //region Searching
 
-    private static int NUM_SEARCH_SUGGESTIONS = 5;
+    private static final int NUM_SEARCH_SUGGESTIONS = 5;
     private boolean isSearching = false;
     private FilterDialogFragment mFilterDialog;
     private EnumSet<CourseSearchEngine.Filter> filters = CourseSearchEngine.Filter.noFilter();
@@ -1251,8 +1251,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     //endregion
     //region Preferences
 
-    private static String PREFERENCES = "com.base12innovations.android.fireroad.MainActivity.Preferences";
-    private static String LAST_SHOWN_FRAGMENT = "lastShownFragment";
+    private static final String PREFERENCES = "com.base12innovations.android.fireroad.MainActivity.Preferences";
+    private static final String LAST_SHOWN_FRAGMENT = "lastShownFragment";
 
     public int lastShownFragmentID() {
         SharedPreferences prefs = getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);

@@ -39,17 +39,17 @@ public class RequirementsListStatement {
         SUBJECTS, UNITS
     }
 
-    protected static String allSeparator = ",";
-    protected static String anySeparator = "/";
-    protected static String commentCharacter = "%%";
-    protected static String declarationCharacter = ":=";
-    protected static String variableDeclarationSeparator = ",";
-    protected static String headerSeparator = "#,#";
+    protected static final String allSeparator = ",";
+    protected static final String anySeparator = "/";
+    protected static final String commentCharacter = "%%";
+    protected static final String declarationCharacter = ":=";
+    protected static final String variableDeclarationSeparator = ",";
+    protected static final String headerSeparator = "#,#";
 
-    protected static String thresholdParameter = "threshold=";
-    protected static String urlParameter = "url=";
+    protected static final String thresholdParameter = "threshold=";
+    protected static final String urlParameter = "url=";
 
-    static int DEFAULT_UNIT_COUNT = 12;
+    static final int DEFAULT_UNIT_COUNT = 12;
 
     public class Threshold {
         public ThresholdType type;

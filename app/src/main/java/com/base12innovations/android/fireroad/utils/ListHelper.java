@@ -34,7 +34,7 @@ public class ListHelper {
         boolean test(T element);
     }
 
-    public static int NOT_FOUND = Integer.MAX_VALUE;
+    public static final int NOT_FOUND = Integer.MAX_VALUE;
 
     public static <T> void filterInPlace(Collection<T> input, Predicate<T> predicate) {
         Iterator<T> it = input.iterator();

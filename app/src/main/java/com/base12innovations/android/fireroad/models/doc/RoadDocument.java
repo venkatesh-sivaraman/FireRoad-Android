@@ -27,7 +27,7 @@ import javax.security.auth.Subject;
 
 public class RoadDocument extends Document {
 
-    public static String[] semesterNames = new String[] {
+    public static final String[] semesterNames = new String[] {
             "Prior Credit",
             "1st Year Fall",
             "1st Year IAP",
@@ -47,16 +47,16 @@ public class RoadDocument extends Document {
     };
 
     protected static class RoadJSON {
-        static String coursesOfStudy = "coursesOfStudy";
-        static String selectedSubjects = "selectedSubjects";
-        static String overrideWarnings = "overrideWarnings";
-        static String semester = "semester";
-        static String subjectTitle = "title";
-        static String subjectID = "subject_id";
-        static String subjectIDAlt = "id";
-        static String units = "units";
-        static String marker = "marker";
-        static String creator = "creator";
+        static final String coursesOfStudy = "coursesOfStudy";
+        static final String selectedSubjects = "selectedSubjects";
+        static final String overrideWarnings = "overrideWarnings";
+        static final String semester = "semester";
+        static final String subjectTitle = "title";
+        static final String subjectID = "subject_id";
+        static final String subjectIDAlt = "id";
+        static final String units = "units";
+        static final String marker = "marker";
+        static final String creator = "creator";
     }
 
     public enum SubjectMarker {

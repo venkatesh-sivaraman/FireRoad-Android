@@ -135,9 +135,9 @@ public class User {
 
     // Recents
 
-    private static String USER_DOCUMENT_PREFS = "com.base12innovations.android.fireroad.userDocumentPrefs";
-    private static String RECENT_ROAD_KEY = "recentRoad";
-    private static String RECENT_SCHEDULE_KEY = "recentSched";
+    private static final String USER_DOCUMENT_PREFS = "com.base12innovations.android.fireroad.userDocumentPrefs";
+    private static final String RECENT_ROAD_KEY = "recentRoad";
+    private static final String RECENT_SCHEDULE_KEY = "recentSched";
 
     public void setRecentRoad(String roadPath) {
         prefs.edit().putString(RECENT_ROAD_KEY, roadPath).apply();

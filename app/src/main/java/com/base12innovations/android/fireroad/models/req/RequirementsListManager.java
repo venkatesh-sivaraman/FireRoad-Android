@@ -15,7 +15,7 @@ import java.util.Map;
 
 public class RequirementsListManager {
     private static RequirementsListManager _shared;
-    public static String FILE_EXTENSION = ".reql";
+    public static final String FILE_EXTENSION = ".reql";
 
     private RequirementsListManager() { }
     private Context context;

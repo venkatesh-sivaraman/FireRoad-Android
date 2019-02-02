@@ -45,8 +45,8 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
     RequirementsBrowserAdapter spinnerAdapter;
     private ProgressBar loadingIndicator;
 
-    private static String PREFERENCES = "com.base12innovations.android.fireroad.requirementsFragmentPrefs";
-    private static String LAST_REQ_LIST_KEY = "lastRequirementsListID";
+    private static final String PREFERENCES = "com.base12innovations.android.fireroad.requirementsFragmentPrefs";
+    private static final String LAST_REQ_LIST_KEY = "lastRequirementsListID";
 
     public RequirementsListFragment getCurrentListFragment() {
         return currentListFragment;
@@ -235,7 +235,7 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
 
     // Help text
 
-    private static String HAS_SHOWN_HELP = "hasShownHelp";
+    private static final String HAS_SHOWN_HELP = "hasShownHelp";
 
     private boolean hasShownHelpText() {
         SharedPreferences prefs = getContext().getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);

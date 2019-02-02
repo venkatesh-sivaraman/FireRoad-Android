@@ -65,7 +65,7 @@ import java.util.concurrent.Callable;
 public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemClickListener {
 
 
-    private static String PREFERENCES = "com.base12innovations.android.fireroad.ScheduleFragmentPreferences";
+    private static final String PREFERENCES = "com.base12innovations.android.fireroad.ScheduleFragmentPreferences";
     private View mView;
     private View configView, noResultsView, noCoursesView;
     private LinearLayout columnView;
@@ -400,7 +400,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         }
     }
 
-    private static String HAS_SHOWN_NEW_FILE_HELP = "hasShownNewFileHelp";
+    private static final String HAS_SHOWN_NEW_FILE_HELP = "hasShownNewFileHelp";
 
     private boolean hasShownNewFileHelpText() {
         SharedPreferences prefs = getContext().getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
@@ -567,7 +567,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         return courseThumbnail;
     }
 
-    private static int MINS_PER_HOUR = 60;
+    private static final int MINS_PER_HOUR = 60;
 
     private int cellHeight(Course.ScheduleTime startTime, Course.ScheduleTime duration, int rowHeight, int lineWidth) {
         int minute = startTime.minute;

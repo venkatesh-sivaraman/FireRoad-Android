@@ -29,8 +29,8 @@ import java.util.List;
 
 public class SearchCoursesFragment extends Fragment implements BottomSheetNavFragment, AddCourseDialog.AddCourseDialogDelegate, SearchResultsAdapter.Delegate {
 
-    private static String SEARCH_QUERY_EXTRA = "_searchQueryString";
-    private static String SEARCH_FILTERS_EXTRA = "_searchFilters";
+    private static final String SEARCH_QUERY_EXTRA = "_searchQueryString";
+    private static final String SEARCH_FILTERS_EXTRA = "_searchFilters";
     private Toolbar toolbar;
     private SearchResultsAdapter listAdapter;
     private RecyclerView resultsView;

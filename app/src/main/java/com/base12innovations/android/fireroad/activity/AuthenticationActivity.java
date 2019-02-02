@@ -30,8 +30,8 @@ import org.json.JSONObject;
 
 public class AuthenticationActivity extends AppCompatActivity {
 
-    public static String AUTH_URL_EXTRA = "com.base12innovations.android.fireroad.authURL";
-    public static String AUTH_RESULT_EXTRA ="com.base12innovations.android.fireroad.authResult";
+    public static final String AUTH_URL_EXTRA = "com.base12innovations.android.fireroad.authURL";
+    public static final String AUTH_RESULT_EXTRA ="com.base12innovations.android.fireroad.authResult";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

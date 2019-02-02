@@ -24,13 +24,13 @@ import java.util.Map;
 public class ScheduleDocument extends Document {
 
     protected static class ScheduleJSON {
-        static String selectedSubjects = "selectedSubjects";
-        static String subjectID = "subject_id";
-        static String subjectIDAlt = "id";
-        static String subjectTitle = "title";
-        static String allowedSections = "allowedSections";
-        static String selectedSections = "selectedSections";
-        static String creator = "creator";
+        static final String selectedSubjects = "selectedSubjects";
+        static final String subjectID = "subject_id";
+        static final String subjectIDAlt = "id";
+        static final String subjectTitle = "title";
+        static final String allowedSections = "allowedSections";
+        static final String selectedSections = "selectedSections";
+        static final String creator = "creator";
     }
 
     private List<Course> courses = new ArrayList<>();

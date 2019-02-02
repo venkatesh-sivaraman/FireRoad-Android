@@ -664,16 +664,16 @@ public class Course implements Parcelable {
     public String rawSchedule;
 
     public static class ScheduleDay {
-        public static int NONE = 0;
-        public static int MON = 1 << 6;
-        public static int TUES = 1 << 5;
-        public static int WED = 1 << 4;
-        public static int THURS = 1 << 3;
-        public static int FRI = 1 << 2;
-        public static int SAT = 1 << 1;
-        public static int SUN = 1 << 0;
+        public static final int NONE = 0;
+        public static final int MON = 1 << 6;
+        public static final int TUES = 1 << 5;
+        public static final int WED = 1 << 4;
+        public static final int THURS = 1 << 3;
+        public static final int FRI = 1 << 2;
+        public static final int SAT = 1 << 1;
+        public static final int SUN = 1 << 0;
 
-        public static int[] ordering = new int[] {
+        public static final int[] ordering = new int[] {
                 MON, TUES, WED, THURS, FRI, SAT, SUN
         };
 
@@ -865,13 +865,13 @@ public class Course implements Parcelable {
     }
 
     public static class ScheduleType {
-        public static String LECTURE = "Lecture";
-        public static String RECITATION = "Recitation";
-        public static String LAB = "Lab";
-        public static String DESIGN = "Design";
-        public static String CUSTOM = "Custom";
+        public static final String LECTURE = "Lecture";
+        public static final String RECITATION = "Recitation";
+        public static final String LAB = "Lab";
+        public static final String DESIGN = "Design";
+        public static final String CUSTOM = "Custom";
 
-        public static String[] ordering = new String[] {
+        public static final String[] ordering = new String[] {
                 LECTURE, RECITATION, LAB, DESIGN, CUSTOM
         };
 

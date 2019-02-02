@@ -44,7 +44,7 @@ import java.util.Set;
 
 public class CourseDetailsFragment extends Fragment implements BottomSheetNavFragment, AddCourseDialog.AddCourseDialogDelegate {
 
-    public static String SUBJECT_ID_EXTRA = "CourseDetails_SubjectID";
+    public static final String SUBJECT_ID_EXTRA = "CourseDetails_SubjectID";
     public Course course;
     private AddCourseDialog addCourseDialog;
     private View mContentView;

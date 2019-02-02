@@ -37,7 +37,7 @@ import java.lang.ref.WeakReference;
 
 public class DocumentBrowserActivity extends AppCompatActivity implements DocumentBrowserAdapter.Delegate {
 
-    public static String DOCUMENT_TYPE_EXTRA = "com.base12innovations.android.fireroad.DocumentBrowserActivity.documentType";
+    public static final String DOCUMENT_TYPE_EXTRA = "com.base12innovations.android.fireroad.DocumentBrowserActivity.documentType";
 
     private String documentType;
     private DocumentManager documentManager;
@@ -299,8 +299,8 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
 
     // Help text
 
-    private static String PREFERENCES = "com.base12innovations.android.fireroad.activity.DocumentBrowserActivity.Preferences";
-    private static String HAS_SHOWN_HELP = "hasShownHelp";
+    private static final String PREFERENCES = "com.base12innovations.android.fireroad.activity.DocumentBrowserActivity.Preferences";
+    private static final String HAS_SHOWN_HELP = "hasShownHelp";
 
     private boolean hasShownHelpText() {
         SharedPreferences prefs = getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);

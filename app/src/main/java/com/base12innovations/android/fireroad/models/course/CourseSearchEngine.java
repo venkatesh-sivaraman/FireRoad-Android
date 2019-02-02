@@ -327,7 +327,7 @@ public class CourseSearchEngine {
     private static String COURSE_SEARCH_PREFERENCES = "com.base12innovations.android.fireroad.courseSearchPreferences";
     private SharedPreferences preferences;
     private static String recentCoursesKey = "recentlySearchedCourses";
-    private static int NUM_RECENT_COURSES = 15;
+    private static final int NUM_RECENT_COURSES = 15;
     private List<Course> recentCourses;
 
     public interface RecentCoursesCallback {

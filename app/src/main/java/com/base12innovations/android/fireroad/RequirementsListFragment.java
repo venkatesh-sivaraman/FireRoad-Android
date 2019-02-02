@@ -47,7 +47,7 @@ import java.util.Set;
  */
 public class RequirementsListFragment extends Fragment implements AddCourseDialog.AddCourseDialogDelegate {
 
-    private static String REQUIREMENTS_LIST_ID = "RequirementsListFragment.requirementsListID";
+    private static final String REQUIREMENTS_LIST_ID = "RequirementsListFragment.requirementsListID";
     private String requirementsListID;
     public RequirementsList requirementsList;
     private RequirementsListDisplay display;

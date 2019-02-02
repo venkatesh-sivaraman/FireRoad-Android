@@ -28,14 +28,14 @@ import static android.graphics.Typeface.BOLD;
 
 public class RequirementsBrowserAdapter extends BaseAdapter implements SpinnerAdapter {
 
-    private static String[] headers = new String[] {
+    private static final String[] headers = new String[] {
             "MY COURSES", "MAJORS", "MINORS", "MASTERS", "OTHER"
     };
     private List<List<RequirementsList>> requirementsLists;
     private LayoutInflater inflater;
 
-    private static int HEADER_VIEW = 0;
-    private static int REQ_LIST_VIEW = 1;
+    private static final int HEADER_VIEW = 0;
+    private static final int REQ_LIST_VIEW = 1;
 
     public int setRequirementsLists(List<RequirementsList> reqLists, int currentSelection) {
         RequirementsList currentReq = (RequirementsList)getItem(currentSelection);

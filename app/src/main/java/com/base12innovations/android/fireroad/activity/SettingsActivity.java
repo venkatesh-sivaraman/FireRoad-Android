@@ -40,8 +40,8 @@ public class SettingsActivity extends AppCompatActivity
 
     public static class MyPreferenceFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener
     {
-        private static String LOGOUT_KEY = "logout";
-        private static String DATABASE_UPDATE_KEY = "database_update";
+        private static final String LOGOUT_KEY = "logout";
+        private static final String DATABASE_UPDATE_KEY = "database_update";
 
         @Override
         public void onCreate(final Bundle savedInstanceState)

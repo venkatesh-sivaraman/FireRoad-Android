@@ -45,15 +45,15 @@ public class CourseManager {
     private static CourseManager _shared;
 
     // Preferences
-    private static String COURSE_DATABASE_PREFERENCES = "com.base12innovations.android.fireroad.courseDatabasePreferences";
+    private static final String COURSE_DATABASE_PREFERENCES = "com.base12innovations.android.fireroad.courseDatabasePreferences";
     private SharedPreferences dbPreferences;
-    private static String prefsDatabaseVersionKey = "databaseVersionKey";
-    private static String prefsRequirementsVersionKey = "requirementsVersionKey";
-    private static String prefsDatabaseSemesterKey = "databaseSemesterKey";
+    private static final String prefsDatabaseVersionKey = "databaseVersionKey";
+    private static final String prefsRequirementsVersionKey = "requirementsVersionKey";
+    private static final String prefsDatabaseSemesterKey = "databaseSemesterKey";
     // This preferences flag allows the load to restart if it crashed in the middle
-    private static String hasPerformedFullLoad = "hasPerformedFullLoad";
+    private static final String hasPerformedFullLoad = "hasPerformedFullLoad";
 
-    private static String RATINGS_PREFS = "com.base12innovations.android.fireroad.ratingsPreferences";
+    private static final String RATINGS_PREFS = "com.base12innovations.android.fireroad.ratingsPreferences";
     private SharedPreferences ratingsPreferences;
 
     private Context context;
@@ -280,9 +280,9 @@ public class CourseManager {
         }
     }
 
-    private static String NEEDS_UPDATE_ON_LAUNCH_KEY = "needsUpdateOnLaunch";
+    private static final String NEEDS_UPDATE_ON_LAUNCH_KEY = "needsUpdateOnLaunch";
     // Increment the cutoff value to set update on launch
-    private static int UPDATE_ON_LAUNCH_CUTOFF = 3;
+    private static final int UPDATE_ON_LAUNCH_CUTOFF = 3;
 
     public boolean needsUpdateOnLaunch() {
         return dbPreferences.getInt(NEEDS_UPDATE_ON_LAUNCH_KEY, 0) < UPDATE_ON_LAUNCH_CUTOFF;
@@ -298,9 +298,9 @@ public class CourseManager {
 
     // Internet
 
-    private static String catalogDownloadURL = NetworkManager.CATALOG_BASE_URL + "catalogs/";
-    private static String requirementsPrefix = "requirements/";
-    private static String relatedCoursesFileIdentifier = "related";
+    private static final String catalogDownloadURL = NetworkManager.CATALOG_BASE_URL + "catalogs/";
+    private static final String requirementsPrefix = "requirements/";
+    private static final String relatedCoursesFileIdentifier = "related";
 
     /*
     This function saves the current version to the preferences, and the completion block is passed
@@ -628,7 +628,7 @@ public class CourseManager {
 
     // Ratings
 
-    public static int NO_RATING = 123;
+    public static final int NO_RATING = 123;
 
     public void setRatingForCourse(Course course, int rating) {
         ratingsPreferences.edit().putInt(course.getSubjectID(), rating).apply();
@@ -642,7 +642,7 @@ public class CourseManager {
     }
 
     private Map<String, Map<Course, Double>> subjectRecommendations;
-    public static String RECOMMENDATION_KEY_FOR_YOU = "for-you";
+    public static final String RECOMMENDATION_KEY_FOR_YOU = "for-you";
 
     public interface RecommendationsFetchCompletion {
         void completed(Map<String, Map<Course, Double>> result);
@@ -750,10 +750,10 @@ public class CourseManager {
         });*/
     }
 
-    private static String FAVORITE_COURSES_KEY = "favoriteCourses";
-    private static String CUSTOM_COURSES_KEY = "customCourses";
-    private static String NOTES_KEY = "notes";
-    private static String PROGRESS_OVERRIDES_KEY = "progressOverrides";
+    private static final String FAVORITE_COURSES_KEY = "favoriteCourses";
+    private static final String CUSTOM_COURSES_KEY = "customCourses";
+    private static final String NOTES_KEY = "notes";
+    private static final String PROGRESS_OVERRIDES_KEY = "progressOverrides";
     private List<String> favoriteCourses;
     private Map<String, String> notes;
     private Map<String, Integer> progressOverrides;

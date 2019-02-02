@@ -92,7 +92,7 @@ public class DocumentManager {
 
     private File baseDir;
     private SharedPreferences prefs;
-    private static String PREFS_PREFIX = "com.base12innovations.android.fireroad.DocumentManager.";
+    private static final String PREFS_PREFIX = "com.base12innovations.android.fireroad.DocumentManager.";
 
     public DocumentManager(String documentType, File baseDir, Context context) {
         this.documentType = documentType;
@@ -298,10 +298,10 @@ public class DocumentManager {
 
     // Cloud sync attributes
 
-    private static String DOCUMENT_IDS_KEY = "documentIDs";
-    private static String USER_IDS_KEY = "userIDs";
-    private static String CLOUD_MODIFIED_DATES_KEY = "cloudModifiedDates";
-    private static String DOWNLOAD_DATES_KEY = "downloadedDates";
+    private static final String DOCUMENT_IDS_KEY = "documentIDs";
+    private static final String USER_IDS_KEY = "userIDs";
+    private static final String CLOUD_MODIFIED_DATES_KEY = "cloudModifiedDates";
+    private static final String DOWNLOAD_DATES_KEY = "downloadedDates";
 
     private Map<String, Integer> documentIDs;
     private Map<String, String> userIDs;

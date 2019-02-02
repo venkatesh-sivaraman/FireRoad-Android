@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class ColorManager {
 
-    private static String[] departmentNumbers = new String[] {
+    private static final String[] departmentNumbers = new String[] {
             "1", "2", "3", "4",
             "5", "6", "7", "8",
             "9", "10", "11", "12",
@@ -130,8 +130,8 @@ public class ColorManager {
         specialColors.put("CI-HW", Color.HSVToColor(new float[] { 342.0f, saturation, brightness }));
     }
 
-    private static float[] saturations = new float[] { 0.7f, 0.52f, 0.88f };
-    private static float[] brightnesses = new float[] { 0.87f, 0.71f, 0.71f };
+    private static final float[] saturations = new float[] { 0.7f, 0.52f, 0.88f };
+    private static final float[] brightnesses = new float[] { 0.87f, 0.71f, 0.71f };
 
     public static int colorForCourse(Course course) {
         return colorForCourse(course, 0xFF);

@@ -36,7 +36,7 @@ import retrofit2.http.Query;
 public class NetworkManager implements DocumentManager.SyncNetworkHandler {
 
     private static NetworkManager _shared;
-    private static String NETWORK_MANAGER_PREFS = "com.base12innovations.android.fireroad.networkManagerPreferences";
+    private static final String NETWORK_MANAGER_PREFS = "com.base12innovations.android.fireroad.networkManagerPreferences";
     private SharedPreferences preferences;
     private Retrofit retrofit;
 
@@ -44,7 +44,7 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
     private Context context;
     private RequestQueue requestQueue;
 
-    public static int JSON_ERROR = 1001;
+    public static final int JSON_ERROR = 1001;
 
 
     public static NetworkManager sharedInstance() {
@@ -87,10 +87,10 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
 
     // URLs
 
-    public static String CATALOG_BASE_URL = "https://fireroad.mit.edu/";
-    public static String BASE_URL = "https://fireroad.mit.edu/";
-    private static String recommenderLoginURL = BASE_URL + "login/";
-    private static String recommenderSignupURL = BASE_URL + "signup/";
+    public static final String CATALOG_BASE_URL = "https://fireroad.mit.edu/";
+    public static final String BASE_URL = "https://fireroad.mit.edu/";
+    private static final String recommenderLoginURL = BASE_URL + "login/";
+    private static final String recommenderSignupURL = BASE_URL + "signup/";
 
     // Log in
 
@@ -110,8 +110,8 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
     private boolean isLoggedIn = false;
     public boolean isLoggedIn() { return isLoggedIn; }
 
-    private static String ACCESS_TOKEN_PREFS_KEY = "accessToken";
-    private static String SHOWN_SIGNUP_PREFS_KEY = "hasShownSignup";
+    private static final String ACCESS_TOKEN_PREFS_KEY = "accessToken";
+    private static final String SHOWN_SIGNUP_PREFS_KEY = "hasShownSignup";
 
     private void setAccessToken(String token) {
         preferences.edit().putString(ACCESS_TOKEN_PREFS_KEY, token).apply();

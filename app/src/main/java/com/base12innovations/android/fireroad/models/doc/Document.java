@@ -17,9 +17,9 @@ import java.util.List;
 
 public class Document {
 
-    public static String ROAD_DOCUMENT_TYPE = "RoadDocument";
-    public static String SCHEDULE_DOCUMENT_TYPE = "ScheduleDocument";
-    public static String INITIAL_DOCUMENT_TITLE = "First Steps";
+    public static final String ROAD_DOCUMENT_TYPE = "RoadDocument";
+    public static final String SCHEDULE_DOCUMENT_TYPE = "ScheduleDocument";
+    public static final String INITIAL_DOCUMENT_TITLE = "First Steps";
 
     public File file;
 
