@@ -54,4 +54,25 @@ public class AppSettings {
         editor.putInt(ALLOWS_RECOMMENDATIONS, allowsRecommendations ? RECOMMENDATIONS_ALLOWED : RECOMMENDATIONS_DISALLOWED);
         editor.apply();
     }
+
+    private static final String VERSION_MESSAGE = "version_message";
+    // Increment this counter and change versionUpdateMessage to show a new "What's New" dialog
+    private static final int versionIndex = 1;
+    private static final String versionUpdateMessage = "+ Tap the \"...\" icon to add custom activities\n+ Tap a subject " +
+            "to mark it as easy, difficult, listener, and more";
+
+    public static String getVersionUpdateMessage() {
+        // If fresh install, don't show update message
+        if (shared().getInt(ALLOWS_RECOMMENDATIONS, RECOMMENDATIONS_NO_VALUE) == RECOMMENDATIONS_NO_VALUE) {
+            shared().edit().putInt(VERSION_MESSAGE, versionIndex).apply();
+        }
+
+        // If updated and versionIndex is now greater, show message
+        if (shared().getInt(VERSION_MESSAGE, 0) < versionIndex) {
+            shared().edit().putInt(VERSION_MESSAGE, versionIndex).apply();
+            return versionUpdateMessage;
+        }
+
+        return null;
+    }
 }

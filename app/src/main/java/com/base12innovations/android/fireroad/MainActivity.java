@@ -195,6 +195,19 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                         }
                         loadingDialogFragment = null;
                         CourseManager.sharedInstance().syncPreferences();
+
+                        // Show version update message
+                        String updateMessage = AppSettings.getVersionUpdateMessage();
+                        if (updateMessage != null) {
+                            new AlertDialog.Builder(MainActivity.this).setTitle("What's New")
+                                    .setMessage(updateMessage)
+                                    .setNegativeButton("Continue", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            dialogInterface.dismiss();
+                                        }
+                                    }).show();
+                        }
                     }
 
                     @Override

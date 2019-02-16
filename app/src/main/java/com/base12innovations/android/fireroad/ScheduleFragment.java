@@ -358,7 +358,8 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
     }
 
     public void scheduleAddedCourse(Course course) {
-        document.setDisplayedScheduleIndex(-1);
+        if (document != null)
+            document.setDisplayedScheduleIndex(-1);
         loadSchedules(false);
     }
 
@@ -441,10 +442,15 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                 for (Course course : preload.keySet()) {
                     if (course.getSchedule() == null) continue;
                     for (String section : preload.get(course).keySet()) {
+                        if (course.getSchedule().get(section) == null) {
+                            allMatch = false;
+                            break;
+                        }
                         boolean match = false;
                         for (ScheduleUnit unit : scheduleConfigurations.get(i).scheduleItems) {
                             if (unit.course.equals(course) &&
                                     unit.sectionType.equals(section) &&
+                                    preload.get(course).get(section) < course.getSchedule().get(section).size() &&
                                     unit.scheduleItems.equals(course.getSchedule().get(section).get(preload.get(course).get(section)))) {
                                 match = true;
                                 break;
@@ -750,7 +756,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
     // Delta between schedules
 
     private void loadScheduleDisplay(boolean withDelta) {
-        if (getContext() == null) {
+        if (getContext() == null || scheduleConfigurations == null || document == null) {
             needsDisplay = true;
             return;
         }
