@@ -349,7 +349,9 @@ public class DocumentManager {
             Map<String, String> result = new HashMap<>();
             for (String comp : raw.split(";")) {
                 String[] subcomps = comp.split(",");
-                result.put(subcomps[0], subcomps[1]);
+                // Take the LAST comma and use its split point
+                String dateString = subcomps[subcomps.length - 1];
+                result.put(comp.substring(0, comp.length() - dateString.length() - 1), dateString);
             }
             return result;
         }
@@ -669,6 +671,7 @@ public class DocumentManager {
 
         final CloudSyncState result = networkHelper.get().cloudSyncFile(this, input);
         if (result == null || result.success == null || !result.success || result.result == null) {
+            Log.e("DocumentManager", "Handling sync error with " + (input.downloadDate != null ? input.downloadDate : "null"));
             handleSyncError(result, listener);
             return false;
         }

@@ -264,7 +264,7 @@ public class RequirementsListStatement {
 
     private TopLevelItemsResult separateTopLevelItems(String text) {
         String trimmed = text.trim();
-        if (trimmed.length() >= 4 && trimmed.matches("^\"\"[^\"]\"\"$")) {
+        if (trimmed.length() >= 4 && trimmed.matches("^\"\"[^\"]*\"\"(\\s*\\{.*\\})?$")) {
             List<String> items = new ArrayList<>();
             items.add(undecoratedComponent(trimmed));
             return new TopLevelItemsResult(ConnectionType.NONE, items);
