@@ -86,8 +86,10 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
             if (reqList != null) {
                 requirementsList = reqList;
                 reqList.loadIfNeeded();
-                if (User.currentUser().getCurrentDocument() != null)
+                if (User.currentUser().getCurrentDocument() != null) {
+                    requirementsList.setCurrentDoc(User.currentUser().getCurrentDocument());
                     requirementsList.computeRequirementStatus(User.currentUser().getCurrentDocument().getCreditCourses());
+                }
                 LinearLayout contentLayout = (LinearLayout)mLayout.findViewById(R.id.reqListLinearLayout);
                 buildRequirementsListLayout(contentLayout);
             }
@@ -229,8 +231,10 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
 
     public void updateRequirementStatus() {
         if (requirementsList != null) {
-            if (User.currentUser().getCurrentDocument() != null)
+            if (User.currentUser().getCurrentDocument() != null) {
+                requirementsList.setCurrentDoc(User.currentUser().getCurrentDocument());
                 requirementsList.computeRequirementStatus(User.currentUser().getCurrentDocument().getCreditCourses());
+            }
             display.updateRequirementsDisplay();
         }
     }

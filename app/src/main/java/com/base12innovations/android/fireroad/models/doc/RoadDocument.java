@@ -50,6 +50,7 @@ public class RoadDocument extends Document {
         static final String coursesOfStudy = "coursesOfStudy";
         static final String selectedSubjects = "selectedSubjects";
         static final String overrideWarnings = "overrideWarnings";
+        static final String progressOverrides = "progressOverrides";
         static final String semester = "semester";
         static final String subjectTitle = "title";
         static final String subjectID = "subject_id";
@@ -141,6 +142,7 @@ public class RoadDocument extends Document {
     public List<String> coursesOfStudy = new ArrayList<>();
     private Map<Course, Boolean> overrides = new HashMap<>();
     private Map<Integer, Map<Course, SubjectMarker>> markers = new HashMap<>();
+    private Map<String, Integer> progressOverrides = new HashMap<>();
 
     public RoadDocument(File location) {
         super(location);
@@ -172,6 +174,7 @@ public class RoadDocument extends Document {
             JSONArray selectedSubjects = json.getJSONArray(RoadJSON.selectedSubjects);
             courses = new HashMap<>();
             overrides = new HashMap<>();
+            progressOverrides = new HashMap<>();
             for (int i = 0; i < selectedSubjects.length(); i++) {
                 JSONObject subjectInfo = selectedSubjects.getJSONObject(i);
                 String subjectID = null;
@@ -215,6 +218,17 @@ public class RoadDocument extends Document {
                 }
             }
 
+            if (json.has(RoadJSON.progressOverrides)) {
+                JSONObject reqOverrides = json.getJSONObject(RoadJSON.progressOverrides);
+                Iterator<String> it = reqOverrides.keys();
+                while (it.hasNext()) {
+                    String key = it.next();
+                    progressOverrides.put(key, reqOverrides.getInt(key));
+                }
+            } else if (progressOverrides.size() == 0) {
+                progressOverrides.putAll(CourseManager.sharedInstance().getAllProgressOverrides());
+            }
+
         } catch (JSONException e) {
             Log.d("JSON Error", String.format(Locale.US, "Invalid JSON: %s", contents));
             e.printStackTrace();
@@ -252,6 +266,12 @@ public class RoadDocument extends Document {
                 }
             }
             parentObject.put(RoadJSON.selectedSubjects, subjects);
+
+            JSONObject reqOverrides = new JSONObject();
+            for (String keyPath: progressOverrides.keySet()) {
+                reqOverrides.put(keyPath, progressOverrides.get(keyPath));
+            }
+            parentObject.put(RoadJSON.progressOverrides, reqOverrides);
 
             return parentObject.toString();
 
@@ -564,5 +584,18 @@ public class RoadDocument extends Document {
         warningsCache.get(course).put(semester, result);
 
         return result;
+    }
+
+    // Requirement Overrides
+
+    public int getProgressOverride(String keyPath) {
+        if (progressOverrides.containsKey(keyPath))
+            return progressOverrides.get(keyPath);
+        return 0;
+    }
+
+    public void setProgressOverride(String keyPath, int value) {
+        progressOverrides.put(keyPath, value);
+        save();
     }
 }

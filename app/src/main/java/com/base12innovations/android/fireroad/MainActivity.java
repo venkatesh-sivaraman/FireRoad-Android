@@ -198,7 +198,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
                         // Show version update message
                         String updateMessage = AppSettings.getVersionUpdateMessage();
-                        if (updateMessage != null) {
+                        if (updateMessage != null && !isActivityPaused) {
                             new AlertDialog.Builder(MainActivity.this).setTitle("What's New")
                                     .setMessage(updateMessage)
                                     .setNegativeButton("Continue", new DialogInterface.OnClickListener() {

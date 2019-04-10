@@ -832,7 +832,7 @@ public class CourseManager {
         NetworkManager.sharedInstance().setNotes(new HashMap<>(notes));
     }
 
-    public int getProgressOverrides(String keyPath) {
+    public HashMap<String, Integer> getAllProgressOverrides() {
         if (progressOverrides == null) {
             String raw = dbPreferences.getString(PROGRESS_OVERRIDES_KEY, "");
             if (raw.length() == 0) {
@@ -845,9 +845,14 @@ public class CourseManager {
                 }
             }
         }
-        if (!progressOverrides.containsKey(keyPath))
+        return new HashMap<>(progressOverrides);
+    }
+
+    public int getProgressOverrides(String keyPath) {
+        HashMap<String, Integer> progOverrides = getAllProgressOverrides();
+        if (!progOverrides.containsKey(keyPath))
             return 0;
-        return progressOverrides.get(keyPath);
+        return progOverrides.get(keyPath);
     }
 
     public void setProgressOverride(String keyPath, int value) {

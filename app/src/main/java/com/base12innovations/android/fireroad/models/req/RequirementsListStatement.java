@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
+import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 import com.base12innovations.android.fireroad.utils.ListHelper;
 
 import java.lang.ref.WeakReference;
@@ -104,6 +105,21 @@ public class RequirementsListStatement {
     public Threshold threshold;
 
     public boolean isPlainString = false;
+
+    private RoadDocument currentDoc = null;
+
+    public RoadDocument getCurrentDoc() {
+        return currentDoc;
+    }
+
+    public void setCurrentDoc(RoadDocument currentDoc) {
+        this.currentDoc = currentDoc;
+        if (requirements != null) {
+            for (RequirementsListStatement req: requirements) {
+                req.setCurrentDoc(currentDoc);
+            }
+        }
+    }
 
     /**
      Defines the bound on the number of distinct elements in the requirements list
@@ -801,9 +817,12 @@ public class RequirementsListStatement {
     }
 
     public int getManualProgress() {
-        return CourseManager.sharedInstance().getProgressOverrides(keyPath());
+        if (currentDoc != null)
+            return currentDoc.getProgressOverride(keyPath());
+        return 0;
     }
     public void setManualProgress(int newValue) {
-        CourseManager.sharedInstance().setProgressOverride(keyPath(), newValue);
+        if (currentDoc != null)
+            currentDoc.setProgressOverride(keyPath(), newValue);
     }
 }
