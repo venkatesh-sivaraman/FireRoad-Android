@@ -210,8 +210,15 @@ public class CourseLayoutBuilder {
     }
 
     public View addButtonItem(LinearLayout layout, String title, View.OnClickListener clickListener) {
+        int margin = defaultMargin;
+
+        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lparams.setMargins(margin, 0, margin, 0);
+
         View metadataView = getLayoutInflater().inflate(R.layout.cell_course_details_button, null);
         layout.addView(metadataView);
+        metadataView.setLayoutParams(lparams);
 
         TextView button = metadataView.findViewById(R.id.buttonTitle);
         button.setText(title);

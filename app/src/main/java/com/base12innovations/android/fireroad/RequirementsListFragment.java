@@ -2,6 +2,9 @@ package com.base12innovations.android.fireroad;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Network;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
@@ -19,6 +22,7 @@ import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.doc.NetworkManager;
 import com.base12innovations.android.fireroad.models.req.RequirementsList;
 import com.base12innovations.android.fireroad.models.req.RequirementsListManager;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
@@ -158,7 +162,24 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
                         } : null);
 
         display.layoutInView(layout);
-
+        if (requirementsList.webURL != null) {
+            display.getLayoutBuilder().addButtonItem(layout, "View on Catalog Site", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent i = new Intent(Intent.ACTION_VIEW);
+                    i.setData(Uri.parse(requirementsList.webURL.toString()));
+                    startActivity(i);
+                }
+            });
+        }
+        display.getLayoutBuilder().addButtonItem(layout, "Request a Correction", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setData(Uri.parse(NetworkManager.CATALOG_BASE_URL + "requirements/edit/" + requirementsListID));
+                startActivity(i);
+            }
+        });
     }
 
     private void showManualProgressSelector(final RequirementsListStatement req) {

@@ -197,16 +197,18 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                         CourseManager.sharedInstance().syncPreferences();
 
                         // Show version update message
-                        String updateMessage = AppSettings.getVersionUpdateMessage();
-                        if (updateMessage != null && !isActivityPaused) {
-                            new AlertDialog.Builder(MainActivity.this).setTitle("What's New")
-                                    .setMessage(updateMessage)
-                                    .setNegativeButton("Continue", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            dialogInterface.dismiss();
-                                        }
-                                    }).show();
+                        if (!isActivityPaused) {
+                            String updateMessage = AppSettings.getVersionUpdateMessage();
+                            if (updateMessage != null) {
+                                new AlertDialog.Builder(MainActivity.this).setTitle("What's New")
+                                        .setMessage(updateMessage)
+                                        .setNegativeButton("Continue", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialogInterface, int i) {
+                                                dialogInterface.dismiss();
+                                            }
+                                        }).show();
+                            }
                         }
                     }
 

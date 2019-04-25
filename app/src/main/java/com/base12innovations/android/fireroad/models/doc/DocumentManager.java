@@ -312,7 +312,6 @@ public class DocumentManager {
     private void loadCloudSyncAttributes() {
         if (documentIDs == null) {
             String raw = prefs.getString(DOCUMENT_IDS_KEY, "");
-            Log.d("DocumentManager", "Document ids: " + raw);
             if (raw.length() == 0) {
                 documentIDs = new HashMap<>();
             } else {
@@ -835,6 +834,10 @@ public class DocumentManager {
 
     private void finishCloudSync(Document doc, final String name, final CloudSyncState state, final SyncResponseHandler listener) {
         if (state == null || state.result == null) {
+            if (state == null)
+                Log.d("DocumentManager", "Sync error because finishing cloud sync state is null");
+            else if (state.result == null)
+                Log.d("DocumentManager", "Sync error because finishing cloud sync state result is null");
             handleSyncError(state, listener);
             return;
         }

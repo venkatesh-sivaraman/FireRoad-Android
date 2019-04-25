@@ -10,6 +10,7 @@ import java.util.Map;
 public class CloudSyncState {
     public CloudSyncState() { }
 
+    @SerializedName("success")
     public Boolean success;
 
     @SerializedName("error")
@@ -24,14 +25,28 @@ public class CloudSyncState {
     @SerializedName("downloaded")
     public String downloadDate;
 
+    @SerializedName("id")
     public Integer id;
+
+    @SerializedName("name")
     public String name;
+
+    @SerializedName("result")
     public String result;
+
+    @SerializedName("contents")
     public Map<String, Object> contents;
+
+    @SerializedName("agent")
     public String agent;
+
+    @SerializedName("override")
     public Boolean override;
 
+    @SerializedName("files")
     public Map<String, CloudSyncState> files;
+
+    @SerializedName("file")
     public CloudSyncState file;
 
     // Conflicts
