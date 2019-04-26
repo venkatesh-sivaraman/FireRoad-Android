@@ -226,6 +226,22 @@ public class CourseLayoutBuilder {
         return metadataView;
     }
 
+    public View addWarningItem(LinearLayout layout, String title) {
+        int margin = defaultMargin;
+
+        LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lparams.setMargins(margin, 0, margin, 0);
+
+        View metadataView = getLayoutInflater().inflate(R.layout.cell_course_details_warning, null);
+        layout.addView(metadataView);
+        metadataView.setLayoutParams(lparams);
+
+        TextView warningText = metadataView.findViewById(R.id.warningText);
+        warningText.setText(title);
+        return metadataView;
+    }
+
     public View addEditTextItem(LinearLayout layout, String text, View.OnFocusChangeListener textViewCompletion) {
         int margin = defaultMargin;
         int height = (int) context.getResources().getDimension(R.dimen.course_details_edittext_height);

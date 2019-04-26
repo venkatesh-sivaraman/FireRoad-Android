@@ -134,6 +134,9 @@ public class Course implements Parcelable {
     public int designUnits = 0;
     public int preparationUnits = 0;
 
+    public String sourceSemester = "";
+    public boolean isHistorical = false;
+
     public boolean hasFinal = false;
     public boolean pdfOption = false;
 

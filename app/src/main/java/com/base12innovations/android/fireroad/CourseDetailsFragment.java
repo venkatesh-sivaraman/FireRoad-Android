@@ -197,6 +197,17 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             layoutBuilder.showHeadingTopMargin = false;
         }
 
+        if (course.isHistorical) {
+            String sourceSemester = course.sourceSemester;
+            String warningText;
+            if (sourceSemester != null && sourceSemester.length() > 0) {
+                warningText = "This subject is no longer offered (last offered " + String.join(" ", sourceSemester.split("-")) + ").";
+            } else {
+                warningText = "This subject is no longer offered.";
+            }
+            layoutBuilder.addWarningItem(layout, warningText);
+        }
+
         if (!course.isGeneric)
             addUnitsItem(layout);
         addRequirementsItem(layout);

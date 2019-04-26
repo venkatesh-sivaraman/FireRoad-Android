@@ -510,8 +510,12 @@ public class CourseManager {
                 case "Prereq or Coreq":
                     course.setEitherPrereqOrCoreq(course.parseBoolean(component));
                     break;
-
-
+                case "Source Semester":
+                    course.sourceSemester = component;
+                    break;
+                case "Historical":
+                    course.isHistorical = course.parseBoolean(component);
+                    break;
                 default:
                     break;
             }
