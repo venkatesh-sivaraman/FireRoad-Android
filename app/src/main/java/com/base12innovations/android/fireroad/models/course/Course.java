@@ -293,7 +293,7 @@ public class Course implements Parcelable {
     }
 
     public enum HASSAttribute {
-        ANY("HASS"), ARTS("HASS-A"), SOCIAL_SCIENCES("HASS-S"), HUMANITIES("HASS-H");
+        ANY("HASS"), ARTS("HASS-A"), SOCIAL_SCIENCES("HASS-S"), HUMANITIES("HASS-H"), ELECTIVE("HASS-E");
 
         public final String rawValue;
         HASSAttribute(final String raw) {
@@ -308,11 +308,13 @@ public class Course implements Parcelable {
             descriptions.put(HASSAttribute.ARTS, "HASS Arts");
             descriptions.put(HASSAttribute.HUMANITIES, "HASS Humanities");
             descriptions.put(HASSAttribute.SOCIAL_SCIENCES, "HASS Social Sciences");
+            descriptions.put(HASSAttribute.ELECTIVE, "HASS Elective");
             lowercasedNames = new HashMap<>();
             lowercasedNames.put("hass", ANY);
             lowercasedNames.put("hass-a", ARTS);
             lowercasedNames.put("hass-s", SOCIAL_SCIENCES);
             lowercasedNames.put("hass-h", HUMANITIES);
+            lowercasedNames.put("hass-e", ELECTIVE);
         }
 
         @Override
@@ -349,9 +351,16 @@ public class Course implements Parcelable {
     }
 
     public String hassAttribute;
-    public HASSAttribute getHASSAttribute() {
+    public List<HASSAttribute> getHASSAttribute() {
         if (hassAttribute != null) {
-            return HASSAttribute.fromRaw(hassAttribute);
+            String[] comps = hassAttribute.split(",");
+            List<HASSAttribute> ret = new ArrayList<>();
+            for (String comp: comps) {
+                HASSAttribute attr = HASSAttribute.fromRaw(comp);
+                if (attr != null)
+                    ret.add(attr);
+            }
+            return ret;
         }
         return null;
     }
@@ -389,6 +398,39 @@ public class Course implements Parcelable {
     public boolean isPublic = true;
     public String creator = null;
     public String customColor = null;
+
+    // Equivalences
+    public String parent = null;
+    public String children = null;
+
+    public List<String> getChildren() {
+        if (children == null)
+            return new ArrayList<>();
+        return nonemptyComponents(children, ",");
+    }
+
+    /**
+     * Sets each child's siblings to this course's parents for faster requirements computation.
+     * Should be called on the background thread, since this method performs database lookups.
+     */
+    public void updateChildren() {
+        if (children == null || children.length() == 0)
+            return;
+        for (String child: getChildren()) {
+            Course childCourse = CourseManager.sharedInstance().getSubjectByID(child);
+            if (childCourse != null) {
+                childCourse.siblings = children;
+                CourseManager.sharedInstance().courseDatabase.daoAccess().updateCourse(childCourse);
+            }
+        }
+    }
+
+    public String siblings = null;
+    public List<String> getSiblings() {
+        if (siblings == null)
+            return new ArrayList<>();
+        return nonemptyComponents(siblings, ",");
+    }
 
     // JSON read/write (currently limited)
 
@@ -579,39 +621,6 @@ public class Course implements Parcelable {
     // Satisfying requirements
 
     /**
-     * Specifies that a given requirement can be satisfied by a given subject ID.
-     */
-    private static class EquivalencePair {
-        String requirement;
-        String subjectID;
-        EquivalencePair(String r, String s) {
-            this.requirement = r;
-            this.subjectID = s;
-        }
-    }
-
-    /**
-     * Specifies that having ALL of a given list of subject IDs is equivalent to a requirement.
-     */
-    private static class EquivalenceSet {
-        List<String> subjectIDs;
-        String requirement;
-        EquivalenceSet(String r, List<String> s) {
-            this.requirement = r;
-            this.subjectIDs = s;
-        }
-    }
-    private static List<EquivalencePair> equivalencePairs;
-    private static List<EquivalenceSet> equivalenceSets;
-    static {
-        equivalencePairs = new ArrayList<>();
-        equivalencePairs.add(new EquivalencePair("6.0001", "6.00"));
-        equivalencePairs.add(new EquivalencePair("6.0002", "6.00"));
-        equivalenceSets = new ArrayList<>();
-        equivalenceSets.add(new EquivalenceSet("6.00", Arrays.asList("6.0001", "6.0002")));
-    }
-
-    /**
      If `allCourses` is not nil, it may be a list of courses that can potentially
      satisfy the requirement. If a combination of courses satisfies the requirement,
      this method will return true.
@@ -623,40 +632,41 @@ public class Course implements Parcelable {
                 getJointSubjectsList().contains(req) ||
                 getEquivalentSubjectsList().contains(req) ||
                 (getGIRAttribute() != null && getGIRAttribute().satisfies(GIRAttribute.fromRaw(req))) ||
-                (getCommunicationRequirement() != null && getCommunicationRequirement().satisfies(CommunicationAttribute.fromRaw(req))) ||
-                (getHASSAttribute() != null && getHASSAttribute().satisfies(HASSAttribute.fromRaw(req)))) {
+                (getCommunicationRequirement() != null && getCommunicationRequirement().satisfies(CommunicationAttribute.fromRaw(req)))) {
             return true;
         }
-        // The course satisfies more than the requirement
-        if (ListHelper.containsElement(equivalencePairs, new ListHelper.Predicate<EquivalencePair>() {
-            @Override
-            public boolean test(EquivalencePair x) {
-                return x.subjectID.equals(getSubjectID()) && x.requirement.equals(req);
-            }
-        }))
-            return true;
-        // Multiple courses from the allCourses list together satisfy a requirement
-        if (allCourses != null) {
-            if (ListHelper.containsElement(equivalenceSets, new ListHelper.Predicate<EquivalenceSet>() {
-                @Override
-                public boolean test(EquivalenceSet equivalenceSet) {
-                    if (!equivalenceSet.requirement.equals(req)) return false;
-                    for (String sID : equivalenceSet.subjectIDs) {
-                        boolean found = false;
-                        for (Course course : allCourses) {
-                            if (course.getSubjectID() == sID) {
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found)
-                            return false;
-                    }
+        List<HASSAttribute> hasses = getHASSAttribute();
+        if (hasses != null) {
+            for (HASSAttribute attr: hasses) {
+                if (attr.satisfies(HASSAttribute.fromRaw(req))) {
                     return true;
                 }
-            })) {
-                return true;
             }
+        }
+
+        // The course satisfies more than the requirement
+        List<String> children = getChildren();
+        if (children.contains(req))
+            return true;
+
+        // Multiple courses from the allCourses list together satisfy a requirement
+        if (allCourses != null && parent != null && req.equals(parent) && siblings != null) {
+            List<String> allIds = ListHelper.map(allCourses, new ListHelper.Function<Course, String>() {
+                @Override
+                public String apply(Course elem) {
+                    return elem.subjectID;
+                }
+            });
+
+            boolean allSiblingsPresent = true;
+            for (String sibling: getSiblings()) {
+                if (!allIds.contains(sibling)) {
+                    allSiblingsPresent = false;
+                    break;
+                }
+            }
+            if (allSiblingsPresent)
+                return true;
         }
 
         return false;

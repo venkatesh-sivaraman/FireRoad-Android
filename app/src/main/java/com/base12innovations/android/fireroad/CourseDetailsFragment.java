@@ -201,7 +201,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             String sourceSemester = course.sourceSemester;
             String warningText;
             if (sourceSemester != null && sourceSemester.length() > 0) {
-                warningText = "This subject is no longer offered (last offered " + String.join(" ", sourceSemester.split("-")) + ").";
+                warningText = "This subject is no longer offered (last offered " + TextUtils.join(" ", sourceSemester.split("-")) + ").";
             } else {
                 warningText = "This subject is no longer offered.";
             }
@@ -397,9 +397,13 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         if (comm != null) {
             reqs.add(comm.toString());
         }
-        Course.HASSAttribute hass = course.getHASSAttribute();
-        if (hass!= null) {
-            reqs.add(hass.toString());
+        List<Course.HASSAttribute> hasses = course.getHASSAttribute();
+        if (hasses != null) {
+            List<String> comps = new ArrayList<>();
+            for (Course.HASSAttribute attr: hasses) {
+                comps.add(attr.rawValue);
+            }
+            reqs.add(TextUtils.join(", ", comps));
         }
 
         if (reqs.size() > 0) {

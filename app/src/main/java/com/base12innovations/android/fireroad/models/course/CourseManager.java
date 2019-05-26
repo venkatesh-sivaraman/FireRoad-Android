@@ -224,6 +224,10 @@ public class CourseManager {
                                 e.printStackTrace();
                                 Log.e("CourseManagerUpdate", e.getMessage());
                             }
+                            for (Course course: courseDatabase.daoAccess().publicCourses()) {
+                                course.updateChildren();
+                            }
+
                             if (!_isLoading) {
                                 _isUpdatingDB = false;
                                 return null;
@@ -515,6 +519,12 @@ public class CourseManager {
                     break;
                 case "Historical":
                     course.isHistorical = course.parseBoolean(component);
+                    break;
+                case "Parent":
+                    course.parent = component;
+                    break;
+                case "Children":
+                    course.children = component;
                     break;
                 default:
                     break;

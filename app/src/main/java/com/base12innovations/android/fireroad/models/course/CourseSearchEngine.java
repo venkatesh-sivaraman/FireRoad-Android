@@ -221,14 +221,17 @@ public class CourseSearchEngine {
         boolean fulfillsHASS = false;
         if (filters.contains(Filter.HASS_NONE)) {
             fulfillsHASS = true;
-        } else if (filters.contains(Filter.HASS) && course.getHASSAttribute() != null) {
-            fulfillsHASS = true;
-        } else if (filters.contains(Filter.HASS_A) && course.getHASSAttribute() == Course.HASSAttribute.ARTS) {
-            fulfillsHASS = true;
-        } else if (filters.contains(Filter.HASS_S) && course.getHASSAttribute() == Course.HASSAttribute.SOCIAL_SCIENCES) {
-            fulfillsHASS = true;
-        } else if (filters.contains(Filter.HASS_H) && course.getHASSAttribute() == Course.HASSAttribute.HUMANITIES) {
-            fulfillsHASS = true;
+        } else if (course.getHASSAttribute() != null) {
+            List<Course.HASSAttribute> hasses = course.getHASSAttribute();
+            if (filters.contains(Filter.HASS) && hasses.size() > 0) {
+                fulfillsHASS = true;
+            } else if (filters.contains(Filter.HASS_A) && hasses.contains(Course.HASSAttribute.ARTS)) {
+                fulfillsHASS = true;
+            } else if (filters.contains(Filter.HASS_S) && hasses.contains(Course.HASSAttribute.SOCIAL_SCIENCES)) {
+                fulfillsHASS = true;
+            } else if (filters.contains(Filter.HASS_H) && hasses.contains(Course.HASSAttribute.HUMANITIES)) {
+                fulfillsHASS = true;
+            }
         }
         if (!fulfillsHASS) return false;
 
@@ -295,9 +298,12 @@ public class CourseSearchEngine {
                 searchFields.add(course.getCommunicationRequirement().descriptionText().toLowerCase());
                 searchFields.add(course.getCommunicationRequirement().toString().toLowerCase());
             }
-            if (course.getHASSAttribute() != null) {
-                searchFields.add(course.getHASSAttribute().descriptionText().toLowerCase());
-                searchFields.add(course.getHASSAttribute().toString().toLowerCase());
+            List<Course.HASSAttribute> hasses = course.getHASSAttribute();
+            if (hasses != null) {
+                for (Course.HASSAttribute hass: hasses) {
+                    searchFields.add(hass.descriptionText().toLowerCase());
+                    searchFields.add(hass.toString().toLowerCase());
+                }
             }
         }
         return searchFields;
@@ -307,7 +313,9 @@ public class CourseSearchEngine {
         Collections.sort(searchItems, new Comparator<SearchItem>() {
             @Override
             public int compare(SearchItem t1, SearchItem t2) {
-                if (t1.relevance != t2.relevance) {
+                if (t1.course.isHistorical != t2.course.isHistorical) {
+                    return t1.course.isHistorical ? 1 : -1;
+                } else if (t1.relevance != t2.relevance) {
                     return (t1.relevance > t2.relevance ? -1 : 1);
                 } else if (t1.course.getSubjectID().length() != t2.course.getSubjectID().length()) {
                     return (t1.course.getSubjectID().length() < t2.course.getSubjectID().length()) ? -1 : 1;

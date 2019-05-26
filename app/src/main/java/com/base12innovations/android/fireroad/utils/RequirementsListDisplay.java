@@ -176,7 +176,6 @@ public class RequirementsListDisplay {
 
         if (requirementsList.maximumNestDepth() <= 1 || singleCard) {
             List<PresentationItem> items = presentationItemsForRequirement(requirementsList, 0, false);
-            Log.d("RequirementsListDisplay", "items: " + items);
             addCard(layout, items);
         } else {
             for (RequirementsListStatement topLevelReq : requirementsList.getRequirements()) {
@@ -402,9 +401,6 @@ public class RequirementsListDisplay {
                     } else if (hass != null) {
                         CourseSearchEngine.Filter baseOption = CourseSearchEngine.Filter.HASS_NONE;
                         switch (hass) {
-                            case ANY:
-                                baseOption = CourseSearchEngine.Filter.HASS;
-                                break;
                             case ARTS:
                                 baseOption = CourseSearchEngine.Filter.HASS_A;
                                 break;
@@ -413,6 +409,9 @@ public class RequirementsListDisplay {
                                 break;
                             case SOCIAL_SCIENCES:
                                 baseOption = CourseSearchEngine.Filter.HASS_S;
+                                break;
+                            default:
+                                baseOption = CourseSearchEngine.Filter.HASS;
                                 break;
                         }
                         CourseSearchEngine.Filter.filterHASS(filters, baseOption);
