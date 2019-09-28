@@ -286,7 +286,7 @@ public class CourseManager {
 
     private static final String NEEDS_UPDATE_ON_LAUNCH_KEY = "needsUpdateOnLaunch";
     // Increment the cutoff value to set update on launch
-    private static final int UPDATE_ON_LAUNCH_CUTOFF = 3;
+    private static final int UPDATE_ON_LAUNCH_CUTOFF = 4;
 
     public boolean needsUpdateOnLaunch() {
         return dbPreferences.getInt(NEEDS_UPDATE_ON_LAUNCH_KEY, 0) < UPDATE_ON_LAUNCH_CUTOFF;
@@ -482,6 +482,9 @@ public class CourseManager {
                     break;
                 case "Has Final":
                     course.hasFinal = course.parseBoolean(component);
+                    break;
+                case "Half Class":
+                    course.isHalfClass = course.parseBoolean(component);
                     break;
                 case "Not Offered Year":
                     course.setNotOfferedYear(component);

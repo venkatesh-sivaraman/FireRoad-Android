@@ -503,14 +503,34 @@ public class RequirementsListStatement {
     public FulfillmentProgress getSubjectProgress() { return subjectProgress; }
     public FulfillmentProgress getUnitProgress() { return unitProgress; }
 
+    // If it's a GIR/HASS/CI requirement, returns only the whole courses that satisfy the requirement
     public List<Course> coursesSatisfyingRequirement(final List<Course> courses) {
         if (requirement != null) {
+            final boolean isMultiRequirement = (requirement.contains("GIR:") ||
+                    requirement.contains("HASS") || requirement.contains("CI-"));
             return ListHelper.filter(courses, new ListHelper.Predicate<Course>() {
                 @Override
                 public boolean test(Course course) {
-                    return course.satisfiesRequirement(requirement, courses);
+                    return (!course.isHalfClass || !isMultiRequirement) && course.satisfiesRequirement(requirement, courses);
                 }
             });
+        }
+        return new ArrayList<>();
+    }
+
+    // If it's a GIR/HASS/CI requirement, returns only the half courses that satisfy the requirement
+    public List<Course> halfCoursesSatisfyingRequirement(final List<Course> courses) {
+        if (requirement != null) {
+            boolean isMultiRequirement = (requirement.contains("GIR:") ||
+                    requirement.contains("HASS") || requirement.contains("CI-"));
+            if (isMultiRequirement) {
+                return ListHelper.filter(courses, new ListHelper.Predicate<Course>() {
+                    @Override
+                    public boolean test(Course course) {
+                        return course.isHalfClass && course.satisfiesRequirement(requirement, courses);
+                    }
+                });
+            }
         }
         return new ArrayList<>();
     }
@@ -609,10 +629,13 @@ public class RequirementsListStatement {
                 }
             } else {
                 // Example: requirement CI-H, we want to show how many have been fulfilled
-                satisfiedCourses.addAll(coursesSatisfyingRequirement(courses));
+                List<Course> wholeCourses = coursesSatisfyingRequirement(courses);
+                List<Course> halfCourses = halfCoursesSatisfyingRequirement(courses);
+                satisfiedCourses.addAll(wholeCourses);
+                satisfiedCourses.addAll(halfCourses);
                 if (threshold != null) {
                     // A specific number of courses is required
-                    subjectProgress = ceilingThreshold(satisfiedCourses.size(), thresholdCutoff(threshold, ThresholdCriterion.SUBJECTS));
+                    subjectProgress = ceilingThreshold(wholeCourses.size() + halfCourses.size() / 2, thresholdCutoff(threshold, ThresholdCriterion.SUBJECTS));
                     unitProgress = ceilingThreshold(totalUnitsInCourses(satisfiedCourses), thresholdCutoff(threshold, ThresholdCriterion.UNITS));
                     isFulfilled = numberSatisfiesThreshold(subjectProgress.progress, unitProgress.progress, threshold);
                 } else {
@@ -636,12 +659,23 @@ public class RequirementsListStatement {
         Map<RequirementsListStatement, Set<Course>> satByCategory = new HashMap<>();
         Set<Course> totalSat = new HashSet<>();
         int numReqsSatisfied = 0;
+        int numCoursesSatisfied = 0;
         for (RequirementsListStatement req : requirements) {
             Set<Course> sat = req.computeRequirementStatus(courses);
             if (req.isFulfilled && sat.size() > 0)
                 numReqsSatisfied += 1;
             satByCategory.put(req, sat);
             totalSat.addAll(sat);
+
+            // For thresholded ANY statements, children that are ALL statements
+            // count as a single satisfied course. ANY children count for
+            // all of their satisfied courses.
+            if (req.connectionType == ConnectionType.ALL) {
+                numCoursesSatisfied += (req.isFulfilled && sat.size() > 0) ? 1 : 0;
+            } else {
+                numCoursesSatisfied += sat.size();
+            }
+
         }
         List<RequirementsListStatement> sortedProgresses = new ArrayList<>(requirements);
         Collections.sort(sortedProgresses, new Comparator<RequirementsListStatement>() {
@@ -672,6 +706,17 @@ public class RequirementsListStatement {
             if (distinctThreshold != null) {
                 // Clip the progresses to the ones which the user is closest to completing
                 sortedProgresses = sortedProgresses.subList(0, Math.min(distinctThreshold.getActualCutoff(), sortedProgresses.size()));
+
+                // recount the number of courses satisfied
+                numCoursesSatisfied = 0;
+                for (RequirementsListStatement req: sortedProgresses) {
+                    Set<Course> sat = satByCategory.get(req);
+                    if (req.connectionType == ConnectionType.ALL) {
+                        numCoursesSatisfied += (req.isFulfilled && sat.size() > 0) ? 1 : 0;
+                    } else {
+                        numCoursesSatisfied += sat.size();
+                    }
+                }
             }
 
             if (threshold == null && distinctThreshold != null) {
@@ -695,7 +740,7 @@ public class RequirementsListStatement {
                 });
             } else if (threshold != null) {
                 // required number of subjects or units
-                subjectProgress = new FulfillmentProgress(totalSat.size(), thresholdCutoff(threshold, ThresholdCriterion.SUBJECTS));
+                subjectProgress = new FulfillmentProgress(numCoursesSatisfied, thresholdCutoff(threshold, ThresholdCriterion.SUBJECTS));
                 unitProgress = new FulfillmentProgress(totalUnitsInCourses(totalSat), thresholdCutoff(threshold, ThresholdCriterion.UNITS));
 
                 if (distinctThreshold != null &&

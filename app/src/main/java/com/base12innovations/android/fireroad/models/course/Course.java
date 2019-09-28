@@ -139,6 +139,7 @@ public class Course implements Parcelable {
 
     public boolean hasFinal = false;
     public boolean pdfOption = false;
+    public boolean isHalfClass = false;
 
     public String url = "";
     private String quarterInformation = "";
