@@ -8,6 +8,7 @@ import android.util.Log;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 import com.base12innovations.android.fireroad.models.AppSettings;
+import com.base12innovations.android.fireroad.models.req.ProgressAssertion;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import org.json.JSONException;
@@ -456,7 +457,7 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
         @GET("prefs/progress_overrides")
         Call<HashMap<String, Object>> getProgressOverrides(@Header("Authorization") String authorization);
         @POST("prefs/set_progress_overrides/")
-        Call<HashMap<String, Object>> setProgressOverrides(@Header("Authorization") String authorization, @Body HashMap<String, Integer> overrides);
+        Call<HashMap<String, Object>> setProgressOverrides(@Header("Authorization") String authorization, @Body HashMap<String, ProgressAssertion> overrides);
 
         @GET("prefs/custom_courses")
         Call<HashMap<String, Object>> getCustomCourses(@Header("Authorization") String authorization);
@@ -567,7 +568,7 @@ public class NetworkManager implements DocumentManager.SyncNetworkHandler {
         }
     }
 
-    public void setProgressOverrides(HashMap<String, Integer> overrides) {
+    public void setProgressOverrides(HashMap<String, ProgressAssertion> overrides) {
         if (AppSettings.shared().getInt(AppSettings.ALLOWS_RECOMMENDATIONS, AppSettings.RECOMMENDATIONS_NO_VALUE) != AppSettings.RECOMMENDATIONS_ALLOWED ||
                 !isLoggedIn)
             return;

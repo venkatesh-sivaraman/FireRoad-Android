@@ -862,12 +862,12 @@ public class RequirementsListStatement {
     }
 
     public int getManualProgress() {
-        if (currentDoc != null)
-            return currentDoc.getProgressOverride(keyPath());
+        /*if (currentDoc != null)
+            return currentDoc.getProgressOverride(keyPath());*/
         return 0;
     }
     public void setManualProgress(int newValue) {
-        if (currentDoc != null)
-            currentDoc.setProgressOverride(keyPath(), newValue);
+        /*if (currentDoc != null)
+            currentDoc.setProgressOverride(keyPath(), newValue);*/
     }
 }

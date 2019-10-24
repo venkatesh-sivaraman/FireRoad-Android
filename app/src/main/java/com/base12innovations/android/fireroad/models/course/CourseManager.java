@@ -5,10 +5,12 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.PopupMenu;
 
 import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.doc.NetworkManager;
+import com.base12innovations.android.fireroad.models.req.ProgressAssertion;
 import com.base12innovations.android.fireroad.models.req.RequirementsListManager;
 import com.base12innovations.android.fireroad.utils.ListHelper;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
@@ -749,7 +751,8 @@ public class CourseManager {
                 if (resp.result != null && resp.result.size() > 0) {
                     progressOverrides = new HashMap<>();
                     for (String key : resp.result.keySet()) {
-                        progressOverrides.put(key, (int)Math.round((Double)resp.result.get(key)));
+                        //progressOverrides.put(key, (int)Math.round((Double)resp.result.get(key)));
+                        progressOverrides.put(key,new ProgressAssertion((String)resp.result.get(key)));
                     }
                 } else if (progressOverrides != null && progressOverrides.size() > 0) {
                     NetworkManager.sharedInstance().setProgressOverrides(new HashMap<>(progressOverrides));
@@ -773,7 +776,7 @@ public class CourseManager {
     private static final String PROGRESS_OVERRIDES_KEY = "progressOverrides";
     private List<String> favoriteCourses;
     private Map<String, String> notes;
-    private Map<String, Integer> progressOverrides;
+    private Map<String, ProgressAssertion> progressOverrides;
     private List<Course> customCourses;
 
     public interface FavoritesChangedListener {
@@ -849,7 +852,7 @@ public class CourseManager {
         NetworkManager.sharedInstance().setNotes(new HashMap<>(notes));
     }
 
-    public HashMap<String, Integer> getAllProgressOverrides() {
+    public HashMap<String, ProgressAssertion> getAllProgressOverrides() {
         if (progressOverrides == null) {
             String raw = dbPreferences.getString(PROGRESS_OVERRIDES_KEY, "");
             if (raw.length() == 0) {
@@ -858,25 +861,26 @@ public class CourseManager {
                 progressOverrides = new HashMap<>();
                 for (String comp : raw.split(";")) {
                     String[] subcomps = comp.split(",");
-                    progressOverrides.put(subcomps[0], Integer.parseInt(subcomps[1]));
+                    //progressOverrides.put(subcomps[0], Integer.parseInt(subcomps[1]));
+                    progressOverrides.put(subcomps[0], new ProgressAssertion(subcomps[1]));
                 }
             }
         }
         return new HashMap<>(progressOverrides);
     }
 
-    public int getProgressOverrides(String keyPath) {
-        HashMap<String, Integer> progOverrides = getAllProgressOverrides();
+    public ProgressAssertion getProgressOverrides(String keyPath) {
+        HashMap<String, ProgressAssertion> progOverrides = getAllProgressOverrides();
         if (!progOverrides.containsKey(keyPath))
-            return 0;
+            return null;
         return progOverrides.get(keyPath);
     }
 
-    public void setProgressOverride(String keyPath, int value) {
-        progressOverrides.put(keyPath, value);
+    public void setProgressOverride(String keyPath, ProgressAssertion progressAssertion) {
+        progressOverrides.put(keyPath, progressAssertion);
         List<String> comps = new ArrayList<>();
         for (String key : progressOverrides.keySet()) {
-            comps.add(key + "," + Integer.toString(progressOverrides.get(key)));
+            comps.add(key + "," + progressOverrides.get(key).toString());
         }
         dbPreferences.edit().putString(PROGRESS_OVERRIDES_KEY, TextUtils.join(";", comps)).apply();
         NetworkManager.sharedInstance().setProgressOverrides(new HashMap<>(progressOverrides));

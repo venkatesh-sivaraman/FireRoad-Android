@@ -1,19 +1,28 @@
 package com.base12innovations.android.fireroad.utils;
 
+import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 
 import com.base12innovations.android.fireroad.CourseNavigatorDelegate;
+import com.base12innovations.android.fireroad.MyRoadFragment;
 import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.RequirementsListFragment;
+import com.base12innovations.android.fireroad.dialog.MarkerDialogFragment;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
 
@@ -31,13 +40,15 @@ import java.util.Set;
  * responds appropriately to taps/long taps on course thumbnails, such as searching for courses,
  * adding them, or adjusting manual progress.
  */
-public class RequirementsListDisplay {
+public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListener{
 
     public RequirementsListStatement requirementsList;
     /** Whether to always display on one row */
     public boolean singleCard = false;
 
     private CourseLayoutBuilder layoutBuilder;
+    private PopupMenu currentPopupMenu;
+    private Course currentlySelectedCourse;
 
     private Context _context;
 
@@ -60,6 +71,7 @@ public class RequirementsListDisplay {
         void showDetails(Course course);
         void searchCourses(String searchTerm, EnumSet<CourseSearchEngine.Filter> filters);
         void showManualProgressSelector(RequirementsListStatement req);
+        Activity getActivity();
     }
 
     public Delegate delegate;
@@ -363,7 +375,7 @@ public class RequirementsListDisplay {
         }
     }
 
-    private void onClickCourseCell(final LinearLayout layout, final int rowIndex, View thumbnail, final Course course, final RequirementsListStatement req) {
+    private void onClickCourseCell(final LinearLayout layout, final int rowIndex, final View thumbnail, final Course course, final RequirementsListStatement req) {
         TaskDispatcher.perform(new TaskDispatcher.Task<Boolean>() {
             @Override
             public Boolean perform() {
@@ -374,16 +386,85 @@ public class RequirementsListDisplay {
             @Override
             public void completed(Boolean arg) {
                 if (arg) {
+                    System.out.println("Case 1");
                     // It's a real course, show details
+                    /*
                     if (delegate != null) {
                         delegate.showDetails(course);
                         //delegate.courseNavigatorWantsCourseDetails(RequirementsListFragment.this, course);
+                    }*/
+                    if(delegate != null) {
+                        currentlySelectedCourse = course;
+                        final PopupMenu menu = new PopupMenu(delegate.getActivity(),thumbnail);
+                        MenuInflater mInflater = menu.getMenuInflater();
+                        mInflater.inflate(R.menu.menu_course_requirements_cell, menu.getMenu());
+
+                        final MenuItem owOn = menu.getMenu().findItem(R.id.overrideOn);
+                        final MenuItem owOff = menu.getMenu().findItem(R.id.overrideOff);
+                        final MenuItem owInfo = menu.getMenu().findItem(R.id.viewOverride);
+                        menu.getMenu().findItem(R.id.viewCourse).setVisible(course.isPublic);
+                        menu.getMenu().findItem(R.id.addCourse).setVisible(course.isPublic);
+                        owOn.setVisible(course.isPublic);
+                        owOff.setVisible(course.isPublic);
+                        owInfo.setVisible(course.isPublic);
+
+
+                        if(course.isPublic){
+                            boolean overrideStatus = User.currentUser().getCurrentDocument().getProgressOverride(req.keyPath()) != null;
+                            if(overrideStatus){
+                                owOn.setVisible(false);
+                            }else{
+                                owOff.setVisible(false);
+                                owInfo.setVisible(false);
+                            }
+                        }
+                        /*
+                        if (course.isPublic) {
+                            List<RoadDocument.Warning> warnings = User.currentUser().getCurrentDocument().warningsForCourseCached(course);
+                            if (warnings == null) {
+                                TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
+                                    @Override
+                                    public void perform() {
+                                        final List<RoadDocument.Warning> newWarnings = User.currentUser().getCurrentDocument().warningsForCourse(course);
+                                        TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                                            @Override
+                                            public void perform() {
+                                                menu.getMenu().findItem(R.id.courseWarnings).setEnabled(newWarnings.size() > 0);
+                                                if (newWarnings.size() == 0) {
+                                                    owOn.setEnabled(false);
+                                                    owOff.setEnabled(false);
+                                                }
+                                            }
+                                        });
+                                    }
+                                });
+                            } else {
+                                menu.getMenu().findItem(R.id.courseWarnings).setEnabled(warnings.size() > 0);
+                                if (warnings.size() == 0) {
+                                    owOn.setEnabled(false);
+                                    owOff.setEnabled(false);
+                                }
+                            }
+                            if (User.currentUser().getCurrentDocument().overrideWarningsForCourse(course)) {
+                                owOn.setVisible(false);
+                            } else {
+                                owOff.setVisible(false);
+                            }
+                        }
+                        */
+                        menu.setOnMenuItemClickListener(RequirementsListDisplay.this);
+                        menu.show();
+                        currentPopupMenu = menu;
                     }
+
+
                 } else if (req.isPlainString) {
+                    System.out.println("Case 3");
                     // Show progress selector
                     if (delegate != null)
                         delegate.showManualProgressSelector(req);
                 } else if (req.requirement != null) {
+                    System.out.println("Case 4");
                     // Search
                     String reqString = req.requirement.replaceAll("GIR:", "");
 
@@ -426,6 +507,7 @@ public class RequirementsListDisplay {
                         delegate.searchCourses(reqString, filters);
                     }
                 } else {
+                    System.out.println("Case 5");
                     // Sub-requirements page
                     if (visibleNestedReqs == null)
                         visibleNestedReqs = new HashSet<>();
@@ -451,6 +533,32 @@ public class RequirementsListDisplay {
         if (req.getRequirements() != null) {
             for (RequirementsListStatement subReq : req.getRequirements())
                 markNestedReqsInvisible(subReq);
+        }
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem menuItem) {
+        currentPopupMenu.dismiss();
+        currentPopupMenu = null;
+        switch (menuItem.getItemId()) {
+            case R.id.viewCourse:
+                delegate.showDetails(currentlySelectedCourse);
+                return true;
+            case R.id.addCourse:
+                delegate.addCourse(currentlySelectedCourse);
+                return true;
+            case R.id.overrideOn:
+                //User.currentUser().getCurrentDocument().setOverrideWarningsForCourse(currentlySelectedCourse, true);
+                //gridAdapter.notifyItemChanged(currentlySelectedPosition);
+                return true;
+            case R.id.overrideOff:
+                //User.currentUser().getCurrentDocument().setOverrideWarningsForCourse(currentlySelectedCourse, false);
+                //gridAdapter.notifyItemChanged(currentlySelectedPosition);
+                return true;
+            case R.id.viewOverride:
+                return true;
+            default:
+                return false;
         }
     }
 

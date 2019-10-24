@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/viewCourse"
+        android:title="View Course" />
+    <item
+        android:id="@+id/addCourse"
+        android:title="Add Course" />
+    <item
+        android:id="@+id/overrideOn"
+        android:title="Override Requirement" />
+    <item
+        android:id="@+id/viewOverride"
+        android:title="View Override Settings" />
+    <item
+        android:id="@+id/overrideOff"
+        android:title="Don't Override" />
+</menu>
