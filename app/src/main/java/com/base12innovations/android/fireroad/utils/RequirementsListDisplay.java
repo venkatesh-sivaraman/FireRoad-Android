@@ -19,11 +19,13 @@ import com.base12innovations.android.fireroad.MyRoadFragment;
 import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.RequirementsListFragment;
 import com.base12innovations.android.fireroad.dialog.MarkerDialogFragment;
+import com.base12innovations.android.fireroad.dialog.RequirementsOverrideDialog;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 import com.base12innovations.android.fireroad.models.doc.User;
+import com.base12innovations.android.fireroad.models.req.ProgressAssertion;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
 
 import java.util.ArrayList;
@@ -40,7 +42,7 @@ import java.util.Set;
  * responds appropriately to taps/long taps on course thumbnails, such as searching for courses,
  * adding them, or adjusting manual progress.
  */
-public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListener{
+public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListener, RequirementsOverrideDialog.RequirementsOverrideDialogDelegate {
 
     public RequirementsListStatement requirementsList;
     /** Whether to always display on one row */
@@ -49,6 +51,8 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
     private CourseLayoutBuilder layoutBuilder;
     private PopupMenu currentPopupMenu;
     private Course currentlySelectedCourse;
+    private RequirementsListStatement currentlySelectedRequirement;
+    private RequirementsOverrideDialog requirementsOverrideDialog;
 
     private Context _context;
 
@@ -395,6 +399,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                     }*/
                     if(delegate != null) {
                         currentlySelectedCourse = course;
+                        currentlySelectedRequirement = req;
                         final PopupMenu menu = new PopupMenu(delegate.getActivity(),thumbnail);
                         MenuInflater mInflater = menu.getMenuInflater();
                         mInflater.inflate(R.menu.menu_course_requirements_cell, menu.getMenu());
@@ -408,7 +413,6 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                         owOff.setVisible(course.isPublic);
                         owInfo.setVisible(course.isPublic);
 
-
                         if(course.isPublic){
                             boolean overrideStatus = User.currentUser().getCurrentDocument().getProgressOverride(req.keyPath()) != null;
                             if(overrideStatus){
@@ -418,6 +422,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                                 owInfo.setVisible(false);
                             }
                         }
+
                         /*
                         if (course.isPublic) {
                             List<RoadDocument.Warning> warnings = User.currentUser().getCurrentDocument().warningsForCourseCached(course);
@@ -550,16 +555,32 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
             case R.id.overrideOn:
                 //User.currentUser().getCurrentDocument().setOverrideWarningsForCourse(currentlySelectedCourse, true);
                 //gridAdapter.notifyItemChanged(currentlySelectedPosition);
+                requirementsOverrideDialog = new RequirementsOverrideDialog();
+                requirementsOverrideDialog.setOverrideStatus(true);
                 return true;
             case R.id.overrideOff:
                 //User.currentUser().getCurrentDocument().setOverrideWarningsForCourse(currentlySelectedCourse, false);
                 //gridAdapter.notifyItemChanged(currentlySelectedPosition);
+                requirementsOverrideDialog = new RequirementsOverrideDialog();
+                requirementsOverrideDialog.setOverrideStatus(false);
                 return true;
             case R.id.viewOverride:
+                requirementsOverrideDialog = new RequirementsOverrideDialog();
                 return true;
             default:
                 return false;
         }
     }
 
+    @Override
+    public void requirementsOverrideDialogDismissed(){
+        requirementsOverrideDialog.dismiss();
+        requirementsOverrideDialog = null;
+    }
+    @Override
+    public void requirementsOverrideDialogEditOverride(boolean overriden, List<Course> courses){
+        requirementsOverrideDialog.dismiss();
+        requirementsOverrideDialog = null;
+        User.currentUser().getCurrentDocument().setProgressOverride(currentlySelectedRequirement.keyPath(), new ProgressAssertion(courses));
+    }
 }
