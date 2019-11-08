@@ -600,4 +600,9 @@ public class RoadDocument extends Document {
         progressOverrides.put(keyPath, progressAssertion);
         save();
     }
+
+    public void removeProgressOverride(String keyPath){
+        progressOverrides.remove(keyPath);
+        save();
+    }
 }

@@ -5,6 +5,7 @@ import android.util.Log;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.ListHelper;
 
 import java.lang.ref.WeakReference;

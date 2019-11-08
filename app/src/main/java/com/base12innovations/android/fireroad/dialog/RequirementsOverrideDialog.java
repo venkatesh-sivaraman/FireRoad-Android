@@ -7,29 +7,49 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
 import android.widget.Switch;
+import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.R;
+import com.base12innovations.android.fireroad.adapter.SearchResultsAdapter;
+import com.base12innovations.android.fireroad.adapter.SelectCoursesAdapter;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.User;
+import com.base12innovations.android.fireroad.models.req.ProgressAssertion;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.List;
 
-public class RequirementsOverrideDialog extends DialogFragment {
+public class RequirementsOverrideDialog extends DialogFragment implements SelectCoursesAdapter.Delegate{
     public interface RequirementsOverrideDialogDelegate{
         void requirementsOverrideDialogDismissed();
         void requirementsOverrideDialogEditOverride(boolean overridden, List<Course> courses);
-
+        void requirementsOverrideDialogCourseClicked(Course course);
     }
 
     public RequirementsListStatement req;
+    public ProgressAssertion progressAssertion;
     public RequirementsOverrideDialogDelegate delegate;
+    public boolean overriding;
+    public List<Course> replacementCourses;
 
-    private boolean overriding;
+    private WeakReference<AlertDialog> alertDialogWeakReference;
+
+    private Switch switchOverride;
+    private RecyclerView recyclerView;
+    private SelectCoursesAdapter listAdapter;
+
 
     public RequirementsOverrideDialog(){
         //required empty constructor
@@ -47,13 +67,33 @@ public class RequirementsOverrideDialog extends DialogFragment {
         View view = inflater.inflate(R.layout.fragment_requirements_override_dialog, null);
         builder.setView(view);
 
-        final Switch switchOverride = view.findViewById(R.id.switchOverride);
+        TextView titleText = view.findViewById(R.id.titleText);
+        titleText.setText(String.format("Override %s", req.requirement));
+
+        recyclerView = view.findViewById(R.id.recyclerViewCourses);
+        listAdapter = new SelectCoursesAdapter(getContext(),null);
+        listAdapter.delegate = new WeakReference<SelectCoursesAdapter.Delegate>(this);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(),LinearLayoutManager.VERTICAL,false);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setAdapter(listAdapter);
+
+        switchOverride = view.findViewById(R.id.switchOverride);
         switchOverride.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 overriding = isChecked;
+                recyclerView.setEnabled(overriding);
+                verifyValidOverride();
             }
         });
+
+        List<List<Course>>allCourses = new ArrayList<>();
+        for(int i = 0; i < RoadDocument.semesterNames.length;i++){
+            allCourses.add(User.currentUser().getCurrentDocument().coursesForSemester(i));
+        }
+        listAdapter.setCourses(allCourses);
+
+        switchOverride.setChecked(overriding);
 
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             @Override
@@ -67,17 +107,49 @@ public class RequirementsOverrideDialog extends DialogFragment {
                 delegate.requirementsOverrideDialogEditOverride(overriding,getCourses());
             }
         });
-        return builder.create();
+        AlertDialog dialog = builder.create();
+        alertDialogWeakReference = new WeakReference<>(dialog);
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialog) {
+                verifyValidOverride();
+            }
+        });
+        return dialog;
     }
 
-    public void setOverrideStatus(boolean overrideStatus){
-
+    public void verifyValidOverride(){
+        if(alertDialogWeakReference != null && alertDialogWeakReference.get() != null && alertDialogWeakReference.get().getButton(AlertDialog.BUTTON_POSITIVE)!=null) {
+            if (!overriding || (overriding && !replacementCourses.isEmpty())) {
+                alertDialogWeakReference.get().getButton(AlertDialog.BUTTON_POSITIVE).setVisibility(View.VISIBLE);
+            } else {
+                alertDialogWeakReference.get().getButton(AlertDialog.BUTTON_POSITIVE).setVisibility(View.INVISIBLE);
+            }
+        }
     }
-
 
     public List<Course> getCourses(){
-        return null;
+        return replacementCourses;
     }
-
+    @Override
+    public void selectCourseClickedCourse(Course selectedCourse){
+        delegate.requirementsOverrideDialogCourseClicked(selectedCourse);
+    }
+    @Override
+    public void selectCourseAddCourse(Course selectedCourse){
+        if(!replacementCourses.contains(selectedCourse)) {
+            replacementCourses.add(selectedCourse);
+        }
+        verifyValidOverride();
+    }
+    @Override
+    public void selectCourseRemoveCourse(Course selectedCourse){
+        replacementCourses.remove(selectedCourse);
+        verifyValidOverride();
+    }
+    @Override
+    public boolean selectCourseIsSelected(Course selectedCourse){
+        return replacementCourses.contains(selectedCourse);
+    }
 
 }
