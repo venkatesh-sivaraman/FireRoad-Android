@@ -10,7 +10,7 @@ import java.util.List;
 
 public class ProgressAssertion {
     private String requirementKey;
-    private List<String> subtitutions;
+    private List<String> subtitutions = new ArrayList<>();
     private boolean ignore;
     public ProgressAssertion(){
 

@@ -78,17 +78,20 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
     </android.support.constraint.ConstraintLayout>
+
     <ImageView
         android:id="@+id/warningView"
         android:layout_width="32dp"
         android:layout_height="32dp"
-        app:srcCompat="@drawable/warning_icon"
-        android:visibility="gone"
-        android:elevation="4dp"
-        android:layout_marginEnd="-16dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
         android:layout_marginTop="-16dp"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentTop="true"/>
+        android:layout_marginEnd="-16dp"
+        android:cropToPadding="false"
+        android:elevation="4dp"
+        android:visibility="gone"
+        android:clipChildren="false"
+        app:srcCompat="@drawable/warning_icon" />
     <ImageView
         android:id="@+id/markerView"
         android:layout_width="28dp"

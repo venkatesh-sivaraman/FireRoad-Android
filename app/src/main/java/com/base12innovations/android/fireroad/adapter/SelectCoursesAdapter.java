@@ -70,7 +70,11 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
         final View view = viewHolder.cellView;
         if(courseIndices.get(i) == -1){
-            ((TextView) view.findViewById(R.id.headerTextView)).setText(RoadDocument.semesterNames[semesters.get(i)]);
+            if(semesters.get(i) == RoadDocument.semesterNames.length){
+                ((TextView) view.findViewById(R.id.headerTextView)).setText(String.format(Locale.US,"Other Courses"));
+            }else {
+                ((TextView) view.findViewById(R.id.headerTextView)).setText(RoadDocument.semesterNames[semesters.get(i)]);
+            }
             int units = 0;
             double hours = 0.0;
             for (Course course: courses.get(semesters.get(i))){
@@ -145,7 +149,7 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
     private void updateIndexInfo(){
         semesters = new ArrayList<>();
         courseIndices = new ArrayList<>();
-        for (int i = 0; i < RoadDocument.semesterNames.length; i++) {
+        for (int i = 0; i <= RoadDocument.semesterNames.length; i++) {
             if(courses.get(i).size()>0){
                 semesters.add(i);
                 courseIndices.add(-1);

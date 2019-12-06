@@ -29,6 +29,8 @@ import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 public class RequirementsOverrideDialog extends DialogFragment implements SelectCoursesAdapter.Delegate{
@@ -87,11 +89,25 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
             }
         });
 
+        List<Course> otherCourses = new ArrayList<>(replacementCourses);
+        Log.d("Other Course", otherCourses.toString());
         List<List<Course>>allCourses = new ArrayList<>();
         for(int i = 0; i < RoadDocument.semesterNames.length;i++){
-            allCourses.add(User.currentUser().getCurrentDocument().coursesForSemester(i));
+            List<Course> coursesForSemester = User.currentUser().getCurrentDocument().coursesForSemester(i);
+            for(Course course : coursesForSemester){
+                for(Course course2 : otherCourses){
+                    if(course2.getSubjectID().equals(course.getSubjectID())){
+                        otherCourses.remove(course2);
+                    }
+                }
+                Log.d("Other Course", course.getSubjectID());
+            }
+            allCourses.add(coursesForSemester);
         }
+        Log.d("Other Course", otherCourses.toString());
+        allCourses.add(otherCourses);
         listAdapter.setCourses(allCourses);
+        listAdapter.notifyDataSetChanged();
 
         switchOverride.setChecked(overriding);
 

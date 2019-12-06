@@ -2,6 +2,9 @@ package com.base12innovations.android.fireroad.utils;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.os.Handler;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentActivity;
@@ -9,7 +12,9 @@ import android.util.Log;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
@@ -20,6 +25,7 @@ import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.RequirementsListFragment;
 import com.base12innovations.android.fireroad.dialog.MarkerDialogFragment;
 import com.base12innovations.android.fireroad.dialog.RequirementsOverrideDialog;
+import com.base12innovations.android.fireroad.models.course.ColorManager;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
@@ -231,7 +237,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
             getLayoutBuilder().updateSubHeaderProgress(headerCells.get(statement), statement.percentageFulfilled());
         }
         if (courseListCells.containsKey(statement)) {
-            formatCourseCellFulfillmentIndicator(courseListCells.get(statement), statement.getFulfillmentProgress());
+            formatCourseCellFulfillmentIndicator(courseListCells.get(statement), statement);
         }
         if (statement.getRequirements() != null) {
             for (RequirementsListStatement subReq : statement.getRequirements())
@@ -351,7 +357,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                                         }
                                     });
                             courseListCells.put(requirements.get(i), cell);
-                            formatCourseCellFulfillmentIndicator(cell, statement.getFulfillmentProgress());
+                            formatCourseCellFulfillmentIndicator(cell, statement);
                         }
                     }
                 });
@@ -359,13 +365,35 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         });
     }
 
-    private void formatCourseCellFulfillmentIndicator(View courseThumbnail, RequirementsListStatement.FulfillmentProgress progress) {
+    private void formatCourseCellFulfillmentIndicator(View courseThumbnail, RequirementsListStatement statement) {
+        statement.computeRequirementStatus(User.currentUser().getCurrentDocument().getCreditCourses());
+        RequirementsListStatement.FulfillmentProgress progress = statement.getFulfillmentProgress();
         ProgressBar pBar = courseThumbnail.findViewById(R.id.requirementsProgressBar);
+        ImageView warningIcon = courseThumbnail.findViewById(R.id.warningView);
+        warningIcon.setVisibility(View.INVISIBLE);
         if (progress != null) {
-            if (progress.getProgress() == progress.getMax())
+            if (progress.getProgress() == progress.getMax()) {
                 courseThumbnail.setAlpha(0.5f);
-            else
+            }else if (statement.isIgnored() || (statement.isOverriden())) {
+                if(statement.isIgnored() || statement.isSubstitutionsFulfilled()) {
+                    courseThumbnail.setAlpha(0.5f);
+                }else{
+                    courseThumbnail.setAlpha(1.0f);
+                }
+                ViewGroup.LayoutParams layoutParams = courseThumbnail.getLayoutParams();
+                if(layoutParams instanceof LinearLayout.LayoutParams){
+                    int width = ((LinearLayout.LayoutParams) layoutParams).width+4;
+                    int height = ((LinearLayout.LayoutParams) layoutParams).height+4;
+                    LinearLayout.LayoutParams layoutParams1 = new LinearLayout.LayoutParams(width,height);
+                    layoutParams1.setMargins(1,1,1,1);
+                    courseThumbnail.setLayoutParams(layoutParams1);
+                }
+                if(statement.isOverriden()&&!statement.isSubstitutionsFulfilled()){
+                    warningIcon.setVisibility(View.VISIBLE);
+                }
+            }else {
                 courseThumbnail.setAlpha(1.0f);
+            }
 
             if (progress.getMax() != 1) {
                 pBar.setVisibility(View.VISIBLE);

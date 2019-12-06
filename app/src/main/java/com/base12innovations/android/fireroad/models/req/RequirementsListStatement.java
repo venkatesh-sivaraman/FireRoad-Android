@@ -497,6 +497,14 @@ public class RequirementsListStatement {
     private boolean isFulfilled = false;
     public boolean isFulfilled() { return isFulfilled; }
 
+    private boolean isIgnored = false;
+    public boolean isIgnored(){ return isIgnored;}
+
+    private boolean isOverriden = false;
+    public boolean isOverriden(){return isOverriden;}
+    private boolean substitutionsFulfilled =false;
+    public boolean isSubstitutionsFulfilled(){return substitutionsFulfilled;}
+
     private FulfillmentProgress fulfillmentProgress;
     private FulfillmentProgress subjectProgress;
     private FulfillmentProgress unitProgress;
@@ -601,6 +609,33 @@ public class RequirementsListStatement {
      * @return the set of courses that satisfy this requirement
      */
     public Set<Course> computeRequirementStatus(List<Course> courses) {
+        ProgressAssertion progressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(this.keyPath());
+        if(progressAssertion !=null){
+            if(progressAssertion.getIgnore()){
+                isIgnored = true;
+                isOverriden = false;
+                substitutionsFulfilled = false;
+                return new HashSet<>();
+            }else {
+                isIgnored = false;
+                isOverriden = true;
+                List<String> substitutions = progressAssertion.getSubstitutions();
+                int numCoursesInSubstitutions = 0;
+                Set<Course> courseSet = new HashSet<>();
+                for (Course course : courses) {
+                    if (substitutions.contains(course.getSubjectID())) {
+                        numCoursesInSubstitutions++;
+                        courseSet.add(course);
+                    }
+                }
+                substitutionsFulfilled = (numCoursesInSubstitutions >= substitutions.size());
+                return courseSet;
+            }
+        }else{
+            isIgnored = false;
+            isOverriden = false;
+            substitutionsFulfilled =false;
+        }
         if (requirement != null) {
             // It's a basic requirement
             Set<Course> satisfiedCourses = new HashSet<>();
@@ -663,7 +698,7 @@ public class RequirementsListStatement {
         int numCoursesSatisfied = 0;
         for (RequirementsListStatement req : requirements) {
             Set<Course> sat = req.computeRequirementStatus(courses);
-            if (req.isFulfilled && sat.size() > 0)
+            if (req.isFulfilled && sat.size() > 0 || req.isIgnored || req.isOverriden && req.substitutionsFulfilled)
                 numReqsSatisfied += 1;
             satByCategory.put(req, sat);
             totalSat.addAll(sat);
