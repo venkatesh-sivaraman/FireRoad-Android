@@ -173,14 +173,6 @@ public class CourseSearchEngine {
                 for (String comp : queryComps) {
                     boolean found = false;
                     String regex = filters.contains(Filter.MATCHES) ? "^.*" + Pattern.quote(comp) + ".*$" : "";
-                    /*if(course.getSubjectID().equals("18.04")){
-                        for(String s : searchFields){
-                            Log.d("CourseSearchEngine101",s);
-                        }
-                        Log.d("CourseSearchEngine101",regex);
-                        Log.d("CourseSearchEngine101","" + filters.contains(Filter.MATCHES));
-                        Log.d("CourseSearchEngine101","" + searchFields.get(0).matches(regex));
-                    }*/
                     for (int i = 0; i < searchFields.size(); i++) {
                         String field = searchFields.get(i);
                         if ((filters.contains(Filter.MATCHES) && field.matches(regex)) ||
@@ -206,8 +198,6 @@ public class CourseSearchEngine {
                     relevance *= Math.log(Math.min((double)course.enrollmentNumber, 2.0));
                 }
                 searchItems.add(new SearchItem(course, relevance));
-            }else{
-                Log.d("CourseSearchEngine202",course.getSubjectID());
             }
         }
         return sortedSearchResults(searchItems);
