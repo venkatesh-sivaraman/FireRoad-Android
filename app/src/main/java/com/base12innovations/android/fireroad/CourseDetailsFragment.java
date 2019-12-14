@@ -287,8 +287,8 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
                     CourseSearchEngine.Filter.exactMatch(filter);
 
                     String searchText = course.getSubjectID();
-                    if (course.getGIRAttribute() != null && course.getGIRAttribute() != Course.GIRAttribute.REST)
-                        searchText = course.getGIRAttribute().toString();
+                    if (course.getGIRAttribute() != null && course.getGIRAttribute() != Course.GIRAttribute.REST && course.getGIRAttribute() != Course.GIRAttribute.LAB)
+                        searchText = course.getGIRAttribute().rawValue;
                     delegate.get().courseNavigatorWantsSearchCourses(CourseDetailsFragment.this, searchText, filter);
                 }
             }

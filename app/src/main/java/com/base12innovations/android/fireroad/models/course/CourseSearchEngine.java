@@ -144,7 +144,6 @@ public class CourseSearchEngine {
             }
             searchItems.add(new SearchItem(course, relevance));
         }
-
         return sortedSearchResults(searchItems);
     }
 
@@ -172,7 +171,7 @@ public class CourseSearchEngine {
             else {
                 for (String comp : queryComps) {
                     boolean found = false;
-                    String regex = filters.contains(Filter.MATCHES) ? "^.*[^A-z0-9]" + Pattern.quote(comp) + "[^A-z0-9].*$" : "";
+                    String regex = filters.contains(Filter.MATCHES) ? "^.*[^A-Za-z0-9]*" + Pattern.quote(comp) + "[^A-Za-z0-9]*.*$" : "";
                     for (int i = 0; i < searchFields.size(); i++) {
                         String field = searchFields.get(i);
                         if ((filters.contains(Filter.MATCHES) && field.matches(regex)) ||
