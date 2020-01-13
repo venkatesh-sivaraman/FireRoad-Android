@@ -149,7 +149,7 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
     }
     @Override
     public void selectCourseClickedCourse(Course selectedCourse){
-        delegate.requirementsOverrideDialogCourseClicked(selectedCourse);
+        //delegate.requirementsOverrideDialogCourseClicked(selectedCourse);
     }
     @Override
     public void selectCourseAddCourse(Course selectedCourse){
