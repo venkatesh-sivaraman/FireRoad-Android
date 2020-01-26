@@ -599,6 +599,10 @@ public class RequirementsListStatement {
         return t.cutoff * (t.criterion == ThresholdCriterion.SUBJECTS ? DEFAULT_UNIT_COUNT : 1);
     }
 
+    public Set<Course> coursesSatisfyingRequirementSet;
+    public Set<Course> computeRequirementStatus(List<Course> courses){
+        return computeRequirementStatus(courses, true);
+    }
     /**
      * This is a large and complicated method that provides considerable information about the
      * requirement's fulfillment status. It sets the `isFulfilled` property, which indicates whether
@@ -609,7 +613,7 @@ public class RequirementsListStatement {
      * @param courses the courses to use to determine whether each requirement has been satisfied
      * @return the set of courses that satisfy this requirement
      */
-    public Set<Course> computeRequirementStatus(List<Course> courses) {
+    public Set<Course> computeRequirementStatus(List<Course> courses, boolean checkChildren) {
         ProgressAssertion progressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(this.keyPath());
         if(progressAssertion !=null){
             final Set<Course> courseSet = new HashSet<>();
@@ -632,6 +636,7 @@ public class RequirementsListStatement {
                 });
                 fulfillmentProgress = subjectProgress;
                 courseSet.add(new Course());
+                coursesSatisfyingRequirementSet = courseSet;
                 return courseSet;
             }else {
                 isIgnored = false;
@@ -662,6 +667,7 @@ public class RequirementsListStatement {
                 isFulfilled = substitutionsFulfilled;
                 subjectProgress = ceilingThreshold(numCoursesInSubstitutions,substitutions.size());
                 fulfillmentProgress = subjectProgress;
+                coursesSatisfyingRequirementSet = courseSet;
                 return courseSet;
             }
         }else{
@@ -719,6 +725,7 @@ public class RequirementsListStatement {
                 }
             }
             fulfillmentProgress = (threshold != null && threshold.criterion == ThresholdCriterion.UNITS) ? unitProgress : subjectProgress;
+            coursesSatisfyingRequirementSet = satisfiedCourses;
             return satisfiedCourses;
         }
 
@@ -730,7 +737,12 @@ public class RequirementsListStatement {
         int numReqsSatisfied = 0;
         int numCoursesSatisfied = 0;
         for (RequirementsListStatement req : requirements) {
-            Set<Course> sat = req.computeRequirementStatus(courses);
+            Set<Course> sat;
+            if(checkChildren || req.coursesSatisfyingRequirementSet == null){
+                sat=req.computeRequirementStatus(courses);
+            }else{
+                sat = req.coursesSatisfyingRequirementSet;
+            }
             if ((req.isFulfilled && sat.size() > 0) || req.isIgnored || (req.isOverriden && req.substitutionsFulfilled))
                 numReqsSatisfied += 1;
             satByCategory.put(req, sat);
@@ -837,6 +849,7 @@ public class RequirementsListStatement {
         subjectProgress = ceilingThreshold(subjectProgress.progress, subjectProgress.max);
         unitProgress = ceilingThreshold(unitProgress.progress, unitProgress.max);
         fulfillmentProgress = (threshold != null && threshold.criterion == ThresholdCriterion.UNITS) ? unitProgress : subjectProgress;
+        coursesSatisfyingRequirementSet = totalSat;
         return totalSat;
     }
 

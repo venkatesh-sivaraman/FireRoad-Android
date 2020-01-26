@@ -261,12 +261,24 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
     }
 
     private void updateRequirementsStatusBottomUp(RequirementsListStatement statement){
-        if (requirementsList != null) {
+        long startTime = System.nanoTime();
+        if (statement != null && requirementsList != null) {
             if (User.currentUser().getCurrentDocument() != null) {
                 requirementsList.setCurrentDoc(User.currentUser().getCurrentDocument());
-                requirementsList.computeRequirementStatus(User.currentUser().getCurrentDocument().getCreditCourses());
+                RequirementsListStatement cur = statement;
+                while(cur != null) {
+                    cur.computeRequirementStatus(User.currentUser().getCurrentDocument().getCreditCourses(),false);
+                    if(cur.parent == null){
+                        break;
+                    }
+                    cur = cur.parent.get();
+                }
+                long endTime = System.nanoTime();
+                Log.d("TIME",String.valueOf((endTime-startTime)/1000000000.f));
             }
             updateRequirementsDisplayBottomUp(statement);
+            long endTime = System.nanoTime();
+            Log.d("TIME",String.valueOf((endTime-startTime)/1000000000.f));
         }
     }
 
