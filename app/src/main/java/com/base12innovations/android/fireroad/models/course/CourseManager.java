@@ -752,7 +752,8 @@ public class CourseManager {
                     progressOverrides = new HashMap<>();
                     for (String key : resp.result.keySet()) {
                         //progressOverrides.put(key, (int)Math.round((Double)resp.result.get(key)));
-                        progressOverrides.put(key,new ProgressAssertion((String)resp.result.get(key)));
+                        List<String> courseIDS = (List<String>) resp.result.get(key);
+                        progressOverrides.put(key,new ProgressAssertion(courseIDS.get(0),courseIDS.subList(1,courseIDS.size()-1)));
                     }
                 } else if (progressOverrides != null && progressOverrides.size() > 0) {
                     NetworkManager.sharedInstance().setProgressOverrides(new HashMap<>(progressOverrides));
@@ -861,8 +862,13 @@ public class CourseManager {
                 progressOverrides = new HashMap<>();
                 for (String comp : raw.split(";")) {
                     String[] subcomps = comp.split(",");
+                    List<String> substitutions = new ArrayList<>();
+                    for(String s : subcomps){
+                        substitutions.add(s);
+                    }
+                    substitutions.remove(subcomps[0]);
                     //progressOverrides.put(subcomps[0], Integer.parseInt(subcomps[1]));
-                    progressOverrides.put(subcomps[0], new ProgressAssertion(subcomps[1]));
+                    progressOverrides.put(subcomps[0], new ProgressAssertion(subcomps[0],substitutions));
                 }
             }
         }

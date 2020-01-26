@@ -2,57 +2,47 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/courseCellRelativeLayout"
     android:layout_width="match_parent"
     android:layout_height="@dimen/course_cell_height"
     android:background="@drawable/course_background"
-    android:elevation="@dimen/course_cell_elevation"
     android:clipChildren="false"
     android:clipToPadding="false"
+    android:elevation="@dimen/course_cell_elevation"
     android:minHeight="84dp"
     android:orientation="vertical">
 
-    <android.support.constraint.ConstraintLayout android:layout_width="match_parent"
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/courseCellConstraintLayout"
+        android:layout_width="match_parent"
         android:layout_height="@dimen/course_cell_height"
         android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:layout_marginTop="0dp"
         android:gravity="top">
 
-        <View
-            android:id="@+id/selectionView"
+        <ProgressBar
+            android:id="@+id/requirementsProgressBar"
+            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="?attr/selectableItemBackground"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="0dp"
+            android:indeterminate="false"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
-
-        <TextView
-            android:id="@+id/subjectIDLabel"
-            android:layout_width="0dp"
-            android:layout_height="28dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:text="21M.284"
-            android:textAlignment="center"
-            android:textColor="@android:color/white"
-            android:textSize="21sp"
-            android:textStyle="bold"
-            android:typeface="sans"
-            app:layout_constraintBottom_toTopOf="@+id/subjectTitleLabel"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintStart_toStartOf="parent" />
 
         <TextView
             android:id="@+id/subjectTitleLabel"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginEnd="2dp"
             android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"
             android:maxLines="3"
             android:text="Film Music"
             android:textAlignment="center"
@@ -64,20 +54,45 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/subjectIDLabel" />
 
-        <ProgressBar
-            android:id="@+id/requirementsProgressBar"
-            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-            android:visibility="gone"
+        <TextView
+            android:id="@+id/subjectIDLabel"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="0dp"
-            android:layout_marginEnd="8dp"
+            android:layout_height="28dp"
             android:layout_marginStart="8dp"
-            android:indeterminate="false"
+            android:layout_marginEnd="8dp"
+            android:text="21M.284"
+            android:textAlignment="center"
+            android:textColor="@android:color/white"
+            android:textSize="21sp"
+            android:textStyle="bold"
+            android:typeface="sans"
+            app:layout_constraintBottom_toTopOf="@+id/subjectTitleLabel"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <View
+            android:id="@+id/selectionView"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="?attr/selectableItemBackground"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
     </android.support.constraint.ConstraintLayout>
+
+    <ImageView
+        android:id="@+id/markerView"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="-10dp"
+        android:layout_marginTop="-16dp"
+        android:elevation="5dp"
+        android:visibility="gone"
+        app:srcCompat="@drawable/marker_easy" />
 
     <ImageView
         android:id="@+id/warningView"
@@ -87,20 +102,10 @@
         android:layout_alignParentTop="true"
         android:layout_marginTop="-16dp"
         android:layout_marginEnd="-16dp"
-        android:cropToPadding="false"
-        android:elevation="4dp"
-        android:visibility="gone"
         android:clipChildren="false"
-        app:srcCompat="@drawable/warning_icon" />
-    <ImageView
-        android:id="@+id/markerView"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        app:srcCompat="@drawable/marker_easy"
+        android:cropToPadding="false"
+        android:elevation="9dp"
         android:visibility="gone"
-        android:elevation="5dp"
-        android:layout_marginStart="-10dp"
-        android:layout_marginTop="-16dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"/>
+        app:srcCompat="@drawable/warning_icon" />
+
 </RelativeLayout>

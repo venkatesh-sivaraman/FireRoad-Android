@@ -7,6 +7,7 @@ import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.ListHelper;
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -611,24 +612,56 @@ public class RequirementsListStatement {
     public Set<Course> computeRequirementStatus(List<Course> courses) {
         ProgressAssertion progressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(this.keyPath());
         if(progressAssertion !=null){
+            final Set<Course> courseSet = new HashSet<>();
             if(progressAssertion.getIgnore()){
                 isIgnored = true;
                 isOverriden = false;
                 substitutionsFulfilled = false;
-                return new HashSet<>();
+                subjectProgress = ceilingThreshold(1,1);
+                isFulfilled = true;
+                TaskDispatcher.perform(new TaskDispatcher.Task<Course>() {
+                    @Override
+                    public Course perform() {
+                        return CourseManager.sharedInstance().getSubjectByID(requirement);
+                    }
+                }, new TaskDispatcher.CompletionBlock<Course>() {
+                    @Override
+                    public void completed(Course arg) {
+                        unitProgress = ceilingThreshold(arg.totalUnits,arg.totalUnits);
+                    }
+                });
+                fulfillmentProgress = subjectProgress;
+                courseSet.add(new Course());
+                return courseSet;
             }else {
                 isIgnored = false;
                 isOverriden = true;
-                List<String> substitutions = progressAssertion.getSubstitutions();
+                final List<String> substitutions = progressAssertion.getSubstitutions();
                 int numCoursesInSubstitutions = 0;
-                Set<Course> courseSet = new HashSet<>();
                 for (Course course : courses) {
                     if (substitutions.contains(course.getSubjectID())) {
                         numCoursesInSubstitutions++;
                         courseSet.add(course);
                     }
                 }
+                TaskDispatcher.perform(new TaskDispatcher.Task<Integer>() {
+                    public Integer perform() {
+                        int totalUnits = 0;
+                        for(String courseID : substitutions){
+                            totalUnits += CourseManager.sharedInstance().getSubjectByID(courseID).totalUnits;
+                        }
+                        return totalUnits;
+                    }
+                }, new TaskDispatcher.CompletionBlock<Integer>() {
+                    @Override
+                    public void completed(Integer arg) {
+                        unitProgress = ceilingThreshold(totalUnitsInCourses(courseSet),arg);
+                    }
+                });
                 substitutionsFulfilled = (numCoursesInSubstitutions >= substitutions.size());
+                isFulfilled = substitutionsFulfilled;
+                subjectProgress = ceilingThreshold(numCoursesInSubstitutions,substitutions.size());
+                fulfillmentProgress = subjectProgress;
                 return courseSet;
             }
         }else{
@@ -698,7 +731,7 @@ public class RequirementsListStatement {
         int numCoursesSatisfied = 0;
         for (RequirementsListStatement req : requirements) {
             Set<Course> sat = req.computeRequirementStatus(courses);
-            if (req.isFulfilled && sat.size() > 0 || req.isIgnored || req.isOverriden && req.substitutionsFulfilled)
+            if ((req.isFulfilled && sat.size() > 0) || req.isIgnored || (req.isOverriden && req.substitutionsFulfilled))
                 numReqsSatisfied += 1;
             satByCategory.put(req, sat);
             totalSat.addAll(sat);
@@ -707,11 +740,10 @@ public class RequirementsListStatement {
             // count as a single satisfied course. ANY children count for
             // all of their satisfied courses.
             if (req.connectionType == ConnectionType.ALL) {
-                numCoursesSatisfied += (req.isFulfilled && sat.size() > 0) ? 1 : 0;
+                numCoursesSatisfied += (req.isFulfilled && (sat.size() > 0 || req.isIgnored)) ? 1 : 0;
             } else {
                 numCoursesSatisfied += sat.size();
             }
-
         }
         List<RequirementsListStatement> sortedProgresses = new ArrayList<>(requirements);
         Collections.sort(sortedProgresses, new Comparator<RequirementsListStatement>() {
@@ -754,7 +786,6 @@ public class RequirementsListStatement {
                     }
                 }
             }
-
             if (threshold == null && distinctThreshold != null) {
                 // required number of statements
                 if (distinctThreshold.type == ThresholdType.GREATER_THAN_OR_EQUAL ||
@@ -884,12 +915,16 @@ public class RequirementsListStatement {
     }
 
     private float rawPercentageFulfilled() {
+        if(isIgnored || (isOverriden && isSubstitutionsFulfilled()))
+            return 100.f;
         if ((connectionType == ConnectionType.NONE && getManualProgress() == 0) || fulfillmentProgress == null)
             return 0.0f;
         return (float)fulfillmentProgress.progress / (float)Math.max(fulfillmentProgress.max, threshold != null && threshold.criterion == ThresholdCriterion.UNITS ? DEFAULT_UNIT_COUNT: 1) * 100.0f;
     }
 
     public float percentageFulfilled() {
+        if(isIgnored || (isOverriden && isSubstitutionsFulfilled()))
+            return 100.f;
         if ((connectionType == ConnectionType.NONE && getManualProgress() == 0) || fulfillmentProgress == null)
             return 0.0f;
         if (fulfillmentProgress.progress == 0 && fulfillmentProgress.max == 0)

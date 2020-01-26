@@ -90,21 +90,20 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
         });
 
         List<Course> otherCourses = new ArrayList<>(replacementCourses);
-        Log.d("Other Course", otherCourses.toString());
         List<List<Course>>allCourses = new ArrayList<>();
         for(int i = 0; i < RoadDocument.semesterNames.length;i++){
             List<Course> coursesForSemester = User.currentUser().getCurrentDocument().coursesForSemester(i);
             for(Course course : coursesForSemester){
-                for(Course course2 : otherCourses){
-                    if(course2.getSubjectID().equals(course.getSubjectID())){
+                for(int j = 0; j < otherCourses.size(); j++){
+                    Course course2 = otherCourses.get(j);
+                    if(course == course2 || course2.getSubjectID().equals(course.getSubjectID())){
                         otherCourses.remove(course2);
+                        j--;
                     }
                 }
-                Log.d("Other Course", course.getSubjectID());
             }
             allCourses.add(coursesForSemester);
         }
-        Log.d("Other Course", otherCourses.toString());
         allCourses.add(otherCourses);
         listAdapter.setCourses(allCourses);
         listAdapter.notifyDataSetChanged();

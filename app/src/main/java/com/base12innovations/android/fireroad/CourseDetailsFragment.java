@@ -465,6 +465,10 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             @Override public Activity getActivity(){
                 return CourseDetailsFragment.this.getActivity();
             }
+            @Override
+            public void updateRequirementStatus() {
+                Log.e("CourseDetailsFragment", "Requirement Status in Course Details Updated, which should not occur");
+            }
         };
         if (User.currentUser().getCurrentDocument() != null)
             requirement.computeRequirementStatus(User.currentUser().getCurrentDocument().coursesTakenBeforeCourse(course, maxSemester, true));

@@ -11,17 +11,13 @@ import java.util.List;
 public class ProgressAssertion {
     private String requirementKey;
     private List<String> subtitutions = new ArrayList<>();
-    private boolean ignore;
-    public ProgressAssertion(){
-
-    }
-    public ProgressAssertion(String s){
-
+    public ProgressAssertion(String s, List<String> subtitutions){
+        this.requirementKey = s;
+        this.subtitutions = subtitutions;
     }
     public ProgressAssertion(List<Course>courses){
-        ignore = courses == null || courses.isEmpty();
         subtitutions = new ArrayList<>();
-        if(!ignore){
+        if(courses.size()!=0){
             for(Course course : courses){
                 Log.d("ProgAssert",course.getSubjectID());
                 subtitutions.add(course.getSubjectID());
@@ -29,13 +25,13 @@ public class ProgressAssertion {
         }
     }
     public boolean getIgnore(){
-        return ignore;
+        return subtitutions==null || subtitutions.size()==0;
     }
     public List<String> getSubstitutions(){
         return subtitutions;
     }
     @Override
     public String toString(){
-        return "";
+        return (getIgnore()? "Ignoring " + requirementKey:"Substituting " + requirementKey+ " with " + subtitutions.toString() );
     }
 }

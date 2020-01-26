@@ -18,6 +18,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.CourseNavigatorDelegate;
 import com.base12innovations.android.fireroad.MyRoadFragment;
@@ -81,6 +82,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         void showDetails(Course course);
         void searchCourses(String searchTerm, EnumSet<CourseSearchEngine.Filter> filters);
         void showManualProgressSelector(RequirementsListStatement req);
+        void updateRequirementStatus();
         Activity getActivity();
     }
 
@@ -365,34 +367,72 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         });
     }
 
-    private void formatCourseCellFulfillmentIndicator(View courseThumbnail, RequirementsListStatement statement) {
+    private void formatCourseCellFulfillmentIndicator(final View courseThumbnail, final RequirementsListStatement statement) {
         statement.computeRequirementStatus(User.currentUser().getCurrentDocument().getCreditCourses());
         RequirementsListStatement.FulfillmentProgress progress = statement.getFulfillmentProgress();
         ProgressBar pBar = courseThumbnail.findViewById(R.id.requirementsProgressBar);
         ImageView warningIcon = courseThumbnail.findViewById(R.id.warningView);
         warningIcon.setVisibility(View.INVISIBLE);
         if (progress != null) {
-            if (progress.getProgress() == progress.getMax()) {
-                courseThumbnail.setAlpha(0.5f);
-            }else if (statement.isIgnored() || (statement.isOverriden())) {
+            if (statement.isIgnored() || (statement.isOverriden())) {
+                courseThumbnail.setBackgroundColor(Color.rgb(255,0,0));
                 if(statement.isIgnored() || statement.isSubstitutionsFulfilled()) {
                     courseThumbnail.setAlpha(0.5f);
                 }else{
                     courseThumbnail.setAlpha(1.0f);
                 }
-                ViewGroup.LayoutParams layoutParams = courseThumbnail.getLayoutParams();
-                if(layoutParams instanceof LinearLayout.LayoutParams){
-                    int width = ((LinearLayout.LayoutParams) layoutParams).width+4;
-                    int height = ((LinearLayout.LayoutParams) layoutParams).height+4;
-                    LinearLayout.LayoutParams layoutParams1 = new LinearLayout.LayoutParams(width,height);
-                    layoutParams1.setMargins(1,1,1,1);
-                    courseThumbnail.setLayoutParams(layoutParams1);
+                final TextView subjectIDLabel = (TextView)courseThumbnail.findViewById(R.id.subjectIDLabel);
+                final TextView subjectTitleLabel = (TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel);
+                if(statement.isIgnored()){
+                    subjectIDLabel.setText("Ignored");
+                    subjectTitleLabel.setText("");
+                }else{
+                    subjectIDLabel.setText("Substituted");
+                    ProgressAssertion progressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(statement.keyPath());
+                    List<String> courseID = progressAssertion.getSubstitutions();
+                    subjectTitleLabel.setText("with " + courseID.get(0) + ((courseID.size()>1)?" and "+ (courseID.size()-1)+" others":""));
                 }
                 if(statement.isOverriden()&&!statement.isSubstitutionsFulfilled()){
+                    warningIcon.bringToFront();
+                    View view = warningIcon;
+                    int counter = 0;
+                    while(view.getParent() instanceof ViewGroup && counter < 2){
+                        ViewGroup view2 = (ViewGroup)view.getParent();
+                        view2.setClipChildren(false);
+                        counter++;
+                        view = view2;
+                    }
                     warningIcon.setVisibility(View.VISIBLE);
+                }else{
+                    warningIcon.setVisibility(View.INVISIBLE);
                 }
-            }else {
-                courseThumbnail.setAlpha(1.0f);
+            }else{
+                if(statement.maximumNestDepth() == 0) {
+                    final TextView subjectIDLabel = (TextView)courseThumbnail.findViewById(R.id.subjectIDLabel);
+                    final TextView subjectTitleLabel = (TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel);
+                    subjectIDLabel.setText(statement.requirement);
+                    subjectTitleLabel.setText("");
+                    TaskDispatcher.perform(new TaskDispatcher.Task<Course>() {
+                        @Override
+                        public Course perform(){
+                            return CourseManager.sharedInstance().getSubjectByID(statement.requirement);
+                        }
+                    }, new TaskDispatcher.CompletionBlock<Course>() {
+                        @Override
+                        public void completed(Course arg) {
+                            if (arg != null) {
+                                subjectTitleLabel.setText(arg.subjectTitle);
+                            }
+                        }
+                    });
+                }
+                courseThumbnail.setBackgroundColor(Color.TRANSPARENT);
+                warningIcon.setVisibility(View.INVISIBLE);
+                if (progress.getProgress() == progress.getMax()) {
+                    courseThumbnail.setAlpha(0.5f);
+                }else {
+                    courseThumbnail.setAlpha(1.0f);
+                }
             }
 
             if (progress.getMax() != 1) {
@@ -419,53 +459,55 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
             public void completed(Boolean arg) {
                 if (arg) {
                     // It's a real course, show details
-                    /*
-                    if (delegate != null) {
-                        delegate.showDetails(course);
-                        //delegate.courseNavigatorWantsCourseDetails(RequirementsListFragment.this, course);
-                    }*/
-                    if(delegate != null) {
-                        currentlySelectedCourse = course;
-                        currentlySelectedRequirement = req;
-                        final PopupMenu menu = new PopupMenu(delegate.getActivity(),thumbnail);
-                        MenuInflater mInflater = menu.getMenuInflater();
-                        mInflater.inflate(R.menu.menu_course_requirements_cell, menu.getMenu());
+                    if(singleCard) {
+                        if (delegate != null) {
+                            delegate.showDetails(course);
+                            //delegate.courseNavigatorWantsCourseDetails(RequirementsListFragment.this, course);
+                        }
+                    }else {
+                        if (delegate != null) {
+                            currentlySelectedCourse = course;
+                            currentlySelectedRequirement = req;
+                            final PopupMenu menu = new PopupMenu(delegate.getActivity(), thumbnail);
+                            MenuInflater mInflater = menu.getMenuInflater();
+                            mInflater.inflate(R.menu.menu_course_requirements_cell, menu.getMenu());
 
-                        final MenuItem owOn = menu.getMenu().findItem(R.id.overrideOn);
-                        final MenuItem owOff = menu.getMenu().findItem(R.id.overrideOff);
-                        final MenuItem owInfo = menu.getMenu().findItem(R.id.viewOverride);
-                        final MenuItem igOn = menu.getMenu().findItem(R.id.ignoreRequirement);
-                        final MenuItem igOff = menu.getMenu().findItem(R.id.undoIgnoreRequirement);
-                        menu.getMenu().findItem(R.id.viewCourse).setVisible(course.isPublic);
-                        menu.getMenu().findItem(R.id.addCourse).setVisible(course.isPublic);
-                        owOn.setVisible(course.isPublic);
-                        owOff.setVisible(course.isPublic);
-                        owInfo.setVisible(course.isPublic);
-                        igOn.setVisible(course.isPublic);
-                        igOff.setVisible(course.isPublic);
+                            final MenuItem owOn = menu.getMenu().findItem(R.id.overrideOn);
+                            final MenuItem owOff = menu.getMenu().findItem(R.id.overrideOff);
+                            final MenuItem owInfo = menu.getMenu().findItem(R.id.viewOverride);
+                            final MenuItem igOn = menu.getMenu().findItem(R.id.ignoreRequirement);
+                            final MenuItem igOff = menu.getMenu().findItem(R.id.undoIgnoreRequirement);
+                            menu.getMenu().findItem(R.id.viewCourse).setVisible(course.isPublic);
+                            menu.getMenu().findItem(R.id.addCourse).setVisible(course.isPublic);
+                            owOn.setVisible(course.isPublic);
+                            owOff.setVisible(course.isPublic);
+                            owInfo.setVisible(course.isPublic);
+                            igOn.setVisible(course.isPublic);
+                            igOff.setVisible(course.isPublic);
 
 
-                        if(course.isPublic){
-                            ProgressAssertion userProgressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(req.keyPath());
-                            boolean overrideStatus = userProgressAssertion != null;
-                            if(overrideStatus){
-                                igOn.setVisible(false);
-                                owOn.setVisible(false);
-                                if(userProgressAssertion.getIgnore()) {
+                            if (course.isPublic) {
+                                ProgressAssertion userProgressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(req.keyPath());
+                                boolean overrideStatus = userProgressAssertion != null;
+                                if (overrideStatus) {
+                                    igOn.setVisible(false);
+                                    owOn.setVisible(false);
+                                    if (userProgressAssertion.getIgnore()) {
+                                        owOff.setVisible(false);
+                                        owInfo.setVisible(false);
+                                    } else {
+                                        igOff.setVisible(false);
+                                    }
+                                } else {
                                     owOff.setVisible(false);
                                     owInfo.setVisible(false);
-                                }else {
                                     igOff.setVisible(false);
                                 }
-                            }else{
-                                owOff.setVisible(false);
-                                owInfo.setVisible(false);
-                                igOff.setVisible(false);
                             }
+                            menu.setOnMenuItemClickListener(RequirementsListDisplay.this);
+                            menu.show();
+                            currentPopupMenu = menu;
                         }
-                        menu.setOnMenuItemClickListener(RequirementsListDisplay.this);
-                        menu.show();
-                        currentPopupMenu = menu;
                     }
                 } else if (req.isPlainString) {
                     // Show progress selector
@@ -564,11 +606,11 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                 return true;
             case R.id.ignoreRequirement:
                 User.currentUser().getCurrentDocument().setProgressOverride(currentlySelectedRequirement.keyPath(),new ProgressAssertion(new ArrayList<Course>() {}));
-                updateRequirementsDisplay(currentlySelectedRequirement);
+                delegate.updateRequirementStatus();
                 return true;
             case R.id.undoIgnoreRequirement:
                 User.currentUser().getCurrentDocument().removeProgressOverride(currentlySelectedRequirement.keyPath());
-                updateRequirementsDisplay(currentlySelectedRequirement);
+                delegate.updateRequirementStatus();
                 return true;
             default:
                 return false;
@@ -626,7 +668,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         }else{
             User.currentUser().getCurrentDocument().removeProgressOverride(currentlySelectedRequirement.keyPath());
         }
-        updateRequirementsDisplay(currentlySelectedRequirement);
+        delegate.updateRequirementStatus();
         requirementsOverrideDialog.dismiss();
         requirementsOverrideDialog = null;
     }

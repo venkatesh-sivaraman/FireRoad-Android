@@ -135,6 +135,10 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
             @Override public Activity getActivity(){
                 return RequirementsListFragment.this.getActivity();
             }
+            @Override
+            public void updateRequirementStatus() {
+                RequirementsListFragment.this.updateRequirementStatus();
+            }
         };
 
         if (requirementsList.title != null && requirementsList.title.length() > 0) {

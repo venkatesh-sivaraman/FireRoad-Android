@@ -160,7 +160,7 @@ public class RoadDocument extends Document {
 
     @Override
     public void parse(String contents) {
-
+        Log.d("Test",contents);
         try {
             JSONObject json = new JSONObject(contents);
 
@@ -225,12 +225,17 @@ public class RoadDocument extends Document {
                 while (it.hasNext()) {
                     String key = it.next();
                     //progressOverrides.put(key, reqOverrides.getInt(key));
-                    progressOverrides.put(key, new ProgressAssertion(reqOverrides.getString(key)));
+                    JSONArray reqOverride = (reqOverrides.getJSONArray(key));
+                    List<String> substitutionCourseIDs = new ArrayList<>();
+                    for(int i = 0; i < reqOverride.length(); i++){
+                        substitutionCourseIDs.add(reqOverride.getString(i));
+                    }
+                    Log.d("ProgressOverride", key + ":" + substitutionCourseIDs.toString());
+                    progressOverrides.put(key,new ProgressAssertion(key,substitutionCourseIDs));
                 }
             } else if (progressOverrides.size() == 0) {
                 progressOverrides.putAll(CourseManager.sharedInstance().getAllProgressOverrides());
             }
-
         } catch (JSONException e) {
             Log.d("JSON Error", String.format(Locale.US, "Invalid JSON: %s", contents));
             e.printStackTrace();
@@ -271,10 +276,18 @@ public class RoadDocument extends Document {
 
             JSONObject reqOverrides = new JSONObject();
             for (String keyPath: progressOverrides.keySet()) {
-                reqOverrides.put(keyPath, progressOverrides.get(keyPath));
+                JSONArray reqOverride = new JSONArray();
+                List<String> substitutions = progressOverrides.get(keyPath).getSubstitutions();
+                if(substitutions!=null) {
+                    for (String courseID : substitutions) {
+                        Log.d("ProgressOverrideContent", keyPath+":"+courseID);
+                        reqOverride.put(courseID);
+                    }
+                }
+                reqOverrides.put(keyPath,reqOverride);
             }
             parentObject.put(RoadJSON.progressOverrides, reqOverrides);
-
+            Log.d("Test",parentObject.toString());
             return parentObject.toString();
 
         } catch (JSONException e) {
