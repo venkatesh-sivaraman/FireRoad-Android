@@ -247,6 +247,29 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         }
     }
 
+    private void updateRequirementsDisplayBottomUp(RequirementsListStatement statement){
+        if(headerCells == null || courseListCells  == null ) return;
+        if(headerCells.containsKey(statement)){
+            getLayoutBuilder().updateSubHeaderProgress(headerCells.get(statement),statement.percentageFulfilled());
+        }
+        if(courseListCells.containsKey(statement)){
+            formatCourseCellFulfillmentIndicator(courseListCells.get(statement),statement);
+        }
+        if(statement.parent != null && statement.parent.get() != null){
+            updateRequirementsDisplayBottomUp(statement.parent.get());
+        }
+    }
+
+    private void updateRequirementsStatusBottomUp(RequirementsListStatement statement){
+        if (requirementsList != null) {
+            if (User.currentUser().getCurrentDocument() != null) {
+                requirementsList.setCurrentDoc(User.currentUser().getCurrentDocument());
+                requirementsList.computeRequirementStatus(User.currentUser().getCurrentDocument().getCreditCourses());
+            }
+            updateRequirementsDisplayBottomUp(statement);
+        }
+    }
+
     private void addCard(final LinearLayout layout, List<PresentationItem> items, int rowIndex, View.OnClickListener nestedListener) {
         LinearLayout card = getLayoutBuilder().addCard(layout, rowIndex, nestedListener);
 
@@ -368,11 +391,10 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
     }
 
     private void formatCourseCellFulfillmentIndicator(final View courseThumbnail, final RequirementsListStatement statement) {
-        statement.computeRequirementStatus(User.currentUser().getCurrentDocument().getCreditCourses());
+        //statement.computeRequirementStatus(User.currentUser().getCurrentDocument().getCreditCourses());
         RequirementsListStatement.FulfillmentProgress progress = statement.getFulfillmentProgress();
         ProgressBar pBar = courseThumbnail.findViewById(R.id.requirementsProgressBar);
         ImageView warningIcon = courseThumbnail.findViewById(R.id.warningView);
-        warningIcon.setVisibility(View.INVISIBLE);
         if (progress != null) {
             if (statement.isIgnored() || (statement.isOverriden())) {
                 courseThumbnail.setBackgroundColor(Color.rgb(255,0,0));
@@ -407,7 +429,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                     warningIcon.setVisibility(View.INVISIBLE);
                 }
             }else{
-                if(statement.maximumNestDepth() == 0) {
+                if(statement.requirement != null) {
                     final TextView subjectIDLabel = (TextView)courseThumbnail.findViewById(R.id.subjectIDLabel);
                     final TextView subjectTitleLabel = (TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel);
                     subjectIDLabel.setText(statement.requirement);
@@ -434,7 +456,6 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                     courseThumbnail.setAlpha(1.0f);
                 }
             }
-
             if (progress.getMax() != 1) {
                 pBar.setVisibility(View.VISIBLE);
                 pBar.setMax(progress.getMax());
@@ -606,11 +627,23 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                 return true;
             case R.id.ignoreRequirement:
                 User.currentUser().getCurrentDocument().setProgressOverride(currentlySelectedRequirement.keyPath(),new ProgressAssertion(new ArrayList<Course>() {}));
-                delegate.updateRequirementStatus();
+                TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                    @Override
+                    public void perform() {
+                        //delegate.updateRequirementStatus();
+                        updateRequirementsStatusBottomUp(currentlySelectedRequirement);
+                    }
+                });
                 return true;
             case R.id.undoIgnoreRequirement:
                 User.currentUser().getCurrentDocument().removeProgressOverride(currentlySelectedRequirement.keyPath());
-                delegate.updateRequirementStatus();
+                TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+                    @Override
+                    public void perform() {
+                        //delegate.updateRequirementStatus();
+                        updateRequirementsStatusBottomUp(currentlySelectedRequirement);
+                    }
+                });
                 return true;
             default:
                 return false;
@@ -668,7 +701,8 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         }else{
             User.currentUser().getCurrentDocument().removeProgressOverride(currentlySelectedRequirement.keyPath());
         }
-        delegate.updateRequirementStatus();
+        //delegate.updateRequirementStatus();
+        updateRequirementsStatusBottomUp(currentlySelectedRequirement);
         requirementsOverrideDialog.dismiss();
         requirementsOverrideDialog = null;
     }

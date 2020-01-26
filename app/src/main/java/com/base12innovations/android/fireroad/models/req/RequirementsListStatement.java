@@ -837,7 +837,6 @@ public class RequirementsListStatement {
         subjectProgress = ceilingThreshold(subjectProgress.progress, subjectProgress.max);
         unitProgress = ceilingThreshold(unitProgress.progress, unitProgress.max);
         fulfillmentProgress = (threshold != null && threshold.criterion == ThresholdCriterion.UNITS) ? unitProgress : subjectProgress;
-
         return totalSat;
     }
 
