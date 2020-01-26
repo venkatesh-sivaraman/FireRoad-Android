@@ -701,8 +701,13 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         }else{
             User.currentUser().getCurrentDocument().removeProgressOverride(currentlySelectedRequirement.keyPath());
         }
-        //delegate.updateRequirementStatus();
-        updateRequirementsStatusBottomUp(currentlySelectedRequirement);
+        TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
+            @Override
+            public void perform() {
+                //delegate.updateRequirementStatus();
+                updateRequirementsStatusBottomUp(currentlySelectedRequirement);
+            }
+        });
         requirementsOverrideDialog.dismiss();
         requirementsOverrideDialog = null;
     }
