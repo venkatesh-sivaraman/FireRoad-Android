@@ -322,7 +322,8 @@ public class CourseLayoutBuilder {
         ((GradientDrawable)constraintlayout.getBackground()).setColor(color);
         constraintlayout.setElevation(elevation);
         courseThumbnail.setPadding(8,8,8,8);
-        ((TextView) courseThumbnail.findViewById(R.id.subjectIDLabel)).setText(course.getSubjectID());
+        TextView subjectIDTextView = courseThumbnail.findViewById(R.id.subjectIDLabel);
+        subjectIDTextView.setText(course.getSubjectID());
         ((TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel)).setText(course.subjectTitle);
 
         courseThumbnail.setOnClickListener(clickListener);

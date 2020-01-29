@@ -37,18 +37,16 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
     public interface RequirementsOverrideDialogDelegate{
         void requirementsOverrideDialogDismissed();
         void requirementsOverrideDialogEditOverride(boolean overridden, List<Course> courses);
-        void requirementsOverrideDialogCourseClicked(Course course);
     }
 
     public RequirementsListStatement req;
     public ProgressAssertion progressAssertion;
     public RequirementsOverrideDialogDelegate delegate;
-    public boolean overriding;
+    public boolean isEditing;
     public List<Course> replacementCourses;
 
     private WeakReference<AlertDialog> alertDialogWeakReference;
 
-    private Switch switchOverride;
     private RecyclerView recyclerView;
     private SelectCoursesAdapter listAdapter;
 
@@ -79,7 +77,7 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(listAdapter);
 
-        switchOverride = view.findViewById(R.id.switchOverride);
+        /*switchOverride = view.findViewById(R.id.switchOverride);
         switchOverride.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -87,7 +85,7 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
                 recyclerView.setEnabled(overriding);
                 verifyValidOverride();
             }
-        });
+        });*/
 
         List<Course> otherCourses = new ArrayList<>(replacementCourses);
         List<List<Course>>allCourses = new ArrayList<>();
@@ -108,18 +106,16 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
         listAdapter.setCourses(allCourses);
         listAdapter.notifyDataSetChanged();
 
-        switchOverride.setChecked(overriding);
-
-        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton(isEditing?"Cancel Edits":"Cancel Override", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 delegate.requirementsOverrideDialogDismissed();
             }
         });
-        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(isEditing?"Confirm Edits":"Confirm Override", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                delegate.requirementsOverrideDialogEditOverride(overriding,getCourses());
+                delegate.requirementsOverrideDialogEditOverride(true,getCourses());
             }
         });
         AlertDialog dialog = builder.create();
@@ -135,20 +131,12 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
 
     public void verifyValidOverride(){
         if(alertDialogWeakReference != null && alertDialogWeakReference.get() != null && alertDialogWeakReference.get().getButton(AlertDialog.BUTTON_POSITIVE)!=null) {
-            if (!overriding || (overriding && !replacementCourses.isEmpty())) {
-                alertDialogWeakReference.get().getButton(AlertDialog.BUTTON_POSITIVE).setVisibility(View.VISIBLE);
-            } else {
-                alertDialogWeakReference.get().getButton(AlertDialog.BUTTON_POSITIVE).setVisibility(View.INVISIBLE);
-            }
+            alertDialogWeakReference.get().getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(!replacementCourses.isEmpty());
         }
     }
 
     public List<Course> getCourses(){
         return replacementCourses;
-    }
-    @Override
-    public void selectCourseClickedCourse(Course selectedCourse){
-        //delegate.requirementsOverrideDialogCourseClicked(selectedCourse);
     }
     @Override
     public void selectCourseAddCourse(Course selectedCourse){

@@ -2,35 +2,24 @@ package com.base12innovations.android.fireroad.utils;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.PorterDuff;
-import android.os.Handler;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.base12innovations.android.fireroad.CourseNavigatorDelegate;
-import com.base12innovations.android.fireroad.MyRoadFragment;
 import com.base12innovations.android.fireroad.R;
-import com.base12innovations.android.fireroad.RequirementsListFragment;
-import com.base12innovations.android.fireroad.dialog.MarkerDialogFragment;
 import com.base12innovations.android.fireroad.dialog.RequirementsOverrideDialog;
-import com.base12innovations.android.fireroad.models.course.ColorManager;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
-import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.models.req.ProgressAssertion;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
@@ -82,7 +71,6 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         void showDetails(Course course);
         void searchCourses(String searchTerm, EnumSet<CourseSearchEngine.Filter> filters);
         void showManualProgressSelector(RequirementsListStatement req);
-        void updateRequirementStatus();
         Activity getActivity();
     }
 
@@ -417,10 +405,12 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                 }
                 final TextView subjectIDLabel = (TextView)courseThumbnail.findViewById(R.id.subjectIDLabel);
                 final TextView subjectTitleLabel = (TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel);
+                subjectIDLabel.setTextSize(21);
                 if(statement.isIgnored()){
+                    subjectTitleLabel.setText(subjectIDLabel.getText());
                     subjectIDLabel.setText("Ignored");
-                    subjectTitleLabel.setText("");
                 }else{
+                    subjectIDLabel.setTextSize(20.7f);
                     subjectIDLabel.setText("Substituted");
                     ProgressAssertion progressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(statement.keyPath());
                     List<String> courseID = progressAssertion.getSubstitutions();
@@ -442,8 +432,9 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                 }
             }else{
                 if(statement.requirement != null) {
-                    final TextView subjectIDLabel = (TextView)courseThumbnail.findViewById(R.id.subjectIDLabel);
-                    final TextView subjectTitleLabel = (TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel);
+                    final TextView subjectIDLabel = courseThumbnail.findViewById(R.id.subjectIDLabel);
+                    final TextView subjectTitleLabel = courseThumbnail.findViewById(R.id.subjectTitleLabel);
+                    subjectIDLabel.setTextSize(21);
                     subjectIDLabel.setText(statement.requirement);
                     subjectTitleLabel.setText("");
                     TaskDispatcher.perform(new TaskDispatcher.Task<Course>() {
@@ -543,9 +534,34 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                         }
                     }
                 } else if (req.isPlainString) {
-                    // Show progress selector
-                    if (delegate != null)
-                        delegate.showManualProgressSelector(req);
+                    // Show progress selector (deprecated)
+                    //if (delegate != null)
+                    //    delegate.showManualProgressSelector(req);
+
+                    // Show progress override dialog
+                    currentlySelectedCourse = null;
+                    currentlySelectedRequirement = req;
+                    if(User.currentUser().getCurrentDocument().getProgressOverride(req.keyPath())!=null){
+                        final PopupMenu menu = new PopupMenu(delegate.getActivity(),thumbnail);
+
+                        MenuInflater mInflater = menu.getMenuInflater();
+                        mInflater.inflate(R.menu.menu_course_requirements_cell, menu.getMenu());
+
+                        menu.getMenu().findItem(R.id.overrideOn).setVisible(false);
+                        final MenuItem owOff = menu.getMenu().findItem(R.id.overrideOff);
+                        final MenuItem owInfo = menu.getMenu().findItem(R.id.viewOverride);
+                        menu.getMenu().findItem(R.id.ignoreRequirement).setVisible(false);
+                        menu.getMenu().findItem(R.id.undoIgnoreRequirement).setVisible(false);
+                        menu.getMenu().findItem(R.id.viewCourse).setVisible(false);
+                        menu.getMenu().findItem(R.id.addCourse).setVisible(false);
+                        owOff.setVisible(course.isPublic);
+                        owInfo.setVisible(course.isPublic);
+                        menu.setOnMenuItemClickListener(RequirementsListDisplay.this);
+                        menu.show();
+                        currentPopupMenu = menu;
+                    }else {
+                        initializeRequirementsOverrideDialog(false);
+                    }
                 } else if (req.requirement != null) {
                     // Search
                     String reqString = req.requirement.replaceAll("GIR:", "");
@@ -629,16 +645,11 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                 delegate.addCourse(currentlySelectedCourse);
                 return true;
             case R.id.overrideOn:
-                initializeRequirementsOverrideDialog(true,true);
+                initializeRequirementsOverrideDialog(false);
                 return true;
             case R.id.overrideOff:
-                initializeRequirementsOverrideDialog(true, false);
-                return true;
-            case R.id.viewOverride:
-                initializeRequirementsOverrideDialog(false,true);
-                return true;
-            case R.id.ignoreRequirement:
-                User.currentUser().getCurrentDocument().setProgressOverride(currentlySelectedRequirement.keyPath(),new ProgressAssertion(new ArrayList<Course>() {}));
+            case R.id.undoIgnoreRequirement:
+                User.currentUser().getCurrentDocument().removeProgressOverride(currentlySelectedRequirement.keyPath());
                 TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
                     @Override
                     public void perform() {
@@ -647,8 +658,11 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                     }
                 });
                 return true;
-            case R.id.undoIgnoreRequirement:
-                User.currentUser().getCurrentDocument().removeProgressOverride(currentlySelectedRequirement.keyPath());
+            case R.id.viewOverride:
+                initializeRequirementsOverrideDialog(true);
+                return true;
+            case R.id.ignoreRequirement:
+                User.currentUser().getCurrentDocument().setProgressOverride(currentlySelectedRequirement.keyPath(),new ProgressAssertion(new ArrayList<Course>() {}));
                 TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
                     @Override
                     public void perform() {
@@ -662,17 +676,13 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         }
     }
 
-    private void initializeRequirementsOverrideDialog(boolean changing, boolean overriding){
+    private void initializeRequirementsOverrideDialog(boolean isEditing){
         requirementsOverrideDialog = new RequirementsOverrideDialog();
         requirementsOverrideDialog.delegate= this;
         requirementsOverrideDialog.req = currentlySelectedRequirement;
         final ProgressAssertion progressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(currentlySelectedRequirement.keyPath());
-        if(changing) {
-            requirementsOverrideDialog.overriding = overriding;
-        }else{
-            requirementsOverrideDialog.overriding = (progressAssertion != null);
-        }
         requirementsOverrideDialog.replacementCourses = new ArrayList<>();
+        requirementsOverrideDialog.isEditing = isEditing;
         TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
             @Override
             public Void perform() {
@@ -722,9 +732,5 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         });
         requirementsOverrideDialog.dismiss();
         requirementsOverrideDialog = null;
-    }
-    @Override
-    public void requirementsOverrideDialogCourseClicked(Course selectedCourse){
-        this.delegate.showDetails(selectedCourse);
     }
 }

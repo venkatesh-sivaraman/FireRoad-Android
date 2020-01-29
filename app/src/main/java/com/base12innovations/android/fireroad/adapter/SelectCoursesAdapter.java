@@ -24,7 +24,6 @@ import java.util.Locale;
 public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdapter.ViewHolder> {
 
     public interface Delegate{
-        void selectCourseClickedCourse(Course selectedCourse);
         void selectCourseAddCourse(Course selectedCourse);
         void selectCourseRemoveCourse(Course selectedCourse);
         boolean selectCourseIsSelected(Course selectedCourse);
@@ -82,21 +81,13 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
                 double courseHours = course.inClassHours + course.outOfClassHours;
                 hours += (course.getQuarterOffered() != null && course.getQuarterOffered() != Course.QuarterOffered.WholeSemester) ? courseHours * 0.5 : courseHours;
             }
-            ((TextView) view.findViewById(R.id.hoursTextView)).setText(String.format(Locale.US, "%d units, %.1f hours", units, hours));
+            //((TextView) view.findViewById(R.id.hoursTextView)).setText(String.format(Locale.US, "%d units, %.1f hours", units, hours));
             view.findViewById(R.id.moreButton).setVisibility(View.INVISIBLE);
         }else {
             final Course course = courses.get(semesters.get(i)).get(courseIndices.get(i));
             ((TextView) view.findViewById(R.id.subjectIDLabel)).setText(course.getSubjectID());
             ((TextView) view.findViewById(R.id.subjectTitleLabel)).setText(course.subjectTitle);
             view.findViewById(R.id.colorCodingView).setBackgroundColor(ColorManager.colorForCourse(course, 0xFF));
-            view.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (delegate.get() != null) {
-                        delegate.get().selectCourseClickedCourse(course);
-                    }
-                }
-            });
             CheckBox checkBox = view.findViewById(R.id.checkCourse);
             if(delegate != null && delegate.get().selectCourseIsSelected(course)){
                 checkBox.setChecked(true);
