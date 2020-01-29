@@ -398,7 +398,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         if (progress != null) {
             if (statement.isIgnored() || (statement.isOverriden())) {
                 courseThumbnail.setBackgroundColor(Color.rgb(255,0,0));
-                if(statement.isIgnored() || statement.isSubstitutionsFulfilled()) {
+                if(statement.isOverriden() && statement.isSubstitutionsFulfilled()) {
                     courseThumbnail.setAlpha(0.5f);
                 }else{
                     courseThumbnail.setAlpha(1.0f);
@@ -635,6 +635,9 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
 
     @Override
     public boolean onMenuItemClick(MenuItem menuItem) {
+        if(currentPopupMenu == null){
+            return true;
+        }
         currentPopupMenu.dismiss();
         currentPopupMenu = null;
         switch (menuItem.getItemId()) {

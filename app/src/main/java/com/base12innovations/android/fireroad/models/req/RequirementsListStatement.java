@@ -621,8 +621,8 @@ public class RequirementsListStatement {
                 isIgnored = true;
                 isOverriden = false;
                 substitutionsFulfilled = false;
-                subjectProgress = ceilingThreshold(1,1);
-                isFulfilled = true;
+                subjectProgress = ceilingThreshold(0,1);
+                isFulfilled = false;
                 TaskDispatcher.perform(new TaskDispatcher.Task<Course>() {
                     @Override
                     public Course perform() {
@@ -631,7 +631,7 @@ public class RequirementsListStatement {
                 }, new TaskDispatcher.CompletionBlock<Course>() {
                     @Override
                     public void completed(Course arg) {
-                        unitProgress = ceilingThreshold(arg.totalUnits,arg.totalUnits);
+                        unitProgress = ceilingThreshold(0,arg.totalUnits);
                     }
                 });
                 fulfillmentProgress = subjectProgress;
