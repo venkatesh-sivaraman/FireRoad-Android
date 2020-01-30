@@ -405,7 +405,9 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                 final TextView subjectIDLabel = (TextView)courseThumbnail.findViewById(R.id.subjectIDLabel);
                 final TextView subjectTitleLabel = (TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel);
                 if(statement.isIgnored()){
-                    subjectTitleLabel.setText(subjectIDLabel.getText());
+                    if(!subjectIDLabel.getText().toString().trim().equals("")){
+                        subjectTitleLabel.setText(subjectIDLabel.getText());
+                    }
                     subjectIDLabel.setText("Ignored");
                 }else{
                     subjectIDLabel.setText("Substituted");
