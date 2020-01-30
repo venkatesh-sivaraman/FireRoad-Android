@@ -12,6 +12,8 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.Switch;
@@ -123,6 +125,8 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
         dialog.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
             public void onShow(DialogInterface dialog) {
+                alertDialogWeakReference.get().getButton(DialogInterface.BUTTON_POSITIVE).setTextScaleX(0.9f);
+                alertDialogWeakReference.get().getButton(DialogInterface.BUTTON_NEGATIVE).setTextScaleX(0.9f);
                 verifyValidOverride();
             }
         });

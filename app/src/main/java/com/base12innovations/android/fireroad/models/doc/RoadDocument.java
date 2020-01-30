@@ -160,7 +160,6 @@ public class RoadDocument extends Document {
 
     @Override
     public void parse(String contents) {
-        Log.d("Test",contents);
         try {
             JSONObject json = new JSONObject(contents);
 
@@ -230,7 +229,6 @@ public class RoadDocument extends Document {
                     for(int i = 0; i < reqOverride.length(); i++){
                         substitutionCourseIDs.add(reqOverride.getString(i));
                     }
-                    Log.d("ProgressOverride", key + ":" + substitutionCourseIDs.toString());
                     progressOverrides.put(key,new ProgressAssertion(key,substitutionCourseIDs));
                 }
             } else if (progressOverrides.size() == 0) {
@@ -280,14 +278,12 @@ public class RoadDocument extends Document {
                 List<String> substitutions = progressOverrides.get(keyPath).getSubstitutions();
                 if(substitutions!=null) {
                     for (String courseID : substitutions) {
-                        Log.d("ProgressOverrideContent", keyPath+":"+courseID);
                         reqOverride.put(courseID);
                     }
                 }
                 reqOverrides.put(keyPath,reqOverride);
             }
             parentObject.put(RoadJSON.progressOverrides, reqOverrides);
-            Log.d("Test",parentObject.toString());
             return parentObject.toString();
 
         } catch (JSONException e) {
