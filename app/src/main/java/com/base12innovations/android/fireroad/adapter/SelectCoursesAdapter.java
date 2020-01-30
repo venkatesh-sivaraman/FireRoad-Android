@@ -1,14 +1,21 @@
 package com.base12innovations.android.fireroad.adapter;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
+import android.support.constraint.ConstraintSet;
 import android.support.v7.widget.RecyclerView;
+import android.text.Layout;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.R;
@@ -57,9 +64,11 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
         final LayoutInflater layoutInflater = LayoutInflater.from(viewGroup.getContext());
         View convertView;
         if(courseIndices.get(i) == -1){
-            convertView=layoutInflater.inflate(R.layout.header_myroad,viewGroup,false);
+            convertView=layoutInflater.inflate(R.layout.header_select_course,viewGroup,false);
+            convertView.setBackgroundColor(Color.rgb(250,250,250));
         }else {
             convertView=layoutInflater.inflate(R.layout.cell_select_course, viewGroup, false);
+            convertView.setBackgroundColor(Color.rgb(250,250,250));
         }
         ViewHolder vh = new ViewHolder(convertView);
         return vh;
@@ -69,10 +78,13 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
         final View view = viewHolder.cellView;
         if(courseIndices.get(i) == -1){
+            //((View)view.findViewById(R.id.selectCourseHeaderTextView).getParent()).setBackgroundColor(Color.rgb(240,240,240));
+            view.findViewById(R.id.selectCourseHeaderTextView).setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            view.findViewById(R.id.selectCourseColorCodingView).setBackgroundColor(Color.rgb(128,128,128));
             if(semesters.get(i) == RoadDocument.semesterNames.length){
-                ((TextView) view.findViewById(R.id.headerTextView)).setText(String.format(Locale.US,"Other Courses"));
+                ((TextView) view.findViewById(R.id.selectCourseHeaderTextView)).setText(String.format(Locale.US,"Other Courses"));
             }else {
-                ((TextView) view.findViewById(R.id.headerTextView)).setText(RoadDocument.semesterNames[semesters.get(i)]);
+                ((TextView) view.findViewById(R.id.selectCourseHeaderTextView)).setText(RoadDocument.semesterNames[semesters.get(i)]);
             }
             int units = 0;
             double hours = 0.0;
@@ -81,8 +93,6 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
                 double courseHours = course.inClassHours + course.outOfClassHours;
                 hours += (course.getQuarterOffered() != null && course.getQuarterOffered() != Course.QuarterOffered.WholeSemester) ? courseHours * 0.5 : courseHours;
             }
-            //((TextView) view.findViewById(R.id.hoursTextView)).setText(String.format(Locale.US, "%d units, %.1f hours", units, hours));
-            view.findViewById(R.id.moreButton).setVisibility(View.INVISIBLE);
         }else {
             final Course course = courses.get(semesters.get(i)).get(courseIndices.get(i));
             ((TextView) view.findViewById(R.id.subjectIDLabel)).setText(course.getSubjectID());
