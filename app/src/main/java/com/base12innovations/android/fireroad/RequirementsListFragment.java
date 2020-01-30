@@ -1,5 +1,6 @@
 package com.base12innovations.android.fireroad;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -130,6 +131,9 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
             }
             @Override public void showManualProgressSelector(RequirementsListStatement req) {
                 RequirementsListFragment.this.showManualProgressSelector(req);
+            }
+            @Override public Activity getActivity(){
+                return RequirementsListFragment.this.getActivity();
             }
         };
 
