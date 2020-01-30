@@ -70,7 +70,7 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
         builder.setView(view);
 
         TextView titleText = view.findViewById(R.id.titleText);
-        titleText.setText(String.format("Override %s", req.requirement));
+        titleText.setText(String.format("Substitute course(s) for %s", req.requirement));
 
         recyclerView = view.findViewById(R.id.recyclerViewCourses);
         listAdapter = new SelectCoursesAdapter(getContext(),null);
