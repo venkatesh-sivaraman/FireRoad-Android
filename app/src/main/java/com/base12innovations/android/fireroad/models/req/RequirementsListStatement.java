@@ -503,8 +503,6 @@ public class RequirementsListStatement {
 
     private boolean isOverriden = false;
     public boolean isOverriden(){return isOverriden;}
-    private boolean substitutionsFulfilled =false;
-    public boolean isSubstitutionsFulfilled(){return substitutionsFulfilled;}
 
     private FulfillmentProgress fulfillmentProgress;
     private FulfillmentProgress subjectProgress;
@@ -620,22 +618,10 @@ public class RequirementsListStatement {
             if(progressAssertion.getIgnore()){
                 isIgnored = true;
                 isOverriden = false;
-                substitutionsFulfilled = false;
-                subjectProgress = ceilingThreshold(0,1);
+                subjectProgress = ceilingThreshold(0,0);
                 isFulfilled = false;
-                TaskDispatcher.perform(new TaskDispatcher.Task<Course>() {
-                    @Override
-                    public Course perform() {
-                        return CourseManager.sharedInstance().getSubjectByID(requirement);
-                    }
-                }, new TaskDispatcher.CompletionBlock<Course>() {
-                    @Override
-                    public void completed(Course arg) {
-                        unitProgress = ceilingThreshold(0,arg.totalUnits);
-                    }
-                });
+                unitProgress = ceilingThreshold(0,0);
                 fulfillmentProgress = subjectProgress;
-                courseSet.add(new Course());
                 coursesSatisfyingRequirementSet = courseSet;
                 return courseSet;
             }else {
@@ -663,8 +649,7 @@ public class RequirementsListStatement {
                         unitProgress = ceilingThreshold(totalUnitsInCourses(courseSet),arg);
                     }
                 });
-                substitutionsFulfilled = (numCoursesInSubstitutions >= substitutions.size());
-                isFulfilled = substitutionsFulfilled;
+                isFulfilled = (numCoursesInSubstitutions >= substitutions.size());
                 subjectProgress = ceilingThreshold(numCoursesInSubstitutions,substitutions.size());
                 fulfillmentProgress = subjectProgress;
                 coursesSatisfyingRequirementSet = courseSet;
@@ -673,7 +658,6 @@ public class RequirementsListStatement {
         }else{
             isIgnored = false;
             isOverriden = false;
-            substitutionsFulfilled =false;
         }
         if (requirement != null) {
             // It's a basic requirement
@@ -731,19 +715,23 @@ public class RequirementsListStatement {
 
         if (requirements == null) return new HashSet<>();
         // It's a compound requirement
-
+        List<RequirementsListStatement> openRequirements = new ArrayList<>();
         Map<RequirementsListStatement, Set<Course>> satByCategory = new HashMap<>();
         Set<Course> totalSat = new HashSet<>();
         int numReqsSatisfied = 0;
         int numCoursesSatisfied = 0;
         for (RequirementsListStatement req : requirements) {
             Set<Course> sat;
-            if(checkChildren || req.coursesSatisfyingRequirementSet == null){
-                sat=req.computeRequirementStatus(courses);
-            }else{
+            if (checkChildren) {
+                sat = req.computeRequirementStatus(courses);
+            } else {
                 sat = req.coursesSatisfyingRequirementSet;
             }
-            if ((req.isFulfilled && sat.size() > 0) || (req.isOverriden && req.substitutionsFulfilled))
+            if(req.isIgnored){
+                continue;
+            }
+            openRequirements.add(req);
+            if (req.isFulfilled && sat.size() > 0)
                 numReqsSatisfied += 1;
             satByCategory.put(req, sat);
             totalSat.addAll(sat);
@@ -752,12 +740,12 @@ public class RequirementsListStatement {
             // count as a single satisfied course. ANY children count for
             // all of their satisfied courses.
             if (req.connectionType == ConnectionType.ALL) {
-                numCoursesSatisfied += (req.isFulfilled && (sat.size() > 0 || req.isIgnored)) ? 1 : 0;
+                numCoursesSatisfied += (req.isFulfilled && sat.size() > 0) ? 1 : 0;
             } else {
                 numCoursesSatisfied += sat.size();
             }
         }
-        List<RequirementsListStatement> sortedProgresses = new ArrayList<>(requirements);
+        List<RequirementsListStatement> sortedProgresses = new ArrayList<>(openRequirements);
         Collections.sort(sortedProgresses, new Comparator<RequirementsListStatement>() {
             @Override
             public int compare(RequirementsListStatement t1, RequirementsListStatement t2) {
@@ -774,8 +762,9 @@ public class RequirementsListStatement {
                     subjectProgress = sortedProgresses.get(0).subjectProgress;
                     unitProgress = sortedProgresses.get(0).unitProgress;
                 } else {
-                    subjectProgress = new FulfillmentProgress(0, 0);
-                    unitProgress = new FulfillmentProgress(0, 0);
+                    // All child requirements should be ignored if this passes.
+                    subjectProgress = new FulfillmentProgress(0, 1);
+                    unitProgress = new FulfillmentProgress(0, DEFAULT_UNIT_COUNT);
                 }
             } else {
                 // "All" statement, will be finalized later
@@ -837,11 +826,11 @@ public class RequirementsListStatement {
 
         if (connectionType == ConnectionType.ALL) {
             // "all" statement - make above progresses more stringent
-            isFulfilled = isFulfilled && (numReqsSatisfied == requirements.size());
-            if (subjectProgress.progress == subjectProgress.max && requirements.size() > numReqsSatisfied) {
+            isFulfilled = (isFulfilled || openRequirements.size() == 0) && (numReqsSatisfied == openRequirements.size());
+            if (subjectProgress.progress == subjectProgress.max && openRequirements.size() > numReqsSatisfied) {
                 // Not satisfied, but subject progress makes it look satisfied, so lower the progress
-                subjectProgress.max += requirements.size() - numReqsSatisfied;
-                unitProgress.max += (requirements.size() - numReqsSatisfied) * DEFAULT_UNIT_COUNT;
+                subjectProgress.max += openRequirements.size() - numReqsSatisfied;
+                unitProgress.max += (openRequirements.size() - numReqsSatisfied) * DEFAULT_UNIT_COUNT;
             }
         }
         // Polish up values
@@ -926,7 +915,7 @@ public class RequirementsListStatement {
     }
 
     private float rawPercentageFulfilled() {
-        if(isOverriden && isSubstitutionsFulfilled())
+        if(isOverriden && isFulfilled)
             return 100.f;
         if ((connectionType == ConnectionType.NONE && getManualProgress() == 0) || fulfillmentProgress == null)
             return 0.0f;
@@ -934,7 +923,7 @@ public class RequirementsListStatement {
     }
 
     public float percentageFulfilled() {
-        if(isOverriden && isSubstitutionsFulfilled())
+        if(isOverriden && isFulfilled)
             return 100.f;
         if ((connectionType == ConnectionType.NONE && getManualProgress() == 0) || fulfillmentProgress == null)
             return 0.0f;

@@ -402,7 +402,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         if (progress != null) {
             if (statement.isIgnored() || (statement.isOverriden())) {
                 courseThumbnail.setBackgroundColor(Color.rgb(255,0,0));
-                if(statement.isOverriden() && statement.isSubstitutionsFulfilled()) {
+                if(statement.isOverriden() && statement.isFulfilled()) {
                     courseThumbnail.setAlpha(0.5f);
                 }else{
                     courseThumbnail.setAlpha(1.0f);
@@ -420,7 +420,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                     List<String> courseID = progressAssertion.getSubstitutions();
                     subjectTitleLabel.setText("with " + courseID.get(0) + ((courseID.size()>1)?" and "+ (courseID.size()-1)+" others":""));
                 }
-                if(statement.isOverriden()&&!statement.isSubstitutionsFulfilled()){
+                if(statement.isOverriden()&&!statement.isFulfilled()){
                     warningIcon.bringToFront();
                     View view = warningIcon;
                     int counter = 0;
@@ -454,7 +454,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                 }
                 courseThumbnail.setBackgroundColor(Color.TRANSPARENT);
                 warningIcon.setVisibility(View.INVISIBLE);
-                if (progress.getProgress() == progress.getMax()) {
+                if (progress.getProgress() == progress.getMax() && progress.getProgress() != 0) {
                     courseThumbnail.setAlpha(0.5f);
                 }else {
                     courseThumbnail.setAlpha(1.0f);
