@@ -743,7 +743,7 @@ public class RequirementsListStatement {
             }else{
                 sat = req.coursesSatisfyingRequirementSet;
             }
-            if ((req.isFulfilled && sat.size() > 0) || req.isIgnored || (req.isOverriden && req.substitutionsFulfilled))
+            if ((req.isFulfilled && sat.size() > 0) || (req.isOverriden && req.substitutionsFulfilled))
                 numReqsSatisfied += 1;
             satByCategory.put(req, sat);
             totalSat.addAll(sat);
@@ -844,7 +844,6 @@ public class RequirementsListStatement {
                 unitProgress.max += (requirements.size() - numReqsSatisfied) * DEFAULT_UNIT_COUNT;
             }
         }
-
         // Polish up values
         subjectProgress = ceilingThreshold(subjectProgress.progress, subjectProgress.max);
         unitProgress = ceilingThreshold(unitProgress.progress, unitProgress.max);
@@ -927,7 +926,7 @@ public class RequirementsListStatement {
     }
 
     private float rawPercentageFulfilled() {
-        if(isIgnored || (isOverriden && isSubstitutionsFulfilled()))
+        if(isOverriden && isSubstitutionsFulfilled())
             return 100.f;
         if ((connectionType == ConnectionType.NONE && getManualProgress() == 0) || fulfillmentProgress == null)
             return 0.0f;
@@ -935,7 +934,7 @@ public class RequirementsListStatement {
     }
 
     public float percentageFulfilled() {
-        if(isIgnored || (isOverriden && isSubstitutionsFulfilled()))
+        if(isOverriden && isSubstitutionsFulfilled())
             return 100.f;
         if ((connectionType == ConnectionType.NONE && getManualProgress() == 0) || fulfillmentProgress == null)
             return 0.0f;

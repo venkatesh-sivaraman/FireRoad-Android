@@ -316,6 +316,32 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         }
     }
 
+    private Course getCourseFromRequirement(RequirementsListStatement req){
+        String shortDesc = req.getShortDescription();
+        Course newCourse = CourseManager.sharedInstance().getSubjectByID(shortDesc);
+        if (newCourse != null && !newCourse.isGeneric) {
+            return newCourse;
+        } else {
+            String[] words = shortDesc.split("\\s+");
+            Course course = new Course();
+            Course.GIRAttribute gir = Course.GIRAttribute.fromRaw(shortDesc);
+            if (gir != null) {
+                course.setSubjectID("GIR");
+                course.subjectTitle = gir.toString().replaceAll("GIR", "").trim();
+            } else if (words.length > 0 && words[0].contains(".")) {
+                course.setSubjectID(words[0]);
+                course.subjectTitle = shortDesc.substring(words[0].length());
+            } else if (shortDesc.length() > 10) {
+                course.setSubjectID("");
+                course.subjectTitle = shortDesc;
+            } else {
+                course.setSubjectID(shortDesc);
+                course.subjectTitle = "";
+            }
+            return course;
+        }
+    }
+
     private void addCourseListItem(final LinearLayout layout, final List<RequirementsListStatement> requirements) {
         final int rowIndex = layout.getChildCount();
         final LinearLayout listLayout = getLayoutBuilder().addCourseListItem(layout);
@@ -324,29 +350,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
             public void perform() {
                 final List<Course> courses = new ArrayList<>();
                 for (RequirementsListStatement req : requirements) {
-                    String shortDesc = req.getShortDescription();
-                    Course newCourse = CourseManager.sharedInstance().getSubjectByID(shortDesc);
-                    if (newCourse != null && !newCourse.isGeneric) {
-                        courses.add(newCourse);
-                    } else {
-                        String[] words = shortDesc.split("\\s+");
-                        Course course = new Course();
-                        Course.GIRAttribute gir = Course.GIRAttribute.fromRaw(shortDesc);
-                        if (gir != null) {
-                            course.setSubjectID("GIR");
-                            course.subjectTitle = gir.toString().replaceAll("GIR", "").trim();
-                        } else if (words.length > 0 && words[0].contains(".")) {
-                            course.setSubjectID(words[0]);
-                            course.subjectTitle = shortDesc.substring(words[0].length());
-                        } else if (shortDesc.length() > 10) {
-                            course.setSubjectID("");
-                            course.subjectTitle = shortDesc;
-                        } else {
-                            course.setSubjectID(shortDesc);
-                            course.subjectTitle = "";
-                        }
-                        courses.add(course);
-                    }
+                    courses.add(getCourseFromRequirement(req));
                 }
 
                 TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
@@ -435,19 +439,16 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                     final TextView subjectIDLabel = courseThumbnail.findViewById(R.id.subjectIDLabel);
                     final TextView subjectTitleLabel = courseThumbnail.findViewById(R.id.subjectTitleLabel);
                     subjectIDLabel.setTextSize(21);
-                    subjectIDLabel.setText(statement.requirement);
-                    subjectTitleLabel.setText("");
                     TaskDispatcher.perform(new TaskDispatcher.Task<Course>() {
                         @Override
                         public Course perform(){
-                            return CourseManager.sharedInstance().getSubjectByID(statement.requirement);
+                            return getCourseFromRequirement(statement);
                         }
                     }, new TaskDispatcher.CompletionBlock<Course>() {
                         @Override
                         public void completed(Course arg) {
-                            if (arg != null) {
-                                subjectTitleLabel.setText(arg.subjectTitle);
-                            }
+                            subjectIDLabel.setText(arg.getSubjectID());
+                            subjectTitleLabel.setText(arg.subjectTitle);
                         }
                     });
                 }
