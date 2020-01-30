@@ -249,7 +249,6 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
     }
 
     private void updateRequirementsStatusBottomUp(RequirementsListStatement statement){
-        long startTime = System.nanoTime();
         if (statement != null && requirementsList != null) {
             if (User.currentUser().getCurrentDocument() != null) {
                 requirementsList.setCurrentDoc(User.currentUser().getCurrentDocument());
@@ -261,12 +260,8 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                     }
                     cur = cur.parent.get();
                 }
-                long endTime = System.nanoTime();
-                Log.d("TIME",String.valueOf((endTime-startTime)/1000000000.f));
             }
             updateRequirementsDisplayBottomUp(statement);
-            long endTime = System.nanoTime();
-            Log.d("TIME",String.valueOf((endTime-startTime)/1000000000.f));
         }
     }
 
@@ -542,27 +537,43 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                     // Show progress override dialog
                     currentlySelectedCourse = null;
                     currentlySelectedRequirement = req;
-                    if(User.currentUser().getCurrentDocument().getProgressOverride(req.keyPath())!=null){
-                        final PopupMenu menu = new PopupMenu(delegate.getActivity(),thumbnail);
+                    // if it's already Ignored, we want the only option to be to undo the ignore
+                    // if it's already Substituted, we want the options to be to edit or remove the substitution
+                    // if it's not Overridden at all, we want both ignoring and substituting to be options
+                    final PopupMenu menu = new PopupMenu(delegate.getActivity(),thumbnail);
 
-                        MenuInflater mInflater = menu.getMenuInflater();
-                        mInflater.inflate(R.menu.menu_course_requirements_cell, menu.getMenu());
-
-                        menu.getMenu().findItem(R.id.overrideOn).setVisible(false);
-                        final MenuItem owOff = menu.getMenu().findItem(R.id.overrideOff);
-                        final MenuItem owInfo = menu.getMenu().findItem(R.id.viewOverride);
-                        menu.getMenu().findItem(R.id.ignoreRequirement).setVisible(false);
-                        menu.getMenu().findItem(R.id.undoIgnoreRequirement).setVisible(false);
-                        menu.getMenu().findItem(R.id.viewCourse).setVisible(false);
-                        menu.getMenu().findItem(R.id.addCourse).setVisible(false);
-                        owOff.setVisible(course.isPublic);
-                        owInfo.setVisible(course.isPublic);
-                        menu.setOnMenuItemClickListener(RequirementsListDisplay.this);
-                        menu.show();
-                        currentPopupMenu = menu;
+                    MenuInflater mInflater = menu.getMenuInflater();
+                    mInflater.inflate(R.menu.menu_course_requirements_cell, menu.getMenu());
+                    menu.getMenu().findItem(R.id.viewCourse).setVisible(false);
+                    menu.getMenu().findItem(R.id.addCourse).setVisible(false);
+                    final MenuItem owOn = menu.getMenu().findItem(R.id.overrideOn);
+                    final MenuItem igOn = menu.getMenu().findItem(R.id.ignoreRequirement);
+                    final MenuItem igOff = menu.getMenu().findItem(R.id.undoIgnoreRequirement);
+                    final MenuItem owOff = menu.getMenu().findItem(R.id.overrideOff);
+                    final MenuItem owInfo = menu.getMenu().findItem(R.id.viewOverride);
+                    ProgressAssertion progressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(req.keyPath());
+                    if(progressAssertion!=null){
+                        owOn.setVisible(false);
+                        igOn.setVisible(false);
+                        if(progressAssertion.getIgnore()){
+                            igOff.setVisible(course.isPublic);
+                            owOff.setVisible(false);
+                            owInfo.setVisible(false);
+                        }else {
+                            igOff.setVisible(false);
+                            owOff.setVisible(course.isPublic);
+                            owInfo.setVisible(course.isPublic);
+                        }
                     }else {
-                        initializeRequirementsOverrideDialog(false);
+                        owOn.setVisible(course.isPublic);
+                        igOn.setVisible(course.isPublic);
+                        owOff.setVisible(false);
+                        owInfo.setVisible(false);
+                        igOff.setVisible(false);
                     }
+                    menu.setOnMenuItemClickListener(RequirementsListDisplay.this);
+                    menu.show();
+                    currentPopupMenu = menu;
                 } else if (req.requirement != null) {
                     // Search
                     String reqString = req.requirement.replaceAll("GIR:", "");

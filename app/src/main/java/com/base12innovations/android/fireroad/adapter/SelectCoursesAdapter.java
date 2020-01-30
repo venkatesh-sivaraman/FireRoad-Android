@@ -78,20 +78,12 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
         final View view = viewHolder.cellView;
         if(courseIndices.get(i) == -1){
-            //((View)view.findViewById(R.id.selectCourseHeaderTextView).getParent()).setBackgroundColor(Color.rgb(240,240,240));
             view.findViewById(R.id.selectCourseHeaderTextView).setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             view.findViewById(R.id.selectCourseColorCodingView).setBackgroundColor(Color.rgb(128,128,128));
             if(semesters.get(i) == RoadDocument.semesterNames.length){
                 ((TextView) view.findViewById(R.id.selectCourseHeaderTextView)).setText(String.format(Locale.US,"Other Courses"));
             }else {
                 ((TextView) view.findViewById(R.id.selectCourseHeaderTextView)).setText(RoadDocument.semesterNames[semesters.get(i)]);
-            }
-            int units = 0;
-            double hours = 0.0;
-            for (Course course: courses.get(semesters.get(i))){
-                units += course.totalUnits;
-                double courseHours = course.inClassHours + course.outOfClassHours;
-                hours += (course.getQuarterOffered() != null && course.getQuarterOffered() != Course.QuarterOffered.WholeSemester) ? courseHours * 0.5 : courseHours;
             }
         }else {
             final Course course = courses.get(semesters.get(i)).get(courseIndices.get(i));
