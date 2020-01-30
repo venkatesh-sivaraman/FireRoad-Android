@@ -404,12 +404,10 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                 }
                 final TextView subjectIDLabel = (TextView)courseThumbnail.findViewById(R.id.subjectIDLabel);
                 final TextView subjectTitleLabel = (TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel);
-                subjectIDLabel.setTextSize(21);
                 if(statement.isIgnored()){
                     subjectTitleLabel.setText(subjectIDLabel.getText());
                     subjectIDLabel.setText("Ignored");
                 }else{
-                    subjectIDLabel.setTextSize(20.7f);
                     subjectIDLabel.setText("Substituted");
                     ProgressAssertion progressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(statement.keyPath());
                     List<String> courseID = progressAssertion.getSubstitutions();
@@ -433,7 +431,6 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                 if(statement.requirement != null) {
                     final TextView subjectIDLabel = courseThumbnail.findViewById(R.id.subjectIDLabel);
                     final TextView subjectTitleLabel = courseThumbnail.findViewById(R.id.subjectTitleLabel);
-                    subjectIDLabel.setTextSize(21);
                     TaskDispatcher.perform(new TaskDispatcher.Task<Course>() {
                         @Override
                         public Course perform(){
@@ -455,7 +452,7 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
                     courseThumbnail.setAlpha(1.0f);
                 }
             }
-            if (progress.getMax() != 1) {
+            if (progress.getMax() != 1 && !statement.isIgnored()) {
                 pBar.setVisibility(View.VISIBLE);
                 pBar.setMax(progress.getMax());
                 pBar.setProgress(progress.getProgress());

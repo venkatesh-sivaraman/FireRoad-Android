@@ -7,6 +7,8 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.widget.TextViewCompat;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -323,6 +325,7 @@ public class CourseLayoutBuilder {
         constraintlayout.setElevation(elevation);
         courseThumbnail.setPadding(8,8,8,8);
         TextView subjectIDTextView = courseThumbnail.findViewById(R.id.subjectIDLabel);
+        TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(subjectIDTextView,1,40,1,TypedValue.COMPLEX_UNIT_DIP);
         subjectIDTextView.setText(course.getSubjectID());
         ((TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel)).setText(course.subjectTitle);
 
