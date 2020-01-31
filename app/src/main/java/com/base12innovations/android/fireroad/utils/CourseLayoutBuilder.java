@@ -3,7 +3,12 @@ package com.base12innovations.android.fireroad.utils;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.widget.TextViewCompat;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -296,8 +301,8 @@ public class CourseLayoutBuilder {
     }
 
     public View addCourseCell(LinearLayout layout, final Course course, View.OnClickListener clickListener, View.OnLongClickListener longClickListener) {
-        int width = (int) context.getResources().getDimension(R.dimen.course_cell_default_width);
-        int height = (int) context.getResources().getDimension(R.dimen.course_cell_height);
+        int width = (int) context.getResources().getDimension(R.dimen.course_cell_default_width)+16;
+        int height = (int) context.getResources().getDimension(R.dimen.course_cell_height)+16;
         int margin = (int) context.getResources().getDimension(R.dimen.course_cell_spacing);
         int elevation = (int) context.getResources().getDimension(R.dimen.course_cell_elevation);
 
@@ -312,8 +317,16 @@ public class CourseLayoutBuilder {
         ProgressBar pBar = courseThumbnail.findViewById(R.id.requirementsProgressBar);
         pBar.setProgressTintList(ColorStateList.valueOf(ColorManager.darkenColor(color, 0xFF)));
         pBar.setProgressBackgroundTintList(ColorStateList.valueOf(ColorManager.lightenColor(color, 0xFF)));
-        ((GradientDrawable)courseThumbnail.getBackground()).setColor(color);
-        ((TextView) courseThumbnail.findViewById(R.id.subjectIDLabel)).setText(course.getSubjectID());
+        courseThumbnail.setBackgroundColor(Color.TRANSPARENT);
+        courseThumbnail.setElevation(elevation);
+        final View constraintlayout = courseThumbnail.findViewById(R.id.courseCellConstraintLayout);
+        constraintlayout.setBackground(ContextCompat.getDrawable(context,R.drawable.course_background));
+        ((GradientDrawable)constraintlayout.getBackground()).setColor(color);
+        constraintlayout.setElevation(elevation);
+        courseThumbnail.setPadding(8,8,8,8);
+        TextView subjectIDTextView = courseThumbnail.findViewById(R.id.subjectIDLabel);
+        TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(subjectIDTextView,1,40,1,TypedValue.COMPLEX_UNIT_DIP);
+        subjectIDTextView.setText(course.getSubjectID());
         ((TextView) courseThumbnail.findViewById(R.id.subjectTitleLabel)).setText(course.subjectTitle);
 
         courseThumbnail.setOnClickListener(clickListener);

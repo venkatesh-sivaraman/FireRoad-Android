@@ -1,5 +1,6 @@
 package com.base12innovations.android.fireroad;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -460,6 +461,9 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             }
             @Override public void showManualProgressSelector(RequirementsListStatement req) {
                 // Do nothing - manual progress is disabled for prereqs/coreqs
+            }
+            @Override public Activity getActivity(){
+                return CourseDetailsFragment.this.getActivity();
             }
         };
         if (User.currentUser().getCurrentDocument() != null)
