@@ -739,7 +739,7 @@ public class RequirementsListStatement {
             // For thresholded ANY statements, children that are ALL statements
             // count as a single satisfied course. ANY children count for
             // all of their satisfied courses.
-            if (req.connectionType == ConnectionType.ALL) {
+            if (req.connectionType == ConnectionType.ALL && req.requirement == null) {
                 numCoursesSatisfied += (req.isFulfilled && sat.size() > 0) ? 1 : 0;
             } else {
                 numCoursesSatisfied += sat.size();
