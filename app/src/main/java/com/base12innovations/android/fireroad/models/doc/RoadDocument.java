@@ -6,6 +6,7 @@ import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
+import com.base12innovations.android.fireroad.models.req.ProgressAssertion;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
 import com.base12innovations.android.fireroad.utils.ListHelper;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
@@ -142,7 +143,7 @@ public class RoadDocument extends Document {
     public List<String> coursesOfStudy = new ArrayList<>();
     private Map<Course, Boolean> overrides = new HashMap<>();
     private Map<Integer, Map<Course, SubjectMarker>> markers = new HashMap<>();
-    private Map<String, Integer> progressOverrides = new HashMap<>();
+    private Map<String, ProgressAssertion> progressOverrides = new HashMap<>();
 
     public RoadDocument(File location) {
         super(location);
@@ -159,7 +160,6 @@ public class RoadDocument extends Document {
 
     @Override
     public void parse(String contents) {
-
         try {
             JSONObject json = new JSONObject(contents);
 
@@ -223,12 +223,17 @@ public class RoadDocument extends Document {
                 Iterator<String> it = reqOverrides.keys();
                 while (it.hasNext()) {
                     String key = it.next();
-                    progressOverrides.put(key, reqOverrides.getInt(key));
+                    //progressOverrides.put(key, reqOverrides.getInt(key));
+                    JSONArray reqOverride = (reqOverrides.getJSONArray(key));
+                    List<String> substitutionCourseIDs = new ArrayList<>();
+                    for(int i = 0; i < reqOverride.length(); i++){
+                        substitutionCourseIDs.add(reqOverride.getString(i));
+                    }
+                    progressOverrides.put(key,new ProgressAssertion(key,substitutionCourseIDs));
                 }
             } else if (progressOverrides.size() == 0) {
                 progressOverrides.putAll(CourseManager.sharedInstance().getAllProgressOverrides());
             }
-
         } catch (JSONException e) {
             Log.d("JSON Error", String.format(Locale.US, "Invalid JSON: %s", contents));
             e.printStackTrace();
@@ -269,10 +274,16 @@ public class RoadDocument extends Document {
 
             JSONObject reqOverrides = new JSONObject();
             for (String keyPath: progressOverrides.keySet()) {
-                reqOverrides.put(keyPath, progressOverrides.get(keyPath));
+                JSONArray reqOverride = new JSONArray();
+                List<String> substitutions = progressOverrides.get(keyPath).getSubstitutions();
+                if(substitutions!=null) {
+                    for (String courseID : substitutions) {
+                        reqOverride.put(courseID);
+                    }
+                }
+                reqOverrides.put(keyPath,reqOverride);
             }
             parentObject.put(RoadJSON.progressOverrides, reqOverrides);
-
             return parentObject.toString();
 
         } catch (JSONException e) {
@@ -346,9 +357,9 @@ public class RoadDocument extends Document {
 
     public List<Course> coursesForSemester(int semester) {
         if (courses.containsKey(semester)) {
-            return courses.get(semester);
+            return new ArrayList<>(courses.get(semester));
         }
-        return new ArrayList<Course>();
+        return new ArrayList<>();
     }
 
     public boolean addCourse(Course course, int semester) {
@@ -588,14 +599,19 @@ public class RoadDocument extends Document {
 
     // Requirement Overrides
 
-    public int getProgressOverride(String keyPath) {
+    public ProgressAssertion getProgressOverride(String keyPath) {
         if (progressOverrides.containsKey(keyPath))
             return progressOverrides.get(keyPath);
-        return 0;
+        return null;
     }
 
-    public void setProgressOverride(String keyPath, int value) {
-        progressOverrides.put(keyPath, value);
+    public void setProgressOverride(String keyPath, ProgressAssertion progressAssertion) {
+        progressOverrides.put(keyPath, progressAssertion);
+        save();
+    }
+
+    public void removeProgressOverride(String keyPath){
+        progressOverrides.remove(keyPath);
         save();
     }
 }

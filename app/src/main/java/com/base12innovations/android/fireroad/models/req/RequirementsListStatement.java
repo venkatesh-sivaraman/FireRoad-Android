@@ -5,7 +5,9 @@ import android.util.Log;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.ListHelper;
+import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -496,6 +498,12 @@ public class RequirementsListStatement {
     private boolean isFulfilled = false;
     public boolean isFulfilled() { return isFulfilled; }
 
+    private boolean isIgnored = false;
+    public boolean isIgnored(){ return isIgnored;}
+
+    private boolean isOverriden = false;
+    public boolean isOverriden(){return isOverriden;}
+
     private FulfillmentProgress fulfillmentProgress;
     private FulfillmentProgress subjectProgress;
     private FulfillmentProgress unitProgress;
@@ -589,6 +597,10 @@ public class RequirementsListStatement {
         return t.cutoff * (t.criterion == ThresholdCriterion.SUBJECTS ? DEFAULT_UNIT_COUNT : 1);
     }
 
+    public Set<Course> coursesSatisfyingRequirementSet;
+    public Set<Course> computeRequirementStatus(List<Course> courses){
+        return computeRequirementStatus(courses, true);
+    }
     /**
      * This is a large and complicated method that provides considerable information about the
      * requirement's fulfillment status. It sets the `isFulfilled` property, which indicates whether
@@ -599,7 +611,54 @@ public class RequirementsListStatement {
      * @param courses the courses to use to determine whether each requirement has been satisfied
      * @return the set of courses that satisfy this requirement
      */
-    public Set<Course> computeRequirementStatus(List<Course> courses) {
+    public Set<Course> computeRequirementStatus(List<Course> courses, boolean checkChildren) {
+        ProgressAssertion progressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(this.keyPath());
+        if(progressAssertion !=null){
+            final Set<Course> courseSet = new HashSet<>();
+            if(progressAssertion.getIgnore()){
+                isIgnored = true;
+                isOverriden = false;
+                subjectProgress = ceilingThreshold(0,0);
+                isFulfilled = false;
+                unitProgress = ceilingThreshold(0,0);
+                fulfillmentProgress = subjectProgress;
+                coursesSatisfyingRequirementSet = courseSet;
+                return courseSet;
+            }else {
+                isIgnored = false;
+                isOverriden = true;
+                final List<String> substitutions = progressAssertion.getSubstitutions();
+                int numCoursesInSubstitutions = 0;
+                for (Course course : courses) {
+                    if (substitutions.contains(course.getSubjectID())) {
+                        numCoursesInSubstitutions++;
+                        courseSet.add(course);
+                    }
+                }
+                TaskDispatcher.perform(new TaskDispatcher.Task<Integer>() {
+                    public Integer perform() {
+                        int totalUnits = 0;
+                        for(String courseID : substitutions){
+                            totalUnits += CourseManager.sharedInstance().getSubjectByID(courseID).totalUnits;
+                        }
+                        return totalUnits;
+                    }
+                }, new TaskDispatcher.CompletionBlock<Integer>() {
+                    @Override
+                    public void completed(Integer arg) {
+                        unitProgress = ceilingThreshold(totalUnitsInCourses(courseSet),arg);
+                    }
+                });
+                isFulfilled = (numCoursesInSubstitutions >= substitutions.size());
+                subjectProgress = ceilingThreshold(numCoursesInSubstitutions,substitutions.size());
+                fulfillmentProgress = subjectProgress;
+                coursesSatisfyingRequirementSet = courseSet;
+                return courseSet;
+            }
+        }else{
+            isIgnored = false;
+            isOverriden = false;
+        }
         if (requirement != null) {
             // It's a basic requirement
             Set<Course> satisfiedCourses = new HashSet<>();
@@ -650,18 +709,28 @@ public class RequirementsListStatement {
                 }
             }
             fulfillmentProgress = (threshold != null && threshold.criterion == ThresholdCriterion.UNITS) ? unitProgress : subjectProgress;
+            coursesSatisfyingRequirementSet = satisfiedCourses;
             return satisfiedCourses;
         }
 
         if (requirements == null) return new HashSet<>();
         // It's a compound requirement
-
+        List<RequirementsListStatement> openRequirements = new ArrayList<>();
         Map<RequirementsListStatement, Set<Course>> satByCategory = new HashMap<>();
         Set<Course> totalSat = new HashSet<>();
         int numReqsSatisfied = 0;
         int numCoursesSatisfied = 0;
         for (RequirementsListStatement req : requirements) {
-            Set<Course> sat = req.computeRequirementStatus(courses);
+            Set<Course> sat;
+            if (checkChildren) {
+                sat = req.computeRequirementStatus(courses);
+            } else {
+                sat = req.coursesSatisfyingRequirementSet;
+            }
+            if(req.isIgnored){
+                continue;
+            }
+            openRequirements.add(req);
             if (req.isFulfilled && sat.size() > 0)
                 numReqsSatisfied += 1;
             satByCategory.put(req, sat);
@@ -670,14 +739,13 @@ public class RequirementsListStatement {
             // For thresholded ANY statements, children that are ALL statements
             // count as a single satisfied course. ANY children count for
             // all of their satisfied courses.
-            if (req.connectionType == ConnectionType.ALL) {
+            if (req.connectionType == ConnectionType.ALL && req.requirement == null) {
                 numCoursesSatisfied += (req.isFulfilled && sat.size() > 0) ? 1 : 0;
             } else {
                 numCoursesSatisfied += sat.size();
             }
-
         }
-        List<RequirementsListStatement> sortedProgresses = new ArrayList<>(requirements);
+        List<RequirementsListStatement> sortedProgresses = new ArrayList<>(openRequirements);
         Collections.sort(sortedProgresses, new Comparator<RequirementsListStatement>() {
             @Override
             public int compare(RequirementsListStatement t1, RequirementsListStatement t2) {
@@ -694,8 +762,9 @@ public class RequirementsListStatement {
                     subjectProgress = sortedProgresses.get(0).subjectProgress;
                     unitProgress = sortedProgresses.get(0).unitProgress;
                 } else {
-                    subjectProgress = new FulfillmentProgress(0, 0);
-                    unitProgress = new FulfillmentProgress(0, 0);
+                    // All child requirements should be ignored if this passes.
+                    subjectProgress = new FulfillmentProgress(0, 1);
+                    unitProgress = new FulfillmentProgress(0, DEFAULT_UNIT_COUNT);
                 }
             } else {
                 // "All" statement, will be finalized later
@@ -718,7 +787,6 @@ public class RequirementsListStatement {
                     }
                 }
             }
-
             if (threshold == null && distinctThreshold != null) {
                 // required number of statements
                 if (distinctThreshold.type == ThresholdType.GREATER_THAN_OR_EQUAL ||
@@ -758,19 +826,18 @@ public class RequirementsListStatement {
 
         if (connectionType == ConnectionType.ALL) {
             // "all" statement - make above progresses more stringent
-            isFulfilled = isFulfilled && (numReqsSatisfied == requirements.size());
-            if (subjectProgress.progress == subjectProgress.max && requirements.size() > numReqsSatisfied) {
+            isFulfilled = (isFulfilled || openRequirements.size() == 0) && (numReqsSatisfied == openRequirements.size());
+            if (subjectProgress.progress == subjectProgress.max && openRequirements.size() > numReqsSatisfied) {
                 // Not satisfied, but subject progress makes it look satisfied, so lower the progress
-                subjectProgress.max += requirements.size() - numReqsSatisfied;
-                unitProgress.max += (requirements.size() - numReqsSatisfied) * DEFAULT_UNIT_COUNT;
+                subjectProgress.max += openRequirements.size() - numReqsSatisfied;
+                unitProgress.max += (openRequirements.size() - numReqsSatisfied) * DEFAULT_UNIT_COUNT;
             }
         }
-
         // Polish up values
         subjectProgress = ceilingThreshold(subjectProgress.progress, subjectProgress.max);
         unitProgress = ceilingThreshold(unitProgress.progress, unitProgress.max);
         fulfillmentProgress = (threshold != null && threshold.criterion == ThresholdCriterion.UNITS) ? unitProgress : subjectProgress;
-
+        coursesSatisfyingRequirementSet = totalSat;
         return totalSat;
     }
 
@@ -848,12 +915,16 @@ public class RequirementsListStatement {
     }
 
     private float rawPercentageFulfilled() {
+        if(isOverriden && isFulfilled)
+            return 100.f;
         if ((connectionType == ConnectionType.NONE && getManualProgress() == 0) || fulfillmentProgress == null)
             return 0.0f;
         return (float)fulfillmentProgress.progress / (float)Math.max(fulfillmentProgress.max, threshold != null && threshold.criterion == ThresholdCriterion.UNITS ? DEFAULT_UNIT_COUNT: 1) * 100.0f;
     }
 
     public float percentageFulfilled() {
+        if(isOverriden && isFulfilled)
+            return 100.f;
         if ((connectionType == ConnectionType.NONE && getManualProgress() == 0) || fulfillmentProgress == null)
             return 0.0f;
         if (fulfillmentProgress.progress == 0 && fulfillmentProgress.max == 0)
@@ -862,12 +933,12 @@ public class RequirementsListStatement {
     }
 
     public int getManualProgress() {
-        if (currentDoc != null)
-            return currentDoc.getProgressOverride(keyPath());
+        /*if (currentDoc != null)
+            return currentDoc.getProgressOverride(keyPath());*/
         return 0;
     }
     public void setManualProgress(int newValue) {
-        if (currentDoc != null)
-            currentDoc.setProgressOverride(keyPath(), newValue);
+        /*if (currentDoc != null)
+            currentDoc.setProgressOverride(keyPath(), newValue);*/
     }
 }
