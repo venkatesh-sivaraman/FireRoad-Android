@@ -1326,7 +1326,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             public void onClick(DialogInterface dialogInterface, int i) {
                 Intent intent = new Intent(Intent.ACTION_SENDTO);
                 intent.setType("text/plain");
-                intent.putExtra(Intent.EXTRA_EMAIL, "base12apps@gmail.com");
+                intent.putExtra(Intent.EXTRA_EMAIL, "fireroad-dev@mit.edu");
                 intent.putExtra(Intent.EXTRA_SUBJECT, "FireRoad Feedback");
                 intent.putExtra(Intent.EXTRA_TEXT, "Platform:\nOS version:\nFeedback:");
                 startActivity(Intent.createChooser(intent, "Contact developer"));
