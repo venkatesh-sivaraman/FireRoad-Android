@@ -57,9 +57,9 @@ public class AppSettings {
 
     private static final String VERSION_MESSAGE = "version_message";
     // Increment this counter and change versionUpdateMessage to show a new "What's New" dialog
-    private static final int versionIndex = 2;
-    private static final String versionUpdateMessage = "This version adds support for the new CourseRoad website. If you'd like to sync your data, please " +
-            "make sure you have Sync and Recommendations turned on in the Settings pane.";
+    private static final int versionIndex = 3;
+    private static final String versionUpdateMessage = "We made a new feature that allows you to substitute (a.k.a. petition) " +
+            "requirements in your majors and minors. Check it out in the Requirements tab!";
 
     public static String getVersionUpdateMessage() {
         // If fresh install, don't show update message
