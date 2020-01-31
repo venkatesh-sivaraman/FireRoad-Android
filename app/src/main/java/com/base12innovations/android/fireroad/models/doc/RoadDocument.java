@@ -357,9 +357,9 @@ public class RoadDocument extends Document {
 
     public List<Course> coursesForSemester(int semester) {
         if (courses.containsKey(semester)) {
-            return courses.get(semester);
+            return new ArrayList<>(courses.get(semester));
         }
-        return new ArrayList<Course>();
+        return new ArrayList<>();
     }
 
     public boolean addCourse(Course course, int semester) {
