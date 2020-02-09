@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="intro_title_font_size">36sp</dimen>
+    <dimen name="course_cell_id_font_size">18sp</dimen>
+    <dimen name="course_cell_title_font_size">13sp</dimen>
 </resources>
