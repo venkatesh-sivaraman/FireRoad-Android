@@ -24,6 +24,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.base12innovations.android.fireroad.utils.ListHelper.NOT_FOUND;
+
 public class RequirementsListStatement {
     public String title;
     public String contentDescription;
@@ -629,26 +631,29 @@ public class RequirementsListStatement {
                 isOverriden = true;
                 final List<String> substitutions = progressAssertion.getSubstitutions();
                 int numCoursesInSubstitutions = 0;
-                for (Course course : courses) {
-                    if (substitutions.contains(course.getSubjectID())) {
+                int unitsSatisfied = 0;
+                int totalPossibleUnits = 0;
+                for (final String substitution : substitutions) {
+                    int idx = ListHelper.indexOfElement(courses, new ListHelper.Predicate<Course>() {
+                        @Override
+                        public boolean test(Course element) {
+                            return element.getSubjectID().equals(substitution);
+                        }
+                    });
+                    if (idx != NOT_FOUND) {
                         numCoursesInSubstitutions++;
+                        Course course = courses.get(idx);
                         courseSet.add(course);
+                        unitsSatisfied += course.totalUnits;
+                        totalPossibleUnits += course.totalUnits;
+                    } else {
+                        // Pretend that the requirement would be 12 units for simplicity
+                        // (looking it up in the database would require an asynchronous call)
+                        totalPossibleUnits += DEFAULT_UNIT_COUNT;
                     }
                 }
-                TaskDispatcher.perform(new TaskDispatcher.Task<Integer>() {
-                    public Integer perform() {
-                        int totalUnits = 0;
-                        for(String courseID : substitutions){
-                            totalUnits += CourseManager.sharedInstance().getSubjectByID(courseID).totalUnits;
-                        }
-                        return totalUnits;
-                    }
-                }, new TaskDispatcher.CompletionBlock<Integer>() {
-                    @Override
-                    public void completed(Integer arg) {
-                        unitProgress = ceilingThreshold(totalUnitsInCourses(courseSet),arg);
-                    }
-                });
+
+                unitProgress = ceilingThreshold(totalUnitsInCourses(courseSet),totalPossibleUnits);
                 isFulfilled = (numCoursesInSubstitutions >= substitutions.size());
                 subjectProgress = ceilingThreshold(numCoursesInSubstitutions,substitutions.size());
                 fulfillmentProgress = subjectProgress;

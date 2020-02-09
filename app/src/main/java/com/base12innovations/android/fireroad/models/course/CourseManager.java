@@ -744,22 +744,6 @@ public class CourseManager {
                 }
             }
         });
-        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
-            @Override
-            public void perform() {
-                NetworkManager.Response<Map<String, Object>> resp = NetworkManager.sharedInstance().getProgressOverrides();
-                if (resp.result != null && resp.result.size() > 0) {
-                    progressOverrides = new HashMap<>();
-                    for (String key : resp.result.keySet()) {
-                        //progressOverrides.put(key, (int)Math.round((Double)resp.result.get(key)));
-                        List<String> courseIDS = (List<String>) resp.result.get(key);
-                        progressOverrides.put(key,new ProgressAssertion(courseIDS.get(0),courseIDS.subList(1,courseIDS.size()-1)));
-                    }
-                } else if (progressOverrides != null && progressOverrides.size() > 0) {
-                    NetworkManager.sharedInstance().setProgressOverrides(new HashMap<>(progressOverrides));
-                }
-            }
-        });
         /*TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
             @Override
             public void perform() {
