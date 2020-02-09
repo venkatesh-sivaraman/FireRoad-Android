@@ -206,8 +206,8 @@ public class RoadDocument extends Document {
                 } else {
                     course = CourseManager.sharedInstance().getSubjectByID(subjectID);
                     if (course == null) {
-                        Log.d("RoadDocument", "Couldn't find course with ID " + subjectID);
-                        continue;
+                        course = new Course();
+                        course.readJSON(subjectInfo);
                     }
                 }
                 courses.get(semester).add(course);
