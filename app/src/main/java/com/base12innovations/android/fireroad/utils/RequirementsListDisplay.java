@@ -698,33 +698,19 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
         final ProgressAssertion progressAssertion = User.currentUser().getCurrentDocument().getProgressOverride(currentlySelectedRequirement.keyPath());
         requirementsOverrideDialog.replacementCourses = new ArrayList<>();
         requirementsOverrideDialog.isEditing = isEditing;
-        TaskDispatcher.perform(new TaskDispatcher.Task<Void>() {
-            @Override
-            public Void perform() {
-                if(progressAssertion != null) {
-                    Set<String> substitutions = new HashSet<>(progressAssertion.getSubstitutions());
-                    List<Course > courses = (User.currentUser().getCurrentDocument().getAllCourses());
-                    for(Course course : courses){
-                        if(substitutions.contains(course.getSubjectID())){
-                            requirementsOverrideDialog.replacementCourses.add(course);
-                        }
-                    }
-                }
-                return null;
-            }
-        }, new TaskDispatcher.CompletionBlock<Void>(){
-            @Override
-            public void completed(Void arg) {
-                Activity a = delegate.getActivity();
-                FragmentActivity b = null;
-                if(a instanceof FragmentActivity){
-                    b = (FragmentActivity) a;
-                }
-                if(b != null){
-                    requirementsOverrideDialog.show(b.getSupportFragmentManager(),"RequirementsOverrideFragment");
+        if(progressAssertion != null) {
+            Set<String> substitutions = new HashSet<>(progressAssertion.getSubstitutions());
+            List<Course > courses = (User.currentUser().getCurrentDocument().getAllCourses());
+            for(Course course : courses){
+                if(substitutions.contains(course.getSubjectID())){
+                    requirementsOverrideDialog.replacementCourses.add(course);
                 }
             }
-        });
+        }
+        Activity a = delegate.getActivity();
+        if(a instanceof FragmentActivity){
+            requirementsOverrideDialog.show(((FragmentActivity) a).getSupportFragmentManager(),"RequirementsOverrideFragment");
+        }
     }
 
     @Override
