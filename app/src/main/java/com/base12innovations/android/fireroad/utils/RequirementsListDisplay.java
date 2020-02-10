@@ -20,6 +20,7 @@ import com.base12innovations.android.fireroad.dialog.RequirementsOverrideDialog;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
+import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.models.req.ProgressAssertion;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
@@ -701,10 +702,11 @@ public class RequirementsListDisplay implements PopupMenu.OnMenuItemClickListene
             @Override
             public Void perform() {
                 if(progressAssertion != null) {
-                    List<String> substitutions = progressAssertion.getSubstitutions();
-                    if (substitutions != null) {
-                        for (String s : substitutions) {
-                            requirementsOverrideDialog.replacementCourses.add(CourseManager.sharedInstance().getSubjectByID(s));
+                    Set<String> substitutions = new HashSet<>(progressAssertion.getSubstitutions());
+                    List<Course > courses = (User.currentUser().getCurrentDocument().getAllCourses());
+                    for(Course course : courses){
+                        if(substitutions.contains(course.getSubjectID())){
+                            requirementsOverrideDialog.replacementCourses.add(course);
                         }
                     }
                 }
