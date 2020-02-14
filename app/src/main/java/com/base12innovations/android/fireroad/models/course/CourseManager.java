@@ -188,8 +188,10 @@ public class CourseManager {
                         Log.d("CourseManager", "Updating " + Integer.toString(urls.size()) + " URLs");
                         if (urls.size() > 0) {
                             listener.needsFullLoad();
-                            // Mark that a database update has been started
-                            dbPreferences.edit().putBoolean(hasPerformedFullLoad, true).apply();
+                            // Mark that a database update has been started. This is vital because if
+                            // the user stops the app while the database update is in progress,
+                            // the course database will not be complete.
+                            dbPreferences.edit().putBoolean(hasPerformedFullLoad, false).apply();
                             courseDatabase.daoAccess().clearCourses();
                             loadingProgress = 0.0f;
                             _isUpdatingDB = true;
@@ -741,22 +743,6 @@ public class CourseManager {
                     }
                 } else if (notes != null && notes.size() > 0) {
                     NetworkManager.sharedInstance().setNotes(new HashMap<>(notes));
-                }
-            }
-        });
-        TaskDispatcher.inBackground(new TaskDispatcher.TaskNoReturn() {
-            @Override
-            public void perform() {
-                NetworkManager.Response<Map<String, Object>> resp = NetworkManager.sharedInstance().getProgressOverrides();
-                if (resp.result != null && resp.result.size() > 0) {
-                    progressOverrides = new HashMap<>();
-                    for (String key : resp.result.keySet()) {
-                        //progressOverrides.put(key, (int)Math.round((Double)resp.result.get(key)));
-                        List<String> courseIDS = (List<String>) resp.result.get(key);
-                        progressOverrides.put(key,new ProgressAssertion(courseIDS.get(0),courseIDS.subList(1,courseIDS.size()-1)));
-                    }
-                } else if (progressOverrides != null && progressOverrides.size() > 0) {
-                    NetworkManager.sharedInstance().setProgressOverrides(new HashMap<>(progressOverrides));
                 }
             }
         });

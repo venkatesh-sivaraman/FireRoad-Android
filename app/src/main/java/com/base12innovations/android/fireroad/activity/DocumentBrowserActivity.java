@@ -179,19 +179,33 @@ public class DocumentBrowserActivity extends AppCompatActivity implements Docume
         builder.setPositiveButton("Create", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                String text = textBox.getText().toString();
+                final String text = textBox.getText().toString();
                 dialogInterface.dismiss();
-
                 if (text.length() == 0) {
                     addNewDocument();
                     return;
                 }
-                try {
-                    Document doc = documentManager.getNewDocument(text);
-                    documentBrowserSelectedDocument(doc);
-                } catch (IOException e) {
-                    Toast.makeText(DocumentBrowserActivity.this, "File exists - try again.", Toast.LENGTH_SHORT).show();
-                }
+                // We need to perform the task of getting a new document in the background (requires cloud sync)
+                TaskDispatcher.perform(new TaskDispatcher.Task<Document>() {
+                    @Override
+                    public Document perform() {
+                        try {
+                            return documentManager.getNewDocument(text);
+                        } catch (IOException e) {
+                            // The file already exists
+                            return null;
+                        }
+                    }
+                }, new TaskDispatcher.CompletionBlock<Document>() {
+                    @Override
+                    public void completed(Document doc) {
+                        if (doc != null) {
+                            documentBrowserSelectedDocument(doc);
+                        } else {
+                            Toast.makeText(DocumentBrowserActivity.this, "File exists - try again.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
             }
         });
         builder.show();

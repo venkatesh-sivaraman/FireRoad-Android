@@ -14,4 +14,7 @@
     <dimen name="intro_label_top_y">200dp</dimen>
     <dimen name="intro_title_top_y">120dp</dimen>
     <dimen name="intro_title_font_size">40sp</dimen>
+
+    <dimen name="course_cell_id_font_size">21sp</dimen>
+    <dimen name="course_cell_title_font_size">14sp</dimen>
 </resources>

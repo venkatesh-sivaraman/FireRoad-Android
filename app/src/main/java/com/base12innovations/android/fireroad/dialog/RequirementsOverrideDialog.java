@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class RequirementsOverrideDialog extends DialogFragment implements SelectCoursesAdapter.Delegate{
     public interface RequirementsOverrideDialogDelegate{
@@ -89,22 +90,18 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
             }
         });*/
 
-        List<Course> otherCourses = new ArrayList<>(replacementCourses);
-        List<List<Course>>allCourses = new ArrayList<>();
-        for(int i = 0; i < RoadDocument.semesterNames.length;i++){
+        // otherCourses should be the courses that aren't currently in the road, but have been
+        // marked as substituted
+        Set<Course> otherCourses = new HashSet<>(replacementCourses);
+        List<List<Course>> allCourses = new ArrayList<>();
+        for (int i = 0; i < RoadDocument.semesterNames.length;i++) {
             List<Course> coursesForSemester = User.currentUser().getCurrentDocument().coursesForSemester(i);
-            for(Course course : coursesForSemester){
-                for(int j = 0; j < otherCourses.size(); j++){
-                    Course course2 = otherCourses.get(j);
-                    if(course == course2 || course2.getSubjectID().equals(course.getSubjectID())){
-                        otherCourses.remove(course2);
-                        j--;
-                    }
-                }
+            for (Course course : coursesForSemester) {
+                otherCourses.remove(course);
             }
             allCourses.add(coursesForSemester);
         }
-        allCourses.add(otherCourses);
+        allCourses.add(new ArrayList<>(otherCourses));
         listAdapter.setCourses(allCourses);
         listAdapter.notifyDataSetChanged();
 

@@ -527,7 +527,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
 
     @Override
     public void documentManagerSyncError(DocumentManager manager, String message) {
-        if (message != null) {
+        // We don't want to show the alert if the activity is transitioning
+        if (message != null && !isFinishing()) {
             AlertDialog.Builder b = new AlertDialog.Builder(this);
             b.setTitle("Sync Error");
             b.setMessage(message);

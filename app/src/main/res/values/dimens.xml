@@ -7,6 +7,9 @@
     <dimen name="my_road_header_height">44dp</dimen>
     <dimen name="select_course_header_height">50dp</dimen>
 
+    <dimen name="course_cell_id_font_size">18sp</dimen>
+    <dimen name="course_cell_title_font_size">13sp</dimen>
+
     <dimen name="course_cell_elevation">8dp</dimen>
     <dimen name="course_cell_height">88dp</dimen>
     <dimen name="course_cell_default_width">128dp</dimen>

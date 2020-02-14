@@ -238,7 +238,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
     private boolean isLoading = false;
 
     public void loadSchedules(boolean hideView) {
-        if (configView == null || loadingIndicator == null)
+        if (configView == null || loadingIndicator == null || !isAdded())
             return;
         if (hideView) {
             configView.setVisibility(View.INVISIBLE);
@@ -264,7 +264,8 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                 }
 
                 // Check that all courses have schedules available
-                Iterator<Course> it = document.getCourses().iterator();
+                List<Course> allCourses = document.getCourses();
+                Iterator<Course> it = allCourses.iterator();
                 final List<String> incompatibleCourses = new ArrayList<>();
                 while (it.hasNext()) {
                     Course course = it.next();
@@ -365,13 +366,18 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
 
     public void addAllCourses(final List<Course> courses, final String fileName) {
         if (User.currentUser().getCurrentSchedule() != null) {
+            if (document == null) {
+                document = User.currentUser().getCurrentSchedule();
+            }
             String currentName = User.currentUser().getCurrentSchedule().getFileName().replaceAll(fileName, "").trim();
             try {
                 // If it's a version of the same semester, replace the current document
                 if (currentName.length() == 0 || Integer.parseInt(currentName) != 0) {
                     document.setCourses(courses);
                     document.setDisplayedScheduleIndex(-1);
-                    loadSchedules(true);
+                    if (isAdded()) {
+                        loadSchedules(true);
+                    }
                 }
             } catch (NumberFormatException e) {
                     // Create a new document
