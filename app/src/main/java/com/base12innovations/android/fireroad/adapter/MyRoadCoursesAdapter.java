@@ -16,6 +16,7 @@ import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.course.ColorManager;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.Semester;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.util.List;
@@ -40,8 +41,8 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return null;
         }
         int cursor = position;
-        for (int i = 0; i < RoadDocument.semesterNames.length; i++) {
-            List<Course> semCourses = document.coursesForSemester(i);
+        for (Semester semester : Semester.semesterNames.keySet()) {
+            List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
             } else {
@@ -56,13 +57,15 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
         return null;
     }
 
-    public int headerPositionForSemester(int semester) {
+    public int headerPositionForSemester(Semester semester) {
         if (document == null) {
             return 0;
         }
         int cursor = 0;
-        for (int i = 0; i < semester; i++) {
-            List<Course> semCourses = document.coursesForSemester(i);
+        for (Semester otherSemester : Semester.semesterNames.keySet()) {
+            if(!otherSemester.isBefore(semester))
+                break;
+            List<Course> semCourses = document.coursesForSemester(otherSemester);
             cursor += semCourses.size() + 1;
         }
         return cursor;
@@ -73,13 +76,15 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
      * @param semester the semester number.
      * @return an integer indicating the index of the last course.
      */
-    public int lastPositionForSemester(int semester) {
+    public int lastPositionForSemester(Semester semester) {
         if (document == null) {
             return 0;
         }
         int cursor = 0;
-        for (int i = 0; i <= semester; i++) {
-            List<Course> semCourses = document.coursesForSemester(i);
+        for (Semester otherSemester : Semester.semesterNames.keySet()) {
+            if(!otherSemester.isBeforeOrEqual(otherSemester))
+                break;
+            List<Course> semCourses = document.coursesForSemester(otherSemester);
             cursor += semCourses.size() + 1;
         }
         return cursor - 1;
@@ -90,8 +95,8 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return false;
         }
         int cursor = position;
-        for (int i = 0; i < RoadDocument.semesterNames.length; i++) {
-            List<Course> semCourses = document.coursesForSemester(i);
+        for (Semester semester : Semester.semesterNames.keySet()) {
+            List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
             } else {
@@ -106,20 +111,20 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
         return false;
     }
 
-    @Override public int semesterForGridPosition(int position) {
+    @Override public Semester semesterForGridPosition(int position) {
         if (document == null) {
-            return 0;
+            return new Semester(true);
         }
         int cursor = position;
-        for (int i = 0; i < RoadDocument.semesterNames.length; i++) {
-            List<Course> semCourses = document.coursesForSemester(i);
+        for (Semester semester : Semester.semesterNames.keySet()) {
+            List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
             } else {
-                return i;
+                return semester;
             }
         }
-        return 0;
+        return new Semester(true);
     }
 
     public int semesterPositionForGridPosition(int position) {
@@ -127,8 +132,8 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return 0;
         }
         int cursor = position;
-        for (int i = 0; i < RoadDocument.semesterNames.length; i++) {
-            List<Course> semCourses = document.coursesForSemester(i);
+        for (Semester semester : Semester.semesterNames.keySet()) {
+            List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
             } else {
@@ -153,21 +158,21 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
 
     public boolean moveCourse(int originalPos, int finalPos) {
         if (document != null) {
-            int startSem = semesterForGridPosition(originalPos);
+            Semester startSem = semesterForGridPosition(originalPos);
             int startPos = semesterPositionForGridPosition(originalPos);
-            int endSem = semesterForGridPosition(finalPos);
+            Semester endSem = semesterForGridPosition(finalPos);
             int endPos = semesterPositionForGridPosition(finalPos);
             if (endPos == -1) {
                 // Hovering over a header
-                endSem -= 1;
-                if (endSem < 0) {
+                endSem = endSem.prevSemester();
+                if (!endSem.isValid()) {
                     return false;
                 }
                 // Move to last index in the previous semester
                 endPos = document.coursesForSemester(endSem).size();
                 if (endSem == startSem) {
                     // First index in next semester
-                    endSem += 1;
+                    endSem = endSem.nextSemester();
                     endPos = 0;
                 }
             }
@@ -183,12 +188,12 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
     }
 
     @Override
-    public void formatSectionHeader(View view, int semester) {
+    public void formatSectionHeader(View view, Semester semester) {
         final TextView textView = (TextView)view.findViewById(R.id.headerTextView);
-        textView.setText(RoadDocument.semesterNames[semester]);
+        textView.setText(semester.toString());
         List<Course> courses = document.coursesForSemester(semester);
         TextView hoursView = view.findViewById(R.id.hoursTextView);
-        if (courses.size() > 0 && semester != 0) {
+        if (courses.size() > 0 && !semester.isPriorCredit()) {
             int units = 0;
             double hours = 0.0;
             for (Course course : courses) {
@@ -258,6 +263,6 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
         if (document == null) {
             return 0;
         }
-        return document.getAllCourses().size() + RoadDocument.semesterNames.length;
+        return document.getAllCourses().size() + Semester.semesterNames.size();
     }
 }

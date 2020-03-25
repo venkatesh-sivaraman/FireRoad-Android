@@ -28,6 +28,7 @@ import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.Semester;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
 import com.base12innovations.android.fireroad.utils.BottomSheetNavFragment;
@@ -256,7 +257,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         }
 
         RequirementsListStatement prereqs = course.getPrerequisites();
-        int courseSemester = RoadDocument.semesterNames.length;
+        Semester courseSemester = Semester.getLastSemester();
         if (User.currentUser().getCurrentDocument() != null)
             courseSemester = User.currentUser().getCurrentDocument().firstSemesterForCourse(course);
 
@@ -265,7 +266,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             if (course.getEitherPrereqOrCoreq()) {
                 layoutBuilder.addDescriptionItem(layout, "Fulfill either the prerequisites or the corequisites.\n\nPrereqs: ");
             }
-            prereqDisplay = addRequirementsStatementItem(layout, prereqs, courseSemester - 1);
+            prereqDisplay = addRequirementsStatementItem(layout, prereqs, courseSemester.prevSemester());
         }
         RequirementsListStatement coreqs = course.getCorequisites();
         if (coreqs != null) {
@@ -444,7 +445,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         }
     }
 
-    private RequirementsListDisplay addRequirementsStatementItem(LinearLayout layout, RequirementsListStatement requirement, int maxSemester) {
+    private RequirementsListDisplay addRequirementsStatementItem(LinearLayout layout, RequirementsListStatement requirement, Semester maxSemester) {
         RequirementsListDisplay display = new RequirementsListDisplay(requirement, getContext());
         display.singleCard = true;
         display.delegate = new RequirementsListDisplay.Delegate() {
@@ -556,9 +557,9 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
     }
 
     @Override
-    public void addCourseDialogAddedToSemester(Course course, int semester) {
+    public void addCourseDialogAddedToSemester(Course course, String semesterID) {
         if (delegate.get() != null)
-            delegate.get().courseNavigatorAddedCourse(this, course, semester);
+            delegate.get().courseNavigatorAddedCourse(this, course, semesterID);
         addCourseDialog.dismiss();
         addCourseDialog = null;
     }

@@ -27,6 +27,7 @@ import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.Semester;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
@@ -37,7 +38,7 @@ public class CustomCoursesActivity extends AppCompatActivity implements PopupMen
     private CustomCoursesAdapter gridAdapter;
     private ProgressBar loadingIndicator;
 
-    private int currentlySelectedSemester;
+    private Semester currentlySelectedSemester;
     private int currentlySelectedPosition;
     private RecyclerView recyclerView;
     private Course currentlySelectedCourse;
@@ -171,11 +172,11 @@ public class CustomCoursesActivity extends AppCompatActivity implements PopupMen
     }
 
     @Override
-    public void addCourseDialogAddedToSemester(Course course, int semester) {
+    public void addCourseDialogAddedToSemester(Course course, String semesterID) {
         Intent resultIntent = new Intent();
         resultIntent.putExtra(ADDED_SUBJECT_ID_RESULT, course.getSubjectID());
         resultIntent.putExtra(ADDED_SUBJECT_TITLE_RESULT, course.subjectTitle);
-        resultIntent.putExtra(ADDED_SEMESTER_RESULT, semester);
+        resultIntent.putExtra(ADDED_SEMESTER_RESULT, semesterID);
         addCourseDialog.dismiss();
         addCourseDialog = null;
         setResult(RESULT_OK, resultIntent);

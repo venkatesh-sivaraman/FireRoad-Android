@@ -11,6 +11,7 @@ import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.Semester;
 import com.base12innovations.android.fireroad.utils.ListHelper;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
@@ -47,12 +48,12 @@ public class CustomCoursesAdapter extends CourseCollectionAdapter {
         return false;
     }
 
-    @Override public int semesterForGridPosition(int position) {
-        return 0;
+    @Override public Semester semesterForGridPosition(int position) {
+        return new Semester(true);
     }
 
     @Override
-    public void formatSectionHeader(View view, int semester) {
+    public void formatSectionHeader(View view, Semester semester) {
         // Never gets here
     }
 

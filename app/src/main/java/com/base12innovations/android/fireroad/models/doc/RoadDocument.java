@@ -20,32 +20,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 
-public class RoadDocument extends Document {
+import static com.base12innovations.android.fireroad.models.doc.Semester.semesterNames;
 
-    public static final String[] semesterNames = new String[] {
-            "Prior Credit",
-            "1st Year Fall",
-            "1st Year IAP",
-            "1st Year Spring",
-            "2nd Year Fall",
-            "2nd Year IAP",
-            "2nd Year Spring",
-            "3rd Year Fall",
-            "3rd Year IAP",
-            "3rd Year Spring",
-            "4th Year Fall",
-            "4th Year IAP",
-            "4th Year Spring",
-            "5th Year Fall",
-            "5th Year IAP",
-            "5th Year Spring"
-    };
+public class RoadDocument extends Document {
 
     protected static class RoadJSON {
         static final String coursesOfStudy = "coursesOfStudy";
@@ -53,6 +39,7 @@ public class RoadDocument extends Document {
         static final String overrideWarnings = "overrideWarnings";
         static final String progressOverrides = "progressOverrides";
         static final String semester = "semester";
+        static final String semesterID = "semesterID";
         static final String subjectTitle = "title";
         static final String subjectID = "subject_id";
         static final String subjectIDAlt = "id";
@@ -139,10 +126,10 @@ public class RoadDocument extends Document {
         }
     }
 
-    Map<Integer, List<Course>> courses = new HashMap<>();
+    Map<Semester, List<Course>> courses = new HashMap<>();
     public List<String> coursesOfStudy = new ArrayList<>();
     private Map<Course, Boolean> overrides = new HashMap<>();
-    private Map<Integer, Map<Course, SubjectMarker>> markers = new HashMap<>();
+    private Map<Semester, Map<Course, SubjectMarker>> markers = new HashMap<>();
     private Map<String, ProgressAssertion> progressOverrides = new HashMap<>();
 
     public RoadDocument(File location) {
@@ -170,6 +157,7 @@ public class RoadDocument extends Document {
                 coursesOfStudy.add(majors.getString(i));
             }
 
+            Semester.updateNumYears(4,true);
             // load selected subjects
             JSONArray selectedSubjects = json.getJSONArray(RoadJSON.selectedSubjects);
             courses = new HashMap<>();
@@ -186,12 +174,19 @@ public class RoadDocument extends Document {
                 if (subjectID == null) continue;
                 String subjectTitle = subjectInfo.getString(RoadJSON.subjectTitle);
 //                int units = subjectInfo.getInt(RoadJSON.units);
-                int semester = subjectInfo.getInt(RoadJSON.semester);
                 boolean ignoreWarnings = subjectInfo.getBoolean(RoadJSON.overrideWarnings);
-
-                if (semester < 0 || semester >= semesterNames.length) {
-                    continue;
+                Semester semester;
+                //ensure backwards compatibility, RoadJSON.semester is the old semester, RoadJSON.semesterID is the new string
+                if (subjectInfo.has(RoadJSON.semesterID)){
+                    semester = new Semester(subjectInfo.getString(RoadJSON.semesterID),true);
+                }else{
+                    // this is an old version of the JSON file, we now need to ensure that it follows the summer system as well
+                    // the old semester system is as follows: 0 is Prior Credit, 1-3 is 1st year, 4-6 is 2nd year, etc.
+                    semester = new Semester(subjectInfo.getInt(RoadJSON.semester),true);
                 }
+                if(!semester.isValid())
+                    continue;
+
                 if (!courses.containsKey(semester)) {
                     courses.put(semester, new ArrayList<Course>());
                 }
@@ -254,17 +249,20 @@ public class RoadDocument extends Document {
 
             // Write courses
             JSONArray subjects = new JSONArray();
-            for (int semesterIndex : courses.keySet()) {
-                List<Course> semCourses = courses.get(semesterIndex);
+            for (Semester semester : courses.keySet()) {
+                List<Course> semCourses = courses.get(semester);
                 for (Course course : semCourses) {
                     JSONObject courseObj = course.toJSON();
-                    courseObj.put(RoadJSON.semester, semesterIndex);
+                    // we need to cast it back to the previous version. By default, will move to
+                    // the prior credit section so it doesn't get deleted when viewing on an old version
+                    courseObj.put(RoadJSON.semester, semester.oldSemesterIndex());
+                    courseObj.put(RoadJSON.semesterID,semester.semesterID());
                     if (overrides.containsKey(course)) {
                         courseObj.put(RoadJSON.overrideWarnings, overrides.get(course));
                     } else {
                         courseObj.put(RoadJSON.overrideWarnings, false);
                     }
-                    SubjectMarker marker = subjectMarkerForCourse(course, semesterIndex);
+                    SubjectMarker marker = subjectMarkerForCourse(course, semester);
                     if (marker != null)
                         courseObj.put(RoadJSON.marker, marker.rawValue);
                     subjects.put(courseObj);
@@ -300,9 +298,9 @@ public class RoadDocument extends Document {
         String base = file.getName();
         builder.append(base.substring(0, base.lastIndexOf('.')));
         builder.append("\n");
-        for (int i = 0; i < semesterNames.length; i++) {
-            builder.append(semesterNames[i]);
-            List<Course> semCourses = coursesForSemester(i);
+        for(Semester nextSemester : semesterNames.keySet()){
+            builder.append(semesterNames.get(nextSemester));
+            List<Course> semCourses = coursesForSemester(nextSemester);
             if (semCourses.size() == 0) {
                 builder.append(" (no subjects)\n");
             } else {
@@ -336,7 +334,7 @@ public class RoadDocument extends Document {
     @Override
     public List<Course> getAllCourses() {
         List<Course> allCourses = new ArrayList<>();
-        for (int semester : courses.keySet()) {
+        for (Semester semester : courses.keySet()) {
             allCourses.addAll(courses.get(semester));
         }
         return allCourses;
@@ -345,7 +343,7 @@ public class RoadDocument extends Document {
     // Lists just courses that aren't marked as listener
     public List<Course> getCreditCourses() {
         List<Course> creditCourses = new ArrayList<>();
-        for (int semester : courses.keySet()) {
+        for (Semester semester : courses.keySet()) {
             for (Course course: courses.get(semester)) {
                 SubjectMarker marker = subjectMarkerForCourse(course, semester);
                 if (marker != null && marker == SubjectMarker.LISTENER) continue;
@@ -355,15 +353,15 @@ public class RoadDocument extends Document {
         return creditCourses;
     }
 
-    public List<Course> coursesForSemester(int semester) {
+    public List<Course> coursesForSemester(Semester semester) {
         if (courses.containsKey(semester)) {
             return new ArrayList<>(courses.get(semester));
         }
         return new ArrayList<>();
     }
 
-    public boolean addCourse(Course course, int semester) {
-        if (semester < 0 || semester >= semesterNames.length)
+    public boolean addCourse(Course course, Semester semester) {
+        if (!semester.isValid())
             return false;
         if (!courses.containsKey(semester))
             courses.put(semester, new ArrayList<Course>());
@@ -374,10 +372,9 @@ public class RoadDocument extends Document {
         return true;
     }
 
-    public boolean removeCourse(Course course, int semester) {
-        if (semester < 0 || semester >= semesterNames.length) {
+    public boolean removeCourse(Course course, Semester semester) {
+        if (!semester.isValid())
             return false;
-        }
         if (!courses.containsKey(semester)) {
             courses.put(semester, new ArrayList<Course>());
         }
@@ -387,17 +384,16 @@ public class RoadDocument extends Document {
         return ret;
     }
 
-    public void removeAllCoursesFromSemester(int semester) {
-        if (semester < 0 || semester >= semesterNames.length) {
+    public void removeAllCoursesFromSemester(Semester semester) {
+        if (!semester.isValid())
             return;
-        }
         courses.get(semester).clear();
         if (markers.containsKey(semester))
             markers.remove(semester);
         save();
     }
 
-    public void moveCourse(int startSemester, int startPos, int endSemester, int endPos) {
+    public void moveCourse(Semester startSemester, int startPos, Semester endSemester, int endPos) {
         if (!courses.containsKey(startSemester)) {
             return;
         }
@@ -411,7 +407,7 @@ public class RoadDocument extends Document {
         setSubjectMarker(marker, course, endSemester, false);
 
         semCourses.remove(startPos);
-        if (startSemester == endSemester) {
+        if (startSemester.equals(endSemester)) {
             semCourses.add(endPos, course);
         } else {
             if (!courses.containsKey(endSemester)) {
@@ -451,10 +447,9 @@ public class RoadDocument extends Document {
 
     // Markers
 
-    public void setSubjectMarker(SubjectMarker marker, Course course, int semester, boolean shouldSave) {
-        if (semester < 0 || semester >= semesterNames.length)
+    public void setSubjectMarker(SubjectMarker marker, Course course, Semester semester, boolean shouldSave) {
+        if (!semester.isValid())
             return;
-
         if (!markers.containsKey(semester))
             markers.put(semester, new HashMap<Course, SubjectMarker>());
         if (marker != null)
@@ -465,7 +460,7 @@ public class RoadDocument extends Document {
             save();
     }
 
-    public SubjectMarker subjectMarkerForCourse(Course course, int semester) {
+    public SubjectMarker subjectMarkerForCourse(Course course, Semester semester) {
         if (!markers.containsKey(semester))
             return null;
         if (!markers.get(semester).containsKey(course))
@@ -515,7 +510,7 @@ public class RoadDocument extends Document {
         }
     }
 
-    private boolean hasUnsatisfiedRequirements(Course course, RequirementsListStatement statement, int maxSemester, boolean useQuarter) {
+    private boolean hasUnsatisfiedRequirements(Course course, RequirementsListStatement statement, Semester maxSemester, boolean useQuarter) {
         if (statement == null)
             return false;
 
@@ -528,14 +523,21 @@ public class RoadDocument extends Document {
      * Compiles the list of courses taken before the given course, with maxSemester as the maximum
      * inclusive semester for comparison.
      */
-    public List<Course> coursesTakenBeforeCourse(Course course, int maxSemester, boolean useQuarter) {
+    public List<Course> coursesTakenBeforeCourse(Course course, Semester maxSemester, boolean useQuarter) {
         List<Course> takenCourses = new ArrayList<>();
-        for (int i = 0; i <= maxSemester + 1; i++) {
-            for (Course otherCourse : coursesForSemester(i)) {
-                if ((i <= maxSemester ||
-                        (useQuarter && course.getQuarterOffered() != Course.QuarterOffered.BeginningOnly &&
-                                otherCourse.getQuarterOffered() == Course.QuarterOffered.BeginningOnly))) {
-                    takenCourses.add(otherCourse);
+        for(Semester semester : semesterNames.keySet()){
+            if(!semester.isBeforeOrEqual(maxSemester))
+                break;
+            takenCourses.addAll(coursesForSemester(semester));
+        }
+        if(useQuarter) {
+            Semester nextMaxSemester = maxSemester.nextSemester();
+            if (nextMaxSemester.isValid()) {
+                for (Course otherCourse : coursesForSemester(nextMaxSemester)) {
+                    if (course.getQuarterOffered() != Course.QuarterOffered.BeginningOnly &&
+                            otherCourse.getQuarterOffered() == Course.QuarterOffered.BeginningOnly) {
+                        takenCourses.add(otherCourse);
+                    }
                 }
             }
         }
@@ -546,39 +548,43 @@ public class RoadDocument extends Document {
      * Returns the maximum semester index if the course isn't found. Excludes prior credit from the
      * search.
      */
-    public int firstSemesterForCourse(Course course) {
+    public Semester firstSemesterForCourse(Course course) {
         // Exclude prior credit
-        for (int i = 1; i < semesterNames.length; i++) {
-            if (coursesForSemester(i).contains(course)) {
-                return i;
+        Semester firstSemester = Semester.getLastSemester();
+        for(Semester semester : semesterNames.keySet()){
+            if(semester.isBefore(firstSemester)){
+                if(coursesForSemester(semester).contains(course)){
+                    firstSemester = semester;
+                }
             }
         }
-        return semesterNames.length;
+        return firstSemester;
     }
 
-    private Map<Course, Map<Integer, List<Warning>>> warningsCache;
+    private Map<Course, Map<Semester, List<Warning>>> warningsCache;
 
-    public List<Warning> warningsForCourseCached(Course course, int semester) {
+    public List<Warning> warningsForCourseCached(Course course, Semester semester) {
         if (warningsCache != null && warningsCache.containsKey(course) && warningsCache.get(course).containsKey(semester))
             return warningsCache.get(course).get(semester);
         return null;
     }
 
-    public List<Warning> warningsForCourse(Course course, int semester) {
-        if (semester == 0) return new ArrayList<>();
+    public List<Warning> warningsForCourse(Course course, Semester semester) {
+        if (semester.isPriorCredit()) return new ArrayList<>();
         if (warningsCache != null && warningsCache.containsKey(course) && warningsCache.get(course).containsKey(semester))
             return warningsCache.get(course).get(semester);
 
-        boolean unsatisfiedPrereqs = hasUnsatisfiedRequirements(course, course.getPrerequisites(), semester - 1, true);
-        int coreqCutoff = AppSettings.shared().getBoolean(AppSettings.ALLOW_COREQUISITES_TOGETHER, true) ? semester : semester - 1;
+        boolean unsatisfiedPrereqs = hasUnsatisfiedRequirements(course, course.getPrerequisites(), semester.prevSemester(), true);
+        Semester coreqCutoff = AppSettings.shared().getBoolean(AppSettings.ALLOW_COREQUISITES_TOGETHER, true) ? semester : semester.prevSemester();
         boolean unsatisfiedCoreqs = hasUnsatisfiedRequirements(course, course.getCorequisites(), coreqCutoff, false);
 
         List<Warning> result = new ArrayList<>();
-        if (semester % 3 == 1 && !course.isOfferedFall) {
+        //TODO: Summer courses
+        if (semester.getSeason() == Semester.Season.Fall && !course.isOfferedFall) {
             result.add(Warning.notOffered("fall"));
-        } else if (semester % 3 == 2 && !course.isOfferedIAP) {
+        } else if (semester.getSeason() == Semester.Season.IAP && !course.isOfferedIAP) {
             result.add(Warning.notOffered("IAP"));
-        } else if (semester % 3 == 0 && !course.isOfferedSpring) {
+        } else if (semester.getSeason() == Semester.Season.Spring && !course.isOfferedSpring) {
             result.add(Warning.notOffered("spring"));
         }
         if (!course.getEitherPrereqOrCoreq() || (unsatisfiedPrereqs && unsatisfiedCoreqs)) {
@@ -591,7 +597,7 @@ public class RoadDocument extends Document {
         if (warningsCache == null)
             warningsCache = new HashMap<>();
         if (!warningsCache.containsKey(course))
-            warningsCache.put(course, new HashMap<Integer, List<Warning>>());
+            warningsCache.put(course, new HashMap<Semester, List<Warning>>());
         warningsCache.get(course).put(semester, result);
 
         return result;

@@ -29,6 +29,7 @@ import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.doc.Document;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.Semester;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
@@ -46,7 +47,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
     private MyRoadCoursesAdapter gridAdapter;
     private ProgressBar loadingIndicator;
 
-    private int currentlySelectedSemester;
+    private Semester currentlySelectedSemester;
     private int currentlySelectedPosition;
     private RecyclerView recyclerView;
     private Course currentlySelectedCourse;
@@ -174,7 +175,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         };
         gridAdapter.onHeaderClickListener = new MyRoadCoursesAdapter.HeaderClickListener() {
             @Override
-            public void onHeaderButtonClick(int semester, View view) {
+            public void onHeaderButtonClick(Semester semester, View view) {
                 final PopupMenu menu = new PopupMenu(getActivity(), view);
                 MenuInflater mInflater = menu.getMenuInflater();
                 mInflater.inflate(R.menu.menu_myroad_header, menu.getMenu());
@@ -309,7 +310,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         updateRecyclerView();
     }
 
-    public void roadAddedCourse(Course course, int semester) {
+    public void roadAddedCourse(Course course, Semester semester) {
         if (gridAdapter != null) {
             int position = gridAdapter.lastPositionForSemester(semester);
             gridAdapter.notifyItemInserted(position);
@@ -430,7 +431,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
                 return true;
             case R.id.createSchedule:
                 if (mListener != null)
-                    mListener.myRoadFragmentAddedCoursesToSchedule(User.currentUser().getCurrentDocument().coursesForSemester(currentlySelectedSemester), RoadDocument.semesterNames[currentlySelectedSemester]);
+                    mListener.myRoadFragmentAddedCoursesToSchedule(User.currentUser().getCurrentDocument().coursesForSemester(currentlySelectedSemester), currentlySelectedSemester.toString());
                 return true;
             case R.id.addCustomCourse:
                 if (mListener != null)
@@ -457,7 +458,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
         }
     }
 
-    private void presentWarningAlert(Course course, int semester, final int position) {
+    private void presentWarningAlert(Course course, Semester semester, final int position) {
         CourseWarningsDialogFragment dialogFragment = new CourseWarningsDialogFragment();
         dialogFragment.course = course;
         dialogFragment.warnings = User.currentUser().getCurrentDocument().warningsForCourse(course, semester);

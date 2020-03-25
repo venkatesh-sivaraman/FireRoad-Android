@@ -191,9 +191,9 @@ public class RequirementsFragment extends Fragment implements RequirementsListFr
 
 
     @Override
-    public void courseNavigatorAddedCourse(Fragment source, Course course, int semester) {
+    public void courseNavigatorAddedCourse(Fragment source, Course course, String semesterID) {
         if (mListener != null) {
-            mListener.courseNavigatorAddedCourse(this, course, semester);
+            mListener.courseNavigatorAddedCourse(this, course, semesterID);
         }
     }
 
