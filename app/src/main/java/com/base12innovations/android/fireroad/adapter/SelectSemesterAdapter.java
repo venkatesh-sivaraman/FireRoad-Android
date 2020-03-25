@@ -20,7 +20,7 @@ public class SelectSemesterAdapter extends RecyclerView.Adapter<SelectSemesterAd
     public interface Delegate{
         void selectSemester(Semester semester);
         boolean courseInSemester(Semester semester);
-        boolean courseOfferedInSemester(Semester semester);
+        boolean courseNotOfferedInSemester(Semester semester);
     }
 
     public WeakReference<Delegate> delegate;
@@ -50,7 +50,7 @@ public class SelectSemesterAdapter extends RecyclerView.Adapter<SelectSemesterAd
                 button.setAlpha(0.5f);
                 button.setText("Added");
             }else {
-                if(delegateIsValid() && !delegate.get().courseOfferedInSemester(semester))
+                if(delegateIsValid() && delegate.get().courseNotOfferedInSemester(semester))
                     button.setAlpha(0.5f);
                 button.setOnClickListener(new View.OnClickListener() {
                     @Override

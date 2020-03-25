@@ -1,6 +1,5 @@
 package com.base12innovations.android.fireroad.models.doc;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -61,9 +60,11 @@ public class Semester {
         if(newNumYears > numYears){
             for (int year = numYears+1; year <= newNumYears; year++) {
                 for(Season season: Season.values()){
-                    Semester newSemester = new Semester(year,season);
-                    semesterNames.put(newSemester,newSemester.toString());
-                    semesterIDs.put(newSemester,newSemester.semesterID());
+                    if(season != Season.Undefined) {
+                        Semester newSemester = new Semester(year, season, true);
+                        semesterNames.put(newSemester, newSemester.toString());
+                        semesterIDs.put(newSemester, newSemester.semesterID());
+                    }
                 }
             }
             numYears = newNumYears;
@@ -121,6 +122,16 @@ public class Semester {
         }
     }
 
+    private Semester(int year, Season season, boolean overrideYearCheck){
+        if(overrideYearCheck){
+            this.isValid = true;
+            this.isPriorCredit = false;
+            this.year = year;
+            this.season = season;
+        }else{
+            init(year,season);
+        }
+    }
     public Semester(int year, Season season){
         init(year,season);
     }
@@ -241,7 +252,7 @@ public class Semester {
                 }
             }
         }
-        return year + modifier;
+        return year + modifier + " Year";
     }
 
     @Override

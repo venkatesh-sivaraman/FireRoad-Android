@@ -76,7 +76,7 @@ public class AddCourseDialog extends DialogFragment implements SelectSemesterAda
                 }
             });
 
-        RecyclerView recyclerView = view.findViewById(R.id.recyclerViewCourses);
+        RecyclerView recyclerView = view.findViewById(R.id.recyclerViewSelectSemester);
         SelectSemesterAdapter listAdapter = new SelectSemesterAdapter();
         listAdapter.delegate = new WeakReference<SelectSemesterAdapter.Delegate>(this);
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(),LinearLayoutManager.VERTICAL,false);
@@ -90,7 +90,7 @@ public class AddCourseDialog extends DialogFragment implements SelectSemesterAda
             priorCreditButton.setAlpha(0.5f);
             priorCreditButton.setText("Added");
         }else{
-            if(!courseOfferedInSemester(priorCreditSemester))
+            if(!courseNotOfferedInSemester(priorCreditSemester))
                 priorCreditButton.setAlpha(0.5f);
             priorCreditButton.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -99,6 +99,8 @@ public class AddCourseDialog extends DialogFragment implements SelectSemesterAda
                 }
             });
         }
+        listAdapter.numYears=4;
+        listAdapter.notifyDataSetChanged();
 
         ((TextView)view.findViewById(R.id.titleLabel)).setText("Add " + course.getSubjectID() + " to:");
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -120,7 +122,7 @@ public class AddCourseDialog extends DialogFragment implements SelectSemesterAda
     public boolean courseInSemester(Semester semester){
         return doc != null && doc.coursesForSemester(semester).contains(course);
     }
-    public boolean courseOfferedInSemester(Semester semester){
+    public boolean courseNotOfferedInSemester(Semester semester){
         return (semester.getSeason()== Semester.Season.Fall && !course.isOfferedFall) ||
                 (semester.getSeason()== Semester.Season.IAP && !course.isOfferedIAP) ||
                 (semester.getSeason()== Semester.Season.Spring && !course.isOfferedSpring)||
