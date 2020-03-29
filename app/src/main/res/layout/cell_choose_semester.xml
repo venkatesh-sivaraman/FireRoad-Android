@@ -16,8 +16,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="1st Year"
-        android:textAlignment="center"
+        android:text="          1st Year"
+        android:textAlignment="textStart"
         android:textSize="16sp" />
 
     <LinearLayout

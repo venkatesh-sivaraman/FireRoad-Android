@@ -24,6 +24,7 @@ import com.base12innovations.android.fireroad.models.course.ColorManager;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 import com.base12innovations.android.fireroad.models.doc.Semester;
+import com.base12innovations.android.fireroad.models.doc.User;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -145,7 +146,7 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
     private void updateIndexInfo(){
         semesters = new ArrayList<>();
         courseIndices = new ArrayList<>();
-        for(Semester semester : Semester.semesterNames.keySet()){
+        for(Semester semester : User.currentUser().getCurrentDocument().getSemesterNames().keySet()){
             if(courses.get(semester).size()>0){
                 semesters.add(semester);
                 courseIndices.add(-1);

@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -17,6 +18,7 @@ import com.base12innovations.android.fireroad.models.course.ColorManager;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 import com.base12innovations.android.fireroad.models.doc.Semester;
+import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.util.List;
@@ -41,7 +43,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return null;
         }
         int cursor = position;
-        for (Semester semester : Semester.semesterNames.keySet()) {
+        for (Semester semester : document.getSemesterNames().keySet()) {
             List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
@@ -62,7 +64,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return 0;
         }
         int cursor = 0;
-        for (Semester otherSemester : Semester.semesterNames.keySet()) {
+        for (Semester otherSemester : document.getSemesterNames().keySet()) {
             if(!otherSemester.isBefore(semester))
                 break;
             List<Course> semCourses = document.coursesForSemester(otherSemester);
@@ -81,8 +83,8 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return 0;
         }
         int cursor = 0;
-        for (Semester otherSemester : Semester.semesterNames.keySet()) {
-            if(!otherSemester.isBeforeOrEqual(otherSemester))
+        for (Semester otherSemester : document.getSemesterNames().keySet()) {
+            if(!otherSemester.isBeforeOrEqual(semester))
                 break;
             List<Course> semCourses = document.coursesForSemester(otherSemester);
             cursor += semCourses.size() + 1;
@@ -95,7 +97,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return false;
         }
         int cursor = position;
-        for (Semester semester : Semester.semesterNames.keySet()) {
+        for (Semester semester : document.getSemesterNames().keySet()) {
             List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
@@ -116,7 +118,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return new Semester(true);
         }
         int cursor = position;
-        for (Semester semester : Semester.semesterNames.keySet()) {
+        for (Semester semester : document.getSemesterNames().keySet()) {
             List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
@@ -132,7 +134,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return 0;
         }
         int cursor = position;
-        for (Semester semester : Semester.semesterNames.keySet()) {
+        for (Semester semester : document.getSemesterNames().keySet()) {
             List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
@@ -263,6 +265,58 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
         if (document == null) {
             return 0;
         }
-        return document.getAllCourses().size() + Semester.semesterNames.size();
+        return document.getAllCourses().size() + document.getSemesterNames().size()+1;
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if(position == getItemCount() -1){
+            return 2;
+        }else {
+            return super.getItemViewType(position);
+        }
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+        if(i == 2){
+            final LayoutInflater layoutInflater = LayoutInflater.from(viewGroup.getContext());
+            View convertView = layoutInflater.inflate(R.layout.cell_modify_num_years, null);
+            ViewHolder vh = new ViewHolder(convertView);
+            return vh;
+        }else{
+            return super.onCreateViewHolder(viewGroup, i);
+        }
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull final ViewHolder viewHolder, int position) {
+        if(position == getItemCount()-1){
+            View view = viewHolder.cellView;
+            (view.findViewById(R.id.buttonRemoveYear)).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(document.removeYearIsValid())
+                        document.removeLastYear();
+                    notifyDataSetChanged();
+                }
+            });
+            (view.findViewById(R.id.buttonAddYear)).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    document.updateNumYears(document.getNumYears()+1);
+                    notifyDataSetChanged();
+                }
+            });
+            updateYearModifierView(viewHolder);
+        }else{
+            super.onBindViewHolder(viewHolder,position);
+        }
+    }
+    
+    public void updateYearModifierView(ViewHolder viewHolder){
+        View view = viewHolder.cellView;
+        view.findViewById(R.id.buttonRemoveYear).setEnabled(document.removeYearIsValid());
     }
 }

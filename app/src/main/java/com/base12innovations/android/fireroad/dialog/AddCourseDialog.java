@@ -90,7 +90,7 @@ public class AddCourseDialog extends DialogFragment implements SelectSemesterAda
             priorCreditButton.setAlpha(0.5f);
             priorCreditButton.setText("Added");
         }else{
-            if(!courseNotOfferedInSemester(priorCreditSemester))
+            if(courseNotOfferedInSemester(priorCreditSemester))
                 priorCreditButton.setAlpha(0.5f);
             priorCreditButton.setOnClickListener(new View.OnClickListener() {
                 @Override

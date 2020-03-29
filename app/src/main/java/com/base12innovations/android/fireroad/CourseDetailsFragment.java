@@ -257,7 +257,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         }
 
         RequirementsListStatement prereqs = course.getPrerequisites();
-        Semester courseSemester = Semester.getLastSemester();
+        Semester courseSemester = User.currentUser().getCurrentDocument().getLastSemester();
         if (User.currentUser().getCurrentDocument() != null)
             courseSemester = User.currentUser().getCurrentDocument().firstSemesterForCourse(course);
 

@@ -16,6 +16,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,9 +30,7 @@ import java.util.Set;
 
 import javax.security.auth.Subject;
 
-import static com.base12innovations.android.fireroad.models.doc.Semester.semesterNames;
-
-public class RoadDocument extends Document {
+public class RoadDocument extends Document implements Semester.Delegate{
 
     protected static class RoadJSON {
         static final String coursesOfStudy = "coursesOfStudy";
@@ -156,8 +155,7 @@ public class RoadDocument extends Document {
             for (int i = 0; i < majors.length(); i++) {
                 coursesOfStudy.add(majors.getString(i));
             }
-
-            Semester.updateNumYears(4,true);
+            updateNumYears(4);
             // load selected subjects
             JSONArray selectedSubjects = json.getJSONArray(RoadJSON.selectedSubjects);
             courses = new HashMap<>();
@@ -178,11 +176,11 @@ public class RoadDocument extends Document {
                 Semester semester;
                 //ensure backwards compatibility, RoadJSON.semester is the old semester, RoadJSON.semesterID is the new string
                 if (subjectInfo.has(RoadJSON.semesterID)){
-                    semester = new Semester(subjectInfo.getString(RoadJSON.semesterID),true);
+                    semester = new Semester(subjectInfo.getString(RoadJSON.semesterID),true,new WeakReference<Semester.Delegate>(this));
                 }else{
                     // this is an old version of the JSON file, we now need to ensure that it follows the summer system as well
                     // the old semester system is as follows: 0 is Prior Credit, 1-3 is 1st year, 4-6 is 2nd year, etc.
-                    semester = new Semester(subjectInfo.getInt(RoadJSON.semester),true);
+                    semester = new Semester(subjectInfo.getInt(RoadJSON.semester),true, new WeakReference<Semester.Delegate>(this));
                 }
                 if(!semester.isValid())
                     continue;
@@ -550,7 +548,7 @@ public class RoadDocument extends Document {
      */
     public Semester firstSemesterForCourse(Course course) {
         // Exclude prior credit
-        Semester firstSemester = Semester.getLastSemester();
+        Semester firstSemester = getLastSemester();
         for(Semester semester : semesterNames.keySet()){
             if(semester.isBefore(firstSemester)){
                 if(coursesForSemester(semester).contains(course)){
@@ -579,13 +577,14 @@ public class RoadDocument extends Document {
         boolean unsatisfiedCoreqs = hasUnsatisfiedRequirements(course, course.getCorequisites(), coreqCutoff, false);
 
         List<Warning> result = new ArrayList<>();
-        //TODO: Summer courses
         if (semester.getSeason() == Semester.Season.Fall && !course.isOfferedFall) {
             result.add(Warning.notOffered("fall"));
         } else if (semester.getSeason() == Semester.Season.IAP && !course.isOfferedIAP) {
             result.add(Warning.notOffered("IAP"));
         } else if (semester.getSeason() == Semester.Season.Spring && !course.isOfferedSpring) {
             result.add(Warning.notOffered("spring"));
+        } else if (semester.getSeason() == Semester.Season.Summer && !course.isOfferedSummer) {
+            result.add(Warning.notOffered("summer"));
         }
         if (!course.getEitherPrereqOrCoreq() || (unsatisfiedPrereqs && unsatisfiedCoreqs)) {
             if (unsatisfiedPrereqs)
@@ -619,5 +618,65 @@ public class RoadDocument extends Document {
     public void removeProgressOverride(String keyPath){
         progressOverrides.remove(keyPath);
         save();
+    }
+
+    private int numYears;
+    private Map<Semester, String> semesterNames = new LinkedHashMap<>();
+    private Map<Semester, String> semesterIDs = new LinkedHashMap<>();
+    public int getNumYears(){
+        return numYears;
+    }
+    public Map<Semester,String> getSemesterNames(){
+        return semesterNames;
+    }
+    public Map<Semester,String> getSemesterIDs(){
+        return semesterIDs;
+    }
+    public void updateNumYears(int newNumYears){
+        updateNumYears(newNumYears,false);
+    }
+    public void updateNumYears(int newNumYears, boolean allowReduceNumYears){
+        if(semesterNames.size() == 0){
+            semesterNames.put(new Semester(true),"Prior Credit");
+            semesterIDs.put(new Semester(true), Semester.SemesterID.priorCredit);
+        }
+        if(newNumYears > numYears){
+            for (int year = numYears+1; year <= newNumYears; year++) {
+                for(Semester.Season season: Semester.Season.values()){
+                    if(season != Semester.Season.Undefined) {
+                        Semester newSemester = new Semester(year, season, true);
+                        semesterNames.put(newSemester, newSemester.toString());
+                        semesterIDs.put(newSemester, newSemester.semesterID());
+                    }
+                }
+            }
+            numYears = newNumYears;
+        }else if(allowReduceNumYears && newNumYears < numYears){
+            for ( int year = newNumYears + 1; year <= numYears; year++){
+                for(Semester.Season season : Semester.Season.values()){
+                    semesterNames.remove(new Semester(year,season));
+                    semesterIDs.remove(new Semester(year,season));
+                }
+            }
+            numYears = newNumYears;
+        }
+    }
+    public Semester getLastSemester(){
+        return new Semester(numYears, Semester.Season.Summer);
+    }
+    public boolean removeYearIsValid(){
+        if(numYears <= 4)
+            return false;
+        return (coursesForSemester(new Semester(numYears, Semester.Season.Fall)).size() == 0 &&
+                coursesForSemester(new Semester(numYears, Semester.Season.IAP)).size() == 0 &&
+                coursesForSemester(new Semester(numYears, Semester.Season.Spring)).size() == 0 &&
+                coursesForSemester(new Semester(numYears, Semester.Season.Summer)).size() == 0);
+    }
+    public void removeLastYear(){
+        for(Semester.Season season : Semester.Season.values()) {
+            courses.remove(new Semester(numYears,season));
+            markers.remove(new Semester(numYears,season));
+        }
+        updateNumYears(numYears-1,true);
     }
 }

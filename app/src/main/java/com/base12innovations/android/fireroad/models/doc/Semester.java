@@ -1,13 +1,20 @@
 package com.base12innovations.android.fireroad.models.doc;
 
+import java.lang.ref.WeakReference;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class Semester {
-    public static int numYears=0;
-    public static Map<Semester,String> semesterNames = new LinkedHashMap<>();
-    public static Map<Semester,String> semesterIDs = new LinkedHashMap<>();
+
+    public interface Delegate{
+        int getNumYears();
+        Map<Semester,String> getSemesterNames();
+        Map<Semester,String> getSemesterIDs();
+        void updateNumYears(int newNumYears);
+    }
+
+    private WeakReference<Delegate> delegate;
 
     public enum Season{
         Fall(0),IAP(1),Spring(2),Summer(3),Undefined(9);
@@ -49,36 +56,6 @@ public class Semester {
         public static final String priorCredit = "prior-credit";
     }
 
-    public static void updateNumYears(int newNumYears){
-        updateNumYears(newNumYears,false);
-    }
-    public static void updateNumYears(int newNumYears, boolean allowReduceNumYears){
-        if(semesterNames.size() == 0){
-            semesterNames.put(new Semester(true),"Prior Credit");
-            semesterIDs.put(new Semester(true),SemesterID.priorCredit);
-        }
-        if(newNumYears > numYears){
-            for (int year = numYears+1; year <= newNumYears; year++) {
-                for(Season season: Season.values()){
-                    if(season != Season.Undefined) {
-                        Semester newSemester = new Semester(year, season, true);
-                        semesterNames.put(newSemester, newSemester.toString());
-                        semesterIDs.put(newSemester, newSemester.semesterID());
-                    }
-                }
-            }
-            numYears = newNumYears;
-        }else if(allowReduceNumYears && newNumYears < numYears){
-            numYears = newNumYears;
-            for(Semester semester : semesterNames.keySet()){
-                if(semester.getYear() > newNumYears){
-                    semesterNames.remove(semester);
-                    semesterIDs.remove(semester);
-                }
-            }
-        }
-    }
-
     public Semester(){
         this(false);
     }
@@ -87,9 +64,9 @@ public class Semester {
         init(isPriorCredit,isPriorCredit);
     }
 
-    public Semester(String semesterID, boolean updateNumYears){
+    public Semester(String semesterID, boolean updateNumYears, WeakReference<Delegate> delegate){
         if(semesterID.equals(SemesterID.priorCredit)){
-            init(true,true);
+            init(true,true, delegate);
         }else {
             int year = -1;
             Season season = Season.Fall;
@@ -106,28 +83,29 @@ public class Semester {
                 year = Integer.valueOf(semesterID.substring(SemesterID.summer.length()));
                 season = Season.Summer;
             }
-            init(year,season,updateNumYears);
+            init(year,season,updateNumYears,delegate);
         }
     }
 
-    public Semester(int oldSemesterIndex, boolean updateNumYears){
+    public Semester(int oldSemesterIndex, boolean updateNumYears, WeakReference<Delegate> delegate){
         if(oldSemesterIndex == 0){
-            init(true,true);
+            init(true,true,delegate);
         }else if(oldSemesterIndex > 0){
             int year = (oldSemesterIndex+2)/3;
             int season = (oldSemesterIndex+2)%3;
-            init(year,Season.values()[season],updateNumYears);
+            init(year,Season.values()[season],updateNumYears,delegate);
         }else{
-            init(false,false);
+            init(false,false,delegate);
         }
     }
 
-    private Semester(int year, Season season, boolean overrideYearCheck){
+    public Semester(int year, Season season, boolean overrideYearCheck){
         if(overrideYearCheck){
             this.isValid = true;
             this.isPriorCredit = false;
             this.year = year;
             this.season = season;
+            this.delegate = null;
         }else{
             init(year,season);
         }
@@ -140,9 +118,13 @@ public class Semester {
         init(year,season,false);
     }
     private void init(int year, Season season, boolean updateNumYears){
+        init(year,season,updateNumYears,new WeakReference<Delegate>(User.currentUser().getCurrentDocument()));
+    }
+    private void init(int year, Season season, boolean updateNumYears, WeakReference<Delegate> delegate){
+        this.delegate = delegate;
         if(updateNumYears)
-            updateNumYears(year);
-        isValid = year > 0 && year <= numYears;
+            delegate.get().updateNumYears(year);
+        isValid = year > 0 && year <= delegate.get().getNumYears();
         if(isValid) {
             this.year = year;
             this.season = season;
@@ -152,8 +134,11 @@ public class Semester {
         }
         isPriorCredit = false;
     }
-
     private void init(boolean isValid, boolean isPriorCredit){
+        init(isValid,isPriorCredit,new WeakReference<Delegate>(User.currentUser().getCurrentDocument()));
+    }
+    private void init(boolean isValid, boolean isPriorCredit, WeakReference<Delegate> delegate){
+        this.delegate = delegate;
         this.isValid = isValid;
         this.isPriorCredit = isPriorCredit;
         this.year = -1;
@@ -193,13 +178,9 @@ public class Semester {
         return new Semester(newYear,newSeason);
     }
 
-    public static Semester getLastSemester(){
-        return new Semester(numYears,Season.Summer);
-    }
-
     public String semesterID(){
-        if(semesterIDs.containsKey(this))
-            return semesterIDs.get(this);
+        if(delegate != null && delegate.get().getSemesterIDs().containsKey(this))
+            return delegate.get().getSemesterIDs().get(this);
         if(isValid){
             if(isPriorCredit)
                 return SemesterID.priorCredit;
@@ -257,8 +238,8 @@ public class Semester {
 
     @Override
     public String toString(){
-        if(semesterNames.containsKey(this))
-            return semesterNames.get(this);
+        if(delegate != null && delegate.get().getSemesterNames().containsKey(this))
+            return delegate.get().getSemesterNames().get(this);
         if(!isValid)
             return "Invalid Semester Value";
         if(isPriorCredit)

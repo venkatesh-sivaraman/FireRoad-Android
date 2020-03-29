@@ -87,7 +87,7 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
         // marked as substituted
         Set<Course> otherCourses = new HashSet<>(replacementCourses);
         Map<Semester,List<Course>> allCourses = new LinkedHashMap<>();
-        for(Semester semester : Semester.semesterNames.keySet()){
+        for(Semester semester : User.currentUser().getCurrentDocument().getSemesterNames().keySet()){
             List<Course> coursesForSemester = User.currentUser().getCurrentDocument().coursesForSemester(semester);
             for (Course course : coursesForSemester) {
                 otherCourses.remove(course);
