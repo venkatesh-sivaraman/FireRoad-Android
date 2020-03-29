@@ -145,9 +145,13 @@ public class Semester {
         this.season = Season.Undefined;
     }
 
-    public int oldSemesterIndex(){
+    int oldSemesterIndex(){
         if(isValid){
             if(isPriorCredit)
+                return 0;
+            if(season == Season.Summer)
+                return 0;
+            if(year > 5)
                 return 0;
             return year*3+season.rawvalue-2;
         }
