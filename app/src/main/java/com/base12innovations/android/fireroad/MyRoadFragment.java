@@ -341,7 +341,7 @@ public class MyRoadFragment extends Fragment implements PopupMenu.OnMenuItemClic
             MyRoadCoursesAdapter.ViewHolder holder = (MyRoadCoursesAdapter.ViewHolder)recyclerView.getChildViewHolder(recyclerView.getChildAt(i));
             if (holder == null) continue;
             int pos = holder.getAdapterPosition();
-            if (pos == childCount-1)
+            if (pos == gridAdapter.getItemCount()-1)
                 gridAdapter.updateYearModifierView(holder);
             else if (pos >= 0 && gridAdapter.isSectionHeader(pos))
                 gridAdapter.notifyItemChanged(pos);

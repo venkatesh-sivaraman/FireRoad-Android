@@ -149,7 +149,9 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
         return new GridLayoutManager.SpanSizeLookup() {
             @Override
             public int getSpanSize(int i) {
-                if (isSectionHeader(i)) {
+                if (i == getItemCount()-1) {
+                    return numColumns;
+                } else if (isSectionHeader(i)) {
                     return numColumns;
                 } else {
                     return 1;
@@ -282,7 +284,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
         if(i == 2){
             final LayoutInflater layoutInflater = LayoutInflater.from(viewGroup.getContext());
-            View convertView = layoutInflater.inflate(R.layout.cell_modify_num_years, null);
+            View convertView = layoutInflater.inflate(R.layout.cell_modify_num_years, viewGroup,false);
             ViewHolder vh = new ViewHolder(convertView);
             return vh;
         }else{
@@ -317,6 +319,13 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
     
     public void updateYearModifierView(ViewHolder viewHolder){
         View view = viewHolder.cellView;
-        view.findViewById(R.id.buttonRemoveYear).setEnabled(document.removeYearIsValid());
+        Button buttonRemoveYear = view.findViewById(R.id.buttonRemoveYear);
+        if(document.removeYearIsValid()) {
+            buttonRemoveYear.setEnabled(true);
+            buttonRemoveYear.setAlpha(1.0f);
+        }else{
+            buttonRemoveYear.setEnabled(false);
+            buttonRemoveYear.setAlpha(0.5f);
+        }
     }
 }

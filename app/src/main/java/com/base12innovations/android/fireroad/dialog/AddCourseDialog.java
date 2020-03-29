@@ -99,7 +99,7 @@ public class AddCourseDialog extends DialogFragment implements SelectSemesterAda
                 }
             });
         }
-        listAdapter.numYears=4;
+        listAdapter.numYears=doc.getNumYears();
         listAdapter.notifyDataSetChanged();
 
         ((TextView)view.findViewById(R.id.titleLabel)).setText("Add " + course.getSubjectID() + " to:");

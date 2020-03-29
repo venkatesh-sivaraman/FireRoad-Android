@@ -3,10 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginRight="8dp"
-    android:layout_marginTop="8dp"
-    android:layout_marginBottom="8dp"
     android:layout_marginLeft="12dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginRight="8dp"
+    android:layout_marginBottom="8dp"
     android:gravity="top"
     android:orientation="vertical"
     tools:context=".dialog.AddCourseDialog">
@@ -14,11 +14,11 @@
     <TextView
         android:id="@+id/titleLabel"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_height="0dp"
         android:layout_marginStart="18dp"
         android:layout_marginTop="18dp"
-        android:layout_weight="1"
+        android:layout_marginBottom="8dp"
+        android:layout_weight="1.5"
         android:text=""
         android:textSize="22sp"
         android:textStyle="bold" />
@@ -26,25 +26,25 @@
     <Button
         android:id="@+id/buttonSchedule"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:textColor="@color/colorPrimary"
+        android:layout_height="0dp"
+        android:layout_weight="1.5"
         android:background="?attr/selectableItemBackground"
-        android:text="Schedule" />
+        android:text="Schedule"
+        android:textColor="@color/colorPrimary" />
 
     <Button
         android:id="@+id/button0"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:textColor="@color/colorPrimary"
+        android:layout_height="0dp"
+        android:layout_weight="1.5"
         android:background="?attr/selectableItemBackground"
-        android:text="Prior Credit" />
+        android:text="Prior Credit"
+        android:textColor="@color/colorPrimary" />
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recyclerViewSelectSemester"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+        android:layout_height="0dp"
+        android:layout_weight="12.5" />
 
 </LinearLayout>
