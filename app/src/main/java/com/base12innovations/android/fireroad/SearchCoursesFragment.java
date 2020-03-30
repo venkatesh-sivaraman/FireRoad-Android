@@ -10,6 +10,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
@@ -24,10 +25,14 @@ import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class SearchCoursesFragment extends Fragment implements BottomSheetNavFragment, AddCourseDialog.AddCourseDialogDelegate, SearchResultsAdapter.Delegate {
+public class SearchCoursesFragment extends Fragment implements BottomSheetNavFragment, AddCourseDialog.AddCourseDialogDelegate, SearchResultsAdapter.Delegate, Toolbar.OnMenuItemClickListener {
 
     private static final String SEARCH_QUERY_EXTRA = "_searchQueryString";
     private static final String SEARCH_FILTERS_EXTRA = "_searchFilters";
@@ -41,7 +46,7 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
     private int cacheScrollOffset = 0;
 
     public int getScrollOffset() {
-        LinearLayoutManager manager = (LinearLayoutManager)resultsView.getLayoutManager();
+        LinearLayoutManager manager = (LinearLayoutManager) resultsView.getLayoutManager();
         return manager.findFirstVisibleItemPosition();
     }
 
@@ -76,7 +81,7 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
         Serializable f = getArguments().getSerializable(SEARCH_FILTERS_EXTRA);
         if (f != null && f instanceof EnumSet) {
             try {
-                filters = (EnumSet<CourseSearchEngine.Filter>)f;
+                filters = (EnumSet<CourseSearchEngine.Filter>) f;
             } catch (ClassCastException e) {
                 e.printStackTrace();
             }
@@ -91,6 +96,10 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
         resultsView.setAdapter(listAdapter);
 
         toolbar = (Toolbar) layout.findViewById(R.id.toolbar);
+        //toolbar.setOverflowIcon(getResources().getDrawable(R.drawable.more_icon, null));
+        toolbar.inflateMenu(R.menu.menu_sort_search);
+        toolbar.getMenu().findItem(R.id.sortAutomatic).setChecked(true);
+        toolbar.setOnMenuItemClickListener(this);
         toolbar.setClickable(true);
         toolbar.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -112,8 +121,8 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
             });
         }
         toolbar.setTitle("Searching...");
-        TypedValue value = new TypedValue ();
-        getContext().getTheme ().resolveAttribute (R.attr.colorPrimary, value, true);
+        TypedValue value = new TypedValue();
+        getContext().getTheme().resolveAttribute(R.attr.colorPrimary, value, true);
         toolbar.setBackgroundColor(value.data);
 
         progressIndicator = layout.findViewById(R.id.loadingIndicator);
@@ -124,6 +133,12 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
     }
 
     private boolean isSearching = false;
+    private enum SortType {
+        AUTOMATIC, RATING, HOURS, NUMBER
+    }
+
+    private SortType sortType = SortType.AUTOMATIC;
+    private Map<SortType, List<Course>> sortedCourses = new HashMap<>();
 
     public void loadSearchResults(final String query) {
         if (isSearching) {
@@ -145,7 +160,7 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
 
                 // Do the search
                 final List<Course> courses = CourseSearchEngine.sharedInstance().searchSubjects(query, filters);
-
+                sortedCourses.put(SortType.AUTOMATIC, courses);
                 // On completion
                 TaskDispatcher.onMain(new TaskDispatcher.TaskNoReturn() {
                     @Override
@@ -167,7 +182,6 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
             }
         });
     }
-
 
     private AddCourseDialog addCourseDialog;
 
@@ -202,5 +216,64 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
             delegate.get().courseNavigatorAddedCourse(this, course, semester);
         addCourseDialog.dismiss();
         addCourseDialog = null;
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem item) {
+        for (int i = 0; i < toolbar.getMenu().size(); ++i)
+            toolbar.getMenu().getItem(i).setChecked(false);
+        item.setChecked(true);
+        switch (item.getItemId()) {
+            case R.id.sortAutomatic:
+                sortType = SortType.AUTOMATIC;
+                setSelectedSort();
+                return true;
+            case R.id.sortHours:
+                sortType = SortType.HOURS;
+                setSelectedSort();
+                return true;
+            case R.id.sortNumber:
+                sortType = SortType.NUMBER;
+                setSelectedSort();
+                return true;
+            case R.id.sortRating:
+                sortType = SortType.RATING;
+                setSelectedSort();
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void setSelectedSort() {
+        if (sortedCourses.containsKey(sortType)) {
+            listAdapter.setCourses(sortedCourses.get(sortType));
+        } else {
+            List<Course> newSortedCourses = new ArrayList<>(sortedCourses.get(SortType.AUTOMATIC));
+            Collections.sort(newSortedCourses, new Comparator<Course>() {
+                @Override
+                public int compare(Course o1, Course o2) {
+                    switch (sortType) {
+                        case HOURS:
+                            return Double.compare(getEffectiveHours(o1), getEffectiveHours(o2));
+                        case NUMBER:
+                            return o1.getSubjectID().compareTo(o2.getSubjectID());
+                        case RATING:
+                            return Double.compare(o2.rating, o1.rating);
+                    }
+                    return 0;
+                }
+            });
+            sortedCourses.put(sortType, newSortedCourses);
+            listAdapter.setCourses(newSortedCourses);
+        }
+    }
+
+    private double getEffectiveHours(Course c) {
+        if (c.inClassHours + c.outOfClassHours == 0.0) {
+            return 999.0;
+        } else {
+            return c.inClassHours + c.outOfClassHours;
+        }
     }
 }
