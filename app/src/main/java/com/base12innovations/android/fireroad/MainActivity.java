@@ -906,10 +906,12 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         EnumSet<CourseSearchEngine.Filter> filters;
         Course course;
         int scrollOffset;
+        SearchCoursesFragment.SortType sortType;
 
-        BottomSheetItem(String query, EnumSet<CourseSearchEngine.Filter> filters) {
+        BottomSheetItem(String query, EnumSet<CourseSearchEngine.Filter> filters, SearchCoursesFragment.SortType sortType) {
             this.searchQuery = query;
             this.filters = filters;
+            this.sortType = sortType;
         }
 
         BottomSheetItem(Course course) {
@@ -1088,7 +1090,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             BottomSheetItem last = detailsStack.remove(detailsStack.size() - 1);
             Log.d("MainActivity", "Last scroll offset: " + last.scrollOffset);
             if (last.searchQuery != null) {
-                showSearchCoursesView(last.searchQuery, last.filters, last.scrollOffset);
+                showSearchCoursesView(last.searchQuery, last.filters, last.sortType, last.scrollOffset);
             } else if (last.course != null) {
                 onShowCourseDetails(last.course, last.scrollOffset);
             }
@@ -1123,15 +1125,19 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     @Override
-    public void courseNavigatorWantsSearchCourses(Fragment source, String searchTerm, EnumSet<CourseSearchEngine.Filter> filters) {
-        currentDetailsFragment = null;
-        searchCoursesFragment = null;
-        showSearchCoursesView(searchTerm, filters, 0);
+    public void courseNavigatorWantsSearchCourses(Fragment source, String searchTerm, EnumSet<CourseSearchEngine.Filter> filters){
+        courseNavigatorWantsSearchCourses(source,searchTerm,filters, SearchCoursesFragment.SortType.AUTOMATIC);
     }
 
-    public void showSearchCoursesView(String query, EnumSet<CourseSearchEngine.Filter> filters, int scrollOffset) {
+    public void courseNavigatorWantsSearchCourses(Fragment source, String searchTerm, EnumSet<CourseSearchEngine.Filter> filters, SearchCoursesFragment.SortType sortType) {
+        currentDetailsFragment = null;
+        searchCoursesFragment = null;
+        showSearchCoursesView(searchTerm, filters, sortType,0);
+    }
+
+    public void showSearchCoursesView(String query, EnumSet<CourseSearchEngine.Filter> filters, SearchCoursesFragment.SortType sortType, int scrollOffset) {
         //Log.d("MainActivity", "Search courses filters: " + filters.toString());
-        SearchCoursesFragment fragment = SearchCoursesFragment.newInstance(query, filters);
+        SearchCoursesFragment fragment = SearchCoursesFragment.newInstance(query, filters, sortType);
         fragment.setScrollOffset(scrollOffset);
         updateLastScrollIndex();
         Log.d("MainActivity", "Searching courses, stack is " + detailsStack);
@@ -1141,7 +1147,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             detailsStack = new Stack<>();
         }
         fragment.canGoBack = detailsStack.size() > 0;
-        detailsStack.add(new BottomSheetItem(query, filters));
+        detailsStack.add(new BottomSheetItem(query, filters, sortType));
         fragment.delegate = new WeakReference<BottomSheetNavFragment.Delegate>(this);
         presentBottomSheet(fragment);
     }
@@ -1157,9 +1163,17 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         }
     }
 
+    @Override
+    public void sortTypeUpdate(SearchCoursesFragment.SortType sortType){
+        if(detailsStack != null && detailsStack.size() > 0){
+            BottomSheetItem last = detailsStack.get(detailsStack.size() - 1);
+            last.sortType = sortType;
+        }
+    }
+
     public void showSearchCoursesView(String query) {
         // Get the current selected filter here
-        showSearchCoursesView(query, filters, 0);
+        showSearchCoursesView(query, filters, SearchCoursesFragment.SortType.AUTOMATIC, 0);
     }
 
     @Override
