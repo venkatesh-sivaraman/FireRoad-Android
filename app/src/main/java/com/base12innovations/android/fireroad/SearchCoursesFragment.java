@@ -60,8 +60,10 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
 
     }
 
-    public static SearchCoursesFragment newInstance(String query, EnumSet<CourseSearchEngine.Filter> filters) {
+    public static SearchCoursesFragment newInstance(String query, EnumSet<CourseSearchEngine.Filter> filters, SortType sortType) {
         SearchCoursesFragment fragment = new SearchCoursesFragment();
+        fragment.sortType = sortType;
+        Log.d("SearchCoursesFragment",sortType.toString());
         Bundle args = new Bundle();
         args.putString(SEARCH_QUERY_EXTRA, query);
         if (filters != null)
@@ -96,9 +98,13 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
         resultsView.setAdapter(listAdapter);
 
         toolbar = (Toolbar) layout.findViewById(R.id.toolbar);
-        //toolbar.setOverflowIcon(getResources().getDrawable(R.drawable.more_icon, null));
         toolbar.inflateMenu(R.menu.menu_sort_search);
-        toolbar.getMenu().findItem(R.id.sortAutomatic).setChecked(true);
+        switch(sortType){
+            case AUTOMATIC: toolbar.getMenu().findItem(R.id.sortAutomatic).setChecked(true); break;
+            case HOURS: toolbar.getMenu().findItem(R.id.sortHours).setChecked(true); break;
+            case RATING: toolbar.getMenu().findItem(R.id.sortRating).setChecked(true); break;
+            case NUMBER: toolbar.getMenu().findItem(R.id.sortNumber).setChecked(true); break;
+        }
         toolbar.setOnMenuItemClickListener(this);
         toolbar.setClickable(true);
         toolbar.setOnClickListener(new View.OnClickListener() {
@@ -133,10 +139,9 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
     }
 
     private boolean isSearching = false;
-    private enum SortType {
+    public enum SortType {
         AUTOMATIC, RATING, HOURS, NUMBER
     }
-
     private SortType sortType = SortType.AUTOMATIC;
     private Map<SortType, List<Course>> sortedCourses = new HashMap<>();
 
@@ -171,7 +176,7 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
                             title += " (filters on)";
                         toolbar.setTitle(title);
                         progressIndicator.setVisibility(ProgressBar.INVISIBLE);
-                        listAdapter.setCourses(courses);
+                        setSelectedSort();
                         if (!searchQuery.equals(query)) {
                             loadSearchResults(searchQuery);
                         }
@@ -225,24 +230,20 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
         item.setChecked(true);
         switch (item.getItemId()) {
             case R.id.sortAutomatic:
-                sortType = SortType.AUTOMATIC;
-                setSelectedSort();
-                return true;
+                sortType = SortType.AUTOMATIC; break;
             case R.id.sortHours:
-                sortType = SortType.HOURS;
-                setSelectedSort();
-                return true;
+                sortType = SortType.HOURS; break;
             case R.id.sortNumber:
-                sortType = SortType.NUMBER;
-                setSelectedSort();
-                return true;
+                sortType = SortType.NUMBER; break;
             case R.id.sortRating:
-                sortType = SortType.RATING;
-                setSelectedSort();
-                return true;
+                sortType = SortType.RATING; break;
             default:
                 return false;
         }
+        setSelectedSort();
+        if(delegate!= null)
+            delegate.get().sortTypeUpdate(sortType);
+        return true;
     }
 
     private void setSelectedSort() {
