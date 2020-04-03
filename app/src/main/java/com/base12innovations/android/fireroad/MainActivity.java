@@ -1,36 +1,43 @@
 package com.base12innovations.android.fireroad;
 
+import android.accounts.AccountManager;
 import android.animation.Animator;
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.PersistableBundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.design.widget.BottomSheetBehavior;
-import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
-import android.support.v4.content.FileProvider;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
+import com.base12innovations.android.fireroad.models.schedule.GoogleCalendar;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.core.content.FileProvider;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.Toolbar;
+import androidx.appcompat.app.AppCompatActivity;
+
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
+import android.widget.DatePicker;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -59,14 +66,17 @@ import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.BottomSheetNavFragment;
 import com.base12innovations.android.fireroad.utils.CourseSearchSuggestion;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
+import com.google.api.client.util.DateTime;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.mortbay.jetty.Main;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Stack;
@@ -91,6 +101,10 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     private static final int CUSTOM_COURSES_INTENT_TAG = 1928;
     private static final int CUSTOM_COURSE_EDIT_INTENT_TAG = 12073;
 
+    static final int REQUEST_ACCOUNT_PICKER = 1000;
+    public static final int REQUEST_AUTHORIZATION = 1001;
+    static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
+
     private DrawerLayout mDrawer;
     private Toolbar toolbar;
     private NavigationView navDrawer;
@@ -107,6 +121,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     private boolean isActivityPaused = false;
 
     private String courseLoadErrorMessage;
+
+    private boolean addToCalendar = false;
 
     //region Lifecycle
 
@@ -303,7 +319,54 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             if (scheduleFragment != null && lastShownFragmentID() == R.id.schedule_menu_item) {
                 scheduleFragment.loadSchedules(false);
             }
+        } else if (requestCode == REQUEST_ACCOUNT_PICKER){
+            if(resultCode == RESULT_OK && data != null && data.getExtras() != null){
+                String selectedAccountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+                if(selectedAccountName != null) {
+                    GoogleCalendar.credentials.setSelectedAccountName(selectedAccountName);
+                    getPreferences(MODE_PRIVATE).edit().putString(GoogleCalendar.PREF_ACCOUNT_NAME, selectedAccountName).commit();
+                    if(addToCalendar){
+                        promptUserChooseStartDate();
+                        addToCalendar = false;
+                    }
+                }
+            }
+        } else if (requestCode == REQUEST_AUTHORIZATION){
+            if(resultCode == RESULT_OK){
+                promptUserChooseStartDate();
+                addToCalendar = false;
+            }
         }
+        super.onActivityResult(requestCode,resultCode,data);
+    }
+
+    private void promptUserChooseAccount(){
+        startActivityForResult(GoogleCalendar.credentials.newChooseAccountIntent(),REQUEST_ACCOUNT_PICKER);
+    }
+
+    private void promptUserChooseStartDate(){
+        final Calendar calendar = Calendar.getInstance();
+        DatePickerDialog datePickerDialog = new DatePickerDialog(MainActivity.this, new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                calendar.set(year,month,dayOfMonth,0,0,0);
+                promptUserChooseEndDate(calendar);
+            }
+        }, calendar.get(Calendar.YEAR),calendar.get(Calendar.MONTH),calendar.get(Calendar.DAY_OF_MONTH));
+        datePickerDialog.show();
+    }
+
+    private void promptUserChooseEndDate(final Calendar startCalendar){
+        final Calendar calendar = Calendar.getInstance();
+        DatePickerDialog datePickerDialog = new DatePickerDialog(MainActivity.this, new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                calendar.set(year,month,dayOfMonth,0,0,0);
+                calendar.add(Calendar.DAY_OF_MONTH,1);
+                GoogleCalendar.addToCalendar(User.currentUser().getCurrentSchedule(),startCalendar, calendar);
+            }
+        }, calendar.get(Calendar.YEAR),calendar.get(Calendar.MONTH),calendar.get(Calendar.DAY_OF_MONTH));
+        datePickerDialog.show();
     }
 
     @Override
@@ -695,7 +758,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
         mSearchView.setOnLeftMenuClickListener(new FloatingSearchView.OnLeftMenuClickListener() {
             @Override
             public void onMenuOpened() {
-                mDrawer.openDrawer(Gravity.START);
+                mDrawer.openDrawer(GravityCompat.START);
             }
 
             @Override
@@ -817,6 +880,22 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                     shareText(text, fileName);
                 } else if (item.getItemId() == R.id.action_custom_courses) {
                     showCustomCourses(null);
+                } else if (item.getItemId() == R.id.action_google_calendar){
+                    if(GoogleCalendar.credentials == null) {
+                        GoogleCalendar.initialize(MainActivity.this);
+                    }
+                    if(GoogleCalendar.credentials.getSelectedAccountName() == null){
+                        int connectionStatus = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(getApplicationContext());
+                        if(GoogleApiAvailability.getInstance().isUserResolvableError(connectionStatus)){
+                            GoogleApiAvailability.getInstance().getErrorDialog(MainActivity.this,connectionStatus,REQUEST_GOOGLE_PLAY_SERVICES).show();
+                        }else if(connectionStatus == ConnectionResult.SUCCESS) {
+                            addToCalendar =  true;
+                            promptUserChooseAccount();
+                        }
+                    }else{
+                        addToCalendar =  true;
+                        promptUserChooseAccount();
+                    }
                 }
             }
         });
