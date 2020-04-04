@@ -133,9 +133,11 @@ public class RoadDocument extends Document implements Semester.Delegate{
 
     public RoadDocument(File location) {
         super(location);
+        updateNumYears(4);
     }
     public RoadDocument(File location, boolean readOnly) {
         super(location, readOnly);
+        updateNumYears(4);
     }
 
     public static RoadDocument newDocument(File location) {

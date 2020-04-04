@@ -183,7 +183,7 @@ public class Semester {
     }
 
     public String semesterID(){
-        if(delegate != null && delegate.get().getSemesterIDs().containsKey(this))
+        if(delegate != null && delegate.get() != null && delegate.get().getSemesterIDs().containsKey(this))
             return delegate.get().getSemesterIDs().get(this);
         if(isValid){
             if(isPriorCredit)
@@ -242,7 +242,7 @@ public class Semester {
 
     @Override
     public String toString(){
-        if(delegate != null && delegate.get().getSemesterNames().containsKey(this))
+        if(delegate != null && delegate.get() != null && delegate.get().getSemesterNames().containsKey(this))
             return delegate.get().getSemesterNames().get(this);
         if(!isValid)
             return "Invalid Semester Value";
