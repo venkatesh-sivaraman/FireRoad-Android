@@ -1,6 +1,6 @@
 package com.base12innovations.android.fireroad.adapter;
 
-import android.support.v7.widget.GridLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;

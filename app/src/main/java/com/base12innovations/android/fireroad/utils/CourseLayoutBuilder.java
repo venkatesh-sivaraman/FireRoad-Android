@@ -3,13 +3,11 @@ package com.base12innovations.android.fireroad.utils;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.RippleDrawable;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.widget.TextViewCompat;
-import android.text.TextUtils;
-import android.util.Log;
+
+import androidx.core.content.ContextCompat;
+import androidx.core.widget.TextViewCompat;
+
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;

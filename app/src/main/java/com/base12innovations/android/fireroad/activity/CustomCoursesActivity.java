@@ -2,16 +2,15 @@ package com.base12innovations.android.fireroad.activity;
 
 import android.content.Intent;
 import android.graphics.Rect;
-import android.support.annotation.Nullable;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.FragmentActivity;
-import android.support.v7.app.AppCompatActivity;
+import androidx.annotation.Nullable;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import androidx.fragment.app.FragmentActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.appcompat.widget.Toolbar;
 import android.text.Html;
-import android.util.Log;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,18 +18,12 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.base12innovations.android.fireroad.MyRoadFragment;
 import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.adapter.CustomCoursesAdapter;
 import com.base12innovations.android.fireroad.adapter.MyRoadCoursesAdapter;
 import com.base12innovations.android.fireroad.dialog.AddCourseDialog;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
-import com.base12innovations.android.fireroad.models.doc.RoadDocument;
-import com.base12innovations.android.fireroad.models.doc.User;
-import com.base12innovations.android.fireroad.utils.TaskDispatcher;
-
-import java.util.List;
 
 public class CustomCoursesActivity extends AppCompatActivity implements PopupMenu.OnMenuItemClickListener, AddCourseDialog.AddCourseDialogDelegate {
 

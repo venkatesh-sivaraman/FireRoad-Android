@@ -1,6 +1,6 @@
 package com.base12innovations.android.fireroad;
 
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.Fragment;
 
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;

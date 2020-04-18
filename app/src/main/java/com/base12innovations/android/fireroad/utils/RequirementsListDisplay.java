@@ -3,8 +3,8 @@ package com.base12innovations.android.fireroad.utils;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
-import android.support.v4.app.FragmentActivity;
-import android.util.Log;
+import androidx.fragment.app.FragmentActivity;
+
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,7 +20,6 @@ import com.base12innovations.android.fireroad.dialog.RequirementsOverrideDialog;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
-import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.models.req.ProgressAssertion;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;

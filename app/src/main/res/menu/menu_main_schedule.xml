@@ -25,4 +25,7 @@
         android:title="Open other schedule..."
         android:icon="@drawable/browse_icon"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_google_calendar"
+        android:title="Add to Google Calendar" />
 </menu>

@@ -23,7 +23,7 @@
         android:textSize="22sp"
         android:textStyle="bold" />
 
-    <android.support.v4.widget.NestedScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="@dimen/constrain_dialog_height"
         android:scrollbars="vertical">
@@ -43,5 +43,5 @@
 
         </LinearLayout>
 
-    </android.support.v4.widget.NestedScrollView>
+    </androidx.core.widget.NestedScrollView>
 </LinearLayout>

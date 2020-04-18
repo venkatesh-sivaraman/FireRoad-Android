@@ -11,9 +11,9 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v7.widget.AppCompatImageButton;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.appcompat.widget.AppCompatImageButton;
 import android.text.Html;
 import android.text.TextUtils;
 import android.util.Log;
@@ -21,8 +21,10 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
@@ -42,6 +44,7 @@ import com.base12innovations.android.fireroad.models.schedule.ScheduleGenerator;
 import com.base12innovations.android.fireroad.models.schedule.ScheduleSlots;
 import com.base12innovations.android.fireroad.models.schedule.ScheduleUnit;
 import com.base12innovations.android.fireroad.models.doc.User;
+import com.base12innovations.android.fireroad.utils.CustomScrollView;
 import com.base12innovations.android.fireroad.utils.TaskDispatcher;
 
 import java.io.File;
@@ -128,8 +131,11 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         }
     }
 
+    private float mScale = 1f;
+    private ScaleGestureDetector scaleGestureDetector;
+
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(LayoutInflater inflater, final ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_schedule, container, false);
@@ -175,6 +181,44 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
                 setDisplayedScheduleIndex(document.getDisplayedScheduleIndex() - 1);
             }
         });
+
+        final CustomScrollView customScrollView = (CustomScrollView) configView;
+        final RelativeLayout relativeLayout = configView.findViewById(R.id.scheduleRelativeLayout);
+        final HorizontalScrollView horizontalScrollView = configView.findViewById(R.id.horizontalScrollView);
+        relativeLayout.setPivotX(0);
+        relativeLayout.setPivotY(0);
+        scaleGestureDetector = new ScaleGestureDetector(configView.getContext(), new ScaleGestureDetector.OnScaleGestureListener() {
+            @Override
+            public boolean onScale(ScaleGestureDetector detector) {
+                float scaleFactor = detector.getScaleFactor();
+                if(!Float.isInfinite(scaleFactor) && !Float.isNaN(scaleFactor)) {
+                    mScale *= scaleFactor;
+                }
+                if(mScale < 0.9){
+                    mScale = 0.9f;
+                }
+                relativeLayout.setScaleX(mScale);
+                relativeLayout.setScaleY(mScale);
+                Log.d("ScheduleFragment",relativeLayout.getLayoutParams().width+" , " + relativeLayout.getLayoutParams().height);
+                Log.d("ScheduleFragment"," " + horizontalScrollView.getLayoutParams().width+" , " + horizontalScrollView.getLayoutParams().height);
+                horizontalScrollView.updateViewLayout(relativeLayout,relativeLayout.getLayoutParams());
+                customScrollView.updateViewLayout(horizontalScrollView,horizontalScrollView.getLayoutParams());
+                return true;
+            }
+
+            @Override
+            public boolean onScaleBegin(ScaleGestureDetector detector) {
+                return true;
+            }
+
+            @Override
+            public void onScaleEnd(ScaleGestureDetector detector) {
+
+            }
+        });
+        customScrollView.scaleGestureDetector = scaleGestureDetector;
+        configView.setPivotX(0);
+        configView.setPivotY(0);
         return view;
     }
 
@@ -417,7 +461,7 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
     void showNewFileHelpText() {
         if (hasShownNewFileHelpText()) return;
 
-        android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(getActivity());
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(getActivity());
         builder.setTitle("New Schedule Created");
         builder.setMessage(Html.fromHtml("To access previous schedules, tap the <b>&#8942;</b> button, then <b>Open other schedule</b>."));
 
@@ -431,7 +475,6 @@ public class ScheduleFragment extends Fragment implements PopupMenu.OnMenuItemCl
         });
         builder.show();
     }
-
     // Schedule display
 
     private void inferScheduleIndex() {
