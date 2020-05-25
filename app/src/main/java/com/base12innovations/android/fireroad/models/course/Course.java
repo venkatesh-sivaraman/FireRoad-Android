@@ -10,6 +10,8 @@ import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.Semester;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
 import com.base12innovations.android.fireroad.models.schedule.ScheduleSlots;
 import com.base12innovations.android.fireroad.utils.ListHelper;
@@ -1026,5 +1028,9 @@ public class Course implements Parcelable {
         if (GIRAttribute.fromRaw(req) != null || HASSAttribute.fromRaw(req) != null || CommunicationAttribute.fromRaw(req) != null)
             return false;
         return true;
+    }
+
+    public boolean inSemester(RoadDocument doc, Semester semester){
+        return doc != null && doc.coursesForSemester(semester).contains(this);
     }
 }

@@ -1,5 +1,7 @@
 package com.base12innovations.android.fireroad.adapter;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.drawable.GradientDrawable;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.GridLayoutManager;
@@ -12,6 +14,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.base12innovations.android.fireroad.MyRoadFragment;
 import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.AppSettings;
 import com.base12innovations.android.fireroad.models.course.ColorManager;
@@ -43,7 +46,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return null;
         }
         int cursor = position;
-        for (Semester semester : document.getSemesterNames().keySet()) {
+        for (Semester semester : document.getSemesters()) {
             List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
@@ -64,7 +67,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return 0;
         }
         int cursor = 0;
-        for (Semester otherSemester : document.getSemesterNames().keySet()) {
+        for (Semester otherSemester : document.getSemesters()) {
             if(!otherSemester.isBefore(semester))
                 break;
             List<Course> semCourses = document.coursesForSemester(otherSemester);
@@ -83,7 +86,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return 0;
         }
         int cursor = 0;
-        for (Semester otherSemester : document.getSemesterNames().keySet()) {
+        for (Semester otherSemester : document.getSemesters()) {
             if(!otherSemester.isBeforeOrEqual(semester))
                 break;
             List<Course> semCourses = document.coursesForSemester(otherSemester);
@@ -97,7 +100,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return false;
         }
         int cursor = position;
-        for (Semester semester : document.getSemesterNames().keySet()) {
+        for (Semester semester : document.getSemesters()) {
             List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
@@ -118,7 +121,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return new Semester(true);
         }
         int cursor = position;
-        for (Semester semester : document.getSemesterNames().keySet()) {
+        for (Semester semester : document.getSemesters()) {
             List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
@@ -134,7 +137,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             return 0;
         }
         int cursor = position;
-        for (Semester semester : document.getSemesterNames().keySet()) {
+        for (Semester semester : document.getSemesters()) {
             List<Course> semCourses = document.coursesForSemester(semester);
             if (cursor >= semCourses.size() + 1) {
                 cursor -= semCourses.size() + 1;
@@ -169,7 +172,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             if (endPos == -1) {
                 // Hovering over a header
                 endSem = endSem.prevSemester();
-                if (!endSem.isValid()) {
+                if (!document.isSemesterValid(endSem)) {
                     return false;
                 }
                 // Move to last index in the previous semester
@@ -267,7 +270,7 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
         if (document == null) {
             return 0;
         }
-        return document.getAllCourses().size() + document.getSemesterNames().size()+1;
+        return document.getAllCourses().size() + document.getSemesters().size()+1;
     }
 
     @Override
@@ -295,13 +298,29 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder viewHolder, int position) {
         if(position == getItemCount()-1){
-            View view = viewHolder.cellView;
+            final View view = viewHolder.cellView;
             (view.findViewById(R.id.buttonRemoveYear)).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if(document.removeYearIsValid())
+                    if(document.removeYearIsValid()) {
                         document.removeLastYear();
-                    notifyDataSetChanged();
+                        notifyDataSetChanged();
+                    }else{
+                        AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
+                        if(document.getNumYears() == 4){
+                            builder.setMessage("Roads must have 4 years at minimum");
+                        }else{
+                            builder.setMessage("Course(s) detected in last year in Road");
+                        }
+                        builder.setTitle("Unable to Delete Last Year");
+                        builder.setPositiveButton("OK", new DialogInterface.OnClickListener(){
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        });
+                        builder.create().show();
+                    }
                 }
             });
             (view.findViewById(R.id.buttonAddYear)).setOnClickListener(new View.OnClickListener() {
@@ -311,21 +330,8 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
                     notifyDataSetChanged();
                 }
             });
-            updateYearModifierView(viewHolder);
         }else{
             super.onBindViewHolder(viewHolder,position);
-        }
-    }
-    
-    public void updateYearModifierView(ViewHolder viewHolder){
-        View view = viewHolder.cellView;
-        Button buttonRemoveYear = view.findViewById(R.id.buttonRemoveYear);
-        if(document.removeYearIsValid()) {
-            buttonRemoveYear.setEnabled(true);
-            buttonRemoveYear.setAlpha(1.0f);
-        }else{
-            buttonRemoveYear.setEnabled(false);
-            buttonRemoveYear.setAlpha(0.5f);
         }
     }
 }

@@ -84,7 +84,7 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
         if(courseIndices.get(i) == -1){
             view.findViewById(R.id.selectCourseHeaderTextView).setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             view.findViewById(R.id.selectCourseColorCodingView).setBackgroundColor(Color.rgb(128,128,128));
-            if(!semesters.get(i).isValid()){
+            if(semesters.get(i).getSeason() == null && semesters.get(i).getYear() == -1 && !semesters.get(i).isPriorCredit()){
                 ((TextView) view.findViewById(R.id.selectCourseHeaderTextView)).setText(String.format(Locale.US,"Other Courses"));
             }else {
                 ((TextView) view.findViewById(R.id.selectCourseHeaderTextView)).setText(semesters.get(i).toString());
@@ -146,7 +146,7 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
     private void updateIndexInfo(){
         semesters = new ArrayList<>();
         courseIndices = new ArrayList<>();
-        for(Semester semester : User.currentUser().getCurrentDocument().getSemesterNames().keySet()){
+        for(Semester semester : User.currentUser().getCurrentDocument().getSemesters()){
             if(courses.get(semester).size()>0){
                 semesters.add(semester);
                 courseIndices.add(-1);

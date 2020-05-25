@@ -16,21 +16,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
-import javax.security.auth.Subject;
-
-public class RoadDocument extends Document implements Semester.Delegate{
+public class RoadDocument extends Document{
 
     protected static class RoadJSON {
         static final String coursesOfStudy = "coursesOfStudy";
@@ -178,15 +172,17 @@ public class RoadDocument extends Document implements Semester.Delegate{
                 Semester semester;
                 //ensure backwards compatibility, RoadJSON.semester is the old semester, RoadJSON.semesterID is the new string
                 if (subjectInfo.has(RoadJSON.semesterID)){
-                    semester = new Semester(subjectInfo.getString(RoadJSON.semesterID),true,new WeakReference<Semester.Delegate>(this));
+                    semester = new Semester(subjectInfo.getString(RoadJSON.semesterID));
                 }else{
                     // this is an old version of the JSON file, we now need to ensure that it follows the summer system as well
                     // the old semester system is as follows: 0 is Prior Credit, 1-3 is 1st year, 4-6 is 2nd year, etc.
-                    semester = new Semester(subjectInfo.getInt(RoadJSON.semester),true, new WeakReference<Semester.Delegate>(this));
+                    semester = new Semester(subjectInfo.getInt(RoadJSON.semester));
                 }
-                if(!semester.isValid())
+                if(!isSemesterValid(semester))
                     continue;
-
+                else if(semester.getYear() > numYears){
+                    updateNumYears(semester.getYear());
+                }
                 if (!courses.containsKey(semester)) {
                     courses.put(semester, new ArrayList<Course>());
                 }
@@ -298,8 +294,8 @@ public class RoadDocument extends Document implements Semester.Delegate{
         String base = file.getName();
         builder.append(base.substring(0, base.lastIndexOf('.')));
         builder.append("\n");
-        for(Semester nextSemester : semesterNames.keySet()){
-            builder.append(semesterNames.get(nextSemester));
+        for(Semester nextSemester : semesters){
+            builder.append(nextSemester.toString());
             List<Course> semCourses = coursesForSemester(nextSemester);
             if (semCourses.size() == 0) {
                 builder.append(" (no subjects)\n");
@@ -361,7 +357,7 @@ public class RoadDocument extends Document implements Semester.Delegate{
     }
 
     public boolean addCourse(Course course, Semester semester) {
-        if (!semester.isValid())
+        if (!isSemesterValid(semester))
             return false;
         if (!courses.containsKey(semester))
             courses.put(semester, new ArrayList<Course>());
@@ -373,7 +369,7 @@ public class RoadDocument extends Document implements Semester.Delegate{
     }
 
     public boolean removeCourse(Course course, Semester semester) {
-        if (!semester.isValid())
+        if (!isSemesterValid(semester))
             return false;
         if (!courses.containsKey(semester)) {
             courses.put(semester, new ArrayList<Course>());
@@ -385,7 +381,7 @@ public class RoadDocument extends Document implements Semester.Delegate{
     }
 
     public void removeAllCoursesFromSemester(Semester semester) {
-        if (!semester.isValid())
+        if (!isSemesterValid(semester))
             return;
         courses.get(semester).clear();
         if (markers.containsKey(semester))
@@ -448,7 +444,7 @@ public class RoadDocument extends Document implements Semester.Delegate{
     // Markers
 
     public void setSubjectMarker(SubjectMarker marker, Course course, Semester semester, boolean shouldSave) {
-        if (!semester.isValid())
+        if (!isSemesterValid(semester))
             return;
         if (!markers.containsKey(semester))
             markers.put(semester, new HashMap<Course, SubjectMarker>());
@@ -525,14 +521,14 @@ public class RoadDocument extends Document implements Semester.Delegate{
      */
     public List<Course> coursesTakenBeforeCourse(Course course, Semester maxSemester, boolean useQuarter) {
         List<Course> takenCourses = new ArrayList<>();
-        for(Semester semester : semesterNames.keySet()){
+        for(Semester semester : semesters){
             if(!semester.isBeforeOrEqual(maxSemester))
                 break;
             takenCourses.addAll(coursesForSemester(semester));
         }
         if(useQuarter) {
             Semester nextMaxSemester = maxSemester.nextSemester();
-            if (nextMaxSemester.isValid()) {
+            if (isSemesterValid(nextMaxSemester)) {
                 for (Course otherCourse : coursesForSemester(nextMaxSemester)) {
                     if (course.getQuarterOffered() != Course.QuarterOffered.BeginningOnly &&
                             otherCourse.getQuarterOffered() == Course.QuarterOffered.BeginningOnly) {
@@ -551,7 +547,7 @@ public class RoadDocument extends Document implements Semester.Delegate{
     public Semester firstSemesterForCourse(Course course) {
         // Exclude prior credit
         Semester firstSemester = getLastSemester();
-        for(Semester semester : semesterNames.keySet()){
+        for(Semester semester : semesters){
             if(semester.isBefore(firstSemester)){
                 if(coursesForSemester(semester).contains(course)){
                     firstSemester = semester;
@@ -623,44 +619,23 @@ public class RoadDocument extends Document implements Semester.Delegate{
     }
 
     private int numYears;
-    private Map<Semester, String> semesterNames = new LinkedHashMap<>();
-    private Map<Semester, String> semesterIDs = new LinkedHashMap<>();
+    private ArrayList<Semester> semesters;
+    public ArrayList<Semester> getSemesters(){
+        return semesters;
+    }
     public int getNumYears(){
         return numYears;
     }
-    public Map<Semester,String> getSemesterNames(){
-        return semesterNames;
-    }
-    public Map<Semester,String> getSemesterIDs(){
-        return semesterIDs;
-    }
     public void updateNumYears(int newNumYears){
-        updateNumYears(newNumYears,false);
-    }
-    public void updateNumYears(int newNumYears, boolean allowReduceNumYears){
-        if(semesterNames.size() == 0){
-            semesterNames.put(new Semester(true),"Prior Credit");
-            semesterIDs.put(new Semester(true), Semester.SemesterID.priorCredit);
-        }
-        if(newNumYears > numYears){
-            for (int year = numYears+1; year <= newNumYears; year++) {
-                for(Semester.Season season: Semester.Season.values()){
-                    if(season != Semester.Season.Undefined) {
-                        Semester newSemester = new Semester(year, season, true);
-                        semesterNames.put(newSemester, newSemester.toString());
-                        semesterIDs.put(newSemester, newSemester.semesterID());
-                    }
+        if(numYears != newNumYears) {
+            numYears = newNumYears;
+            semesters = new ArrayList<>(newNumYears * 4 + 1);
+            semesters.add(new Semester(true));
+            for (int y = 1; y <= newNumYears; y++) {
+                for (Semester.Season season : Semester.Season.values()) {
+                    semesters.add(new Semester(y, season));
                 }
             }
-            numYears = newNumYears;
-        }else if(allowReduceNumYears && newNumYears < numYears){
-            for ( int year = newNumYears + 1; year <= numYears; year++){
-                for(Semester.Season season : Semester.Season.values()){
-                    semesterNames.remove(new Semester(year,season));
-                    semesterIDs.remove(new Semester(year,season));
-                }
-            }
-            numYears = newNumYears;
         }
     }
     public Semester getLastSemester(){
@@ -679,6 +654,10 @@ public class RoadDocument extends Document implements Semester.Delegate{
             courses.remove(new Semester(numYears,season));
             markers.remove(new Semester(numYears,season));
         }
-        updateNumYears(numYears-1,true);
+        updateNumYears(numYears-1);
+    }
+
+    public boolean isSemesterValid(Semester semester){
+        return semester.isPriorCredit() || (semester.getYear() > 0 && semester.getYear() <= numYears && semester.getSeason() != null);
     }
 }

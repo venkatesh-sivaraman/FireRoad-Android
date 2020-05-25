@@ -1113,7 +1113,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 scheduleFragment.scheduleAddedCourse(course);
         } else {
             RoadDocument doc = User.currentUser().getCurrentDocument();
-            Semester semester = new Semester(semesterID,false,new WeakReference<Semester.Delegate>(doc));
+            Semester semester = new Semester(semesterID);
             if (doc != null) {
                 boolean worked = doc.addCourse(course, semester);
                 if (worked) {

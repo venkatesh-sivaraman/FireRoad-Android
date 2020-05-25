@@ -31,40 +31,68 @@
         android:layout_weight="1"
         android:orientation="horizontal">
 
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" >
+        </Space>
         <Button
             android:id="@+id/button1"
-            android:layout_width="wrap_content"
+            android:layout_width="45dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/colorPrimary"
+            android:layout_weight="0"
             android:background="?attr/selectableItemBackground"
-            android:text="Fall" />
+            android:text="Fall"
+            android:textColor="@color/colorPrimary" />
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" >
+        </Space>
 
         <Button
             android:id="@+id/button2"
-            android:layout_width="wrap_content"
+            android:layout_width="38dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/colorPrimary"
+            android:layout_weight="0"
+            android:width="0dip"
             android:background="?attr/selectableItemBackground"
-            android:text="IAP" />
+            android:text="IAP"
+            android:textColor="@color/colorPrimary" />
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" >
+        </Space>
 
         <Button
             android:id="@+id/button3"
-            android:layout_width="wrap_content"
+            android:layout_width="64dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/colorPrimary"
+            android:layout_weight="0"
             android:background="?attr/selectableItemBackground"
-            android:text="Spring" />
+            android:text="Spring"
+            android:textColor="@color/colorPrimary" />
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" >
+        </Space>
 
         <Button
             android:id="@+id/button4"
-            android:layout_width="wrap_content"
+            android:layout_width="73dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/colorPrimary"
+            android:layout_weight="0"
+            android:width="0dip"
             android:background="?attr/selectableItemBackground"
-            android:text="Summer" />
+            android:text="Summer"
+            android:textColor="@color/colorPrimary" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" >
+        </Space>
     </LinearLayout>
 </LinearLayout>

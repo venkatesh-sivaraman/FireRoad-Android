@@ -120,7 +120,7 @@ public class AddCourseDialog extends DialogFragment implements SelectSemesterAda
     }
 
     public boolean courseInSemester(Semester semester){
-        return doc != null && doc.coursesForSemester(semester).contains(course);
+        return course.inSemester(doc,semester);
     }
     public boolean courseNotOfferedInSemester(Semester semester){
         return (semester.getSeason()== Semester.Season.Fall && !course.isOfferedFall) ||
