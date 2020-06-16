@@ -326,12 +326,23 @@ public class MyRoadCoursesAdapter extends CourseCollectionAdapter { //BaseAdapte
             (view.findViewById(R.id.buttonAddYear)).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    document.updateNumYears(document.getNumYears()+1);
+                    document.addAnotherYear();
                     notifyDataSetChanged();
                 }
             });
+            updateYearModifierView(viewHolder);
         }else{
             super.onBindViewHolder(viewHolder,position);
+        }
+    }
+
+    public void updateYearModifierView(ViewHolder viewHolder){
+        View view = viewHolder.cellView;
+        Button buttonRemoveYear = view.findViewById(R.id.buttonRemoveYear);
+        if(document.removeYearIsValid()) {
+            buttonRemoveYear.setAlpha(1.0f);
+        }else{
+            buttonRemoveYear.setAlpha(0.5f);
         }
     }
 }

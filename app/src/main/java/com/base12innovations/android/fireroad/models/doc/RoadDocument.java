@@ -33,6 +33,7 @@ public class RoadDocument extends Document{
         static final String progressOverrides = "progressOverrides";
         static final String semester = "semester";
         static final String semesterID = "semesterID";
+        static final String numYears = "numYears";
         static final String subjectTitle = "title";
         static final String subjectID = "subject_id";
         static final String subjectIDAlt = "id";
@@ -151,7 +152,11 @@ public class RoadDocument extends Document{
             for (int i = 0; i < majors.length(); i++) {
                 coursesOfStudy.add(majors.getString(i));
             }
-            updateNumYears(4);
+            if(json.has(RoadJSON.numYears)){
+                updateNumYears(json.getInt(RoadJSON.numYears));
+            }else {
+                updateNumYears(5);
+            }
             // load selected subjects
             JSONArray selectedSubjects = json.getJSONArray(RoadJSON.selectedSubjects);
             courses = new HashMap<>();
@@ -236,6 +241,7 @@ public class RoadDocument extends Document{
         try {
             JSONObject parentObject = new JSONObject();
 
+            parentObject.put(RoadJSON.numYears,numYears);
             // Write majors and minors
             JSONArray majors = new JSONArray();
             for (String major : coursesOfStudy) {
@@ -626,7 +632,7 @@ public class RoadDocument extends Document{
     public int getNumYears(){
         return numYears;
     }
-    public void updateNumYears(int newNumYears){
+    private void updateNumYears(int newNumYears){
         if(numYears != newNumYears) {
             numYears = newNumYears;
             semesters = new ArrayList<>(newNumYears * 4 + 1);
@@ -655,6 +661,12 @@ public class RoadDocument extends Document{
             markers.remove(new Semester(numYears,season));
         }
         updateNumYears(numYears-1);
+        save();
+    }
+
+    public void addAnotherYear(){
+        updateNumYears(numYears+1);
+        save();
     }
 
     public boolean isSemesterValid(Semester semester){
