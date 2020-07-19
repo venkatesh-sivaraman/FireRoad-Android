@@ -218,6 +218,10 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
         addOfferedItem(layout);
 
+        if (course.virtualStatus.length() > 0) {
+            addAttendanceItem(layout);
+        }
+
         List<String> instructors = course.getInstructorsList();
         if (instructors.size() > 0) {
             layoutBuilder.addMetadataItem(layout, "Instructor" + (instructors.size() != 1 ? "s" : ""), TextUtils.join(", ", instructors));
@@ -386,6 +390,10 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
         }
         //offeredString = offeredString.substring(0, 1).toUpperCase() + offeredString.substring(1);
         layoutBuilder.addMetadataItem(layout, "Offered", offeredString);
+    }
+
+    private void addAttendanceItem(LinearLayout layout) {
+        layoutBuilder.addMetadataItem(layout, "Attendance", course.virtualStatus);
     }
 
     private void addRequirementsItem(LinearLayout layout) {
