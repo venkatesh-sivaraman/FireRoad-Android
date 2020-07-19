@@ -533,6 +533,9 @@ public class CourseManager {
                 case "Children":
                     course.children = component;
                     break;
+                case "Virtual Status":
+                    course.virtualStatus = component;
+                    break;
                 default:
                     break;
             }

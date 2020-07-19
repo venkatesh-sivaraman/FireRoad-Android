@@ -38,6 +38,7 @@ public class Course implements Parcelable {
     public String subjectTitle = "";
     public String subjectDescription = "";
     public int totalUnits = 0;
+    public String virtualStatus = "";
 
     public String getSubjectID() { return subjectID; }
     public void setSubjectID(String subjectID) { this.subjectID = subjectID; }
