@@ -12,6 +12,7 @@ import android.widget.TextView;
 import com.base12innovations.android.fireroad.R;
 import com.base12innovations.android.fireroad.models.course.ColorManager;
 import com.base12innovations.android.fireroad.models.course.Course;
+import com.base12innovations.android.fireroad.models.doc.Semester;
 
 /**
  * Abstract wrapper for showing a collection of courses in a recycler view.
@@ -23,7 +24,7 @@ public abstract class CourseCollectionAdapter extends RecyclerView.Adapter<Cours
     }
 
     public interface HeaderClickListener {
-        void onHeaderButtonClick(int semester, View view);
+        void onHeaderButtonClick(Semester semester, View view);
     }
 
     public ClickListener itemClickListener;
@@ -50,7 +51,7 @@ public abstract class CourseCollectionAdapter extends RecyclerView.Adapter<Cours
 
     public abstract boolean isSectionHeader(int position);
 
-    public abstract int semesterForGridPosition(int position);
+    public abstract Semester semesterForGridPosition(int position);
 
     public GridLayoutManager.SpanSizeLookup spanSizeLookup() {
         return new GridLayoutManager.SpanSizeLookup() {
@@ -86,13 +87,13 @@ public abstract class CourseCollectionAdapter extends RecyclerView.Adapter<Cours
         }
     }
 
-    public abstract void formatSectionHeader(final View view, int semester);
+    public abstract void formatSectionHeader(final View view, Semester semester);
 
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder viewHolder, int position) {
         final View view = viewHolder.cellView;
         if (isSectionHeader(position)) {
-            final int semester = semesterForGridPosition(position);
+            final Semester semester = semesterForGridPosition(position);
             formatSectionHeader(view, semester);
             if (onHeaderClickListener != null) {
                 view.findViewById(R.id.moreButton).setOnClickListener(new View.OnClickListener() {

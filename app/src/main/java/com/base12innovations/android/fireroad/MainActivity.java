@@ -55,6 +55,7 @@ import com.base12innovations.android.fireroad.models.doc.DocumentManager;
 import com.base12innovations.android.fireroad.models.doc.NetworkManager;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
 import com.base12innovations.android.fireroad.models.doc.ScheduleDocument;
+import com.base12innovations.android.fireroad.models.doc.Semester;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.utils.BottomSheetNavFragment;
 import com.base12innovations.android.fireroad.utils.CourseSearchSuggestion;
@@ -294,7 +295,11 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 Course course = CourseManager.sharedInstance().getCustomCourse(
                         data.getStringExtra(CustomCoursesActivity.ADDED_SUBJECT_ID_RESULT),
                         data.getStringExtra(CustomCoursesActivity.ADDED_SUBJECT_TITLE_RESULT));
-                courseNavigatorAddedCourse(null, course, data.getIntExtra(CustomCoursesActivity.ADDED_SEMESTER_RESULT, 0));
+                if(data.hasExtra(CustomCoursesActivity.ADDED_SEMESTER_RESULT)) {
+                    courseNavigatorAddedCourse(null, course, data.getStringExtra(CustomCoursesActivity.ADDED_SEMESTER_RESULT));
+                }else{
+                    courseNavigatorAddedCourse(null,course,Semester.SemesterID.priorCredit);
+                }
             }
         } else if (requestCode == CUSTOM_COURSE_EDIT_INTENT_TAG && resultCode == RESULT_OK) {
             if (myRoadFragment != null) {
@@ -1096,8 +1101,8 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
     }
 
     @Override
-    public void courseNavigatorAddedCourse(Fragment source, Course course, int semester) {
-        if (semester == ADD_TO_SCHEDULE) {
+    public void courseNavigatorAddedCourse(Fragment source, Course course, String semesterID) {
+        if (semesterID.equals(ADD_TO_SCHEDULE)) {
             ScheduleDocument doc = User.currentUser().getCurrentSchedule();
             if (doc != null) {
                 doc.addCourse(course);
@@ -1108,10 +1113,11 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
                 scheduleFragment.scheduleAddedCourse(course);
         } else {
             RoadDocument doc = User.currentUser().getCurrentDocument();
+            Semester semester = new Semester(semesterID);
             if (doc != null) {
                 boolean worked = doc.addCourse(course, semester);
                 if (worked) {
-                    Snackbar.make(mSearchView, "Added " + course.getSubjectID() + " to " + RoadDocument.semesterNames[semester], Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(mSearchView, "Added " + course.getSubjectID() + " to " + semester.toString(), Snackbar.LENGTH_LONG).show();
                 }
             }
             getMyRoadFragment().roadAddedCourse(course, semester);

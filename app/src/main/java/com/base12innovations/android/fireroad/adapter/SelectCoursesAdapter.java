@@ -19,14 +19,18 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.base12innovations.android.fireroad.R;
+import com.base12innovations.android.fireroad.dialog.RequirementsOverrideDialog;
 import com.base12innovations.android.fireroad.models.course.ColorManager;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.Semester;
+import com.base12innovations.android.fireroad.models.doc.User;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdapter.ViewHolder> {
 
@@ -38,22 +42,22 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
 
     public WeakReference<Delegate> delegate;
 
-    private List<List<Course>> courses;
-    private List<Integer> semesters;
+    private Map<Semester,List<Course>> courses;
+    private List<Semester> semesters;
     private List<Integer> courseIndices;
     private Context context;
 
-    public List<List<Course>> getCourses(){
+    public Map<Semester,List<Course>> getCourses(){
         return courses;
     }
 
-    public void setCourses(List<List<Course>> courses){
+    public void setCourses(Map<Semester,List<Course>> courses){
         this.courses = courses;
         updateIndexInfo();
         notifyDataSetChanged();
     }
 
-    public SelectCoursesAdapter(Context context, List<List<Course>> courses){
+    public SelectCoursesAdapter(Context context, Map<Semester,List<Course>> courses){
         this.context = context;
         this.courses = courses;
     }
@@ -80,10 +84,10 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
         if(courseIndices.get(i) == -1){
             view.findViewById(R.id.selectCourseHeaderTextView).setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             view.findViewById(R.id.selectCourseColorCodingView).setBackgroundColor(Color.rgb(128,128,128));
-            if(semesters.get(i) == RoadDocument.semesterNames.length){
+            if(semesters.get(i).getSeason() == null && semesters.get(i).getYear() == -1 && !semesters.get(i).isPriorCredit()){
                 ((TextView) view.findViewById(R.id.selectCourseHeaderTextView)).setText(String.format(Locale.US,"Other Courses"));
             }else {
-                ((TextView) view.findViewById(R.id.selectCourseHeaderTextView)).setText(RoadDocument.semesterNames[semesters.get(i)]);
+                ((TextView) view.findViewById(R.id.selectCourseHeaderTextView)).setText(semesters.get(i).toString());
             }
         }else {
             final Course course = courses.get(semesters.get(i)).get(courseIndices.get(i));
@@ -130,10 +134,10 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
         }
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder{
-        public View cellView;
+    static class ViewHolder extends RecyclerView.ViewHolder{
+        View cellView;
 
-        public ViewHolder(View v){
+        ViewHolder(View v){
             super(v);
             this.cellView = v;
         }
@@ -142,12 +146,12 @@ public class SelectCoursesAdapter extends RecyclerView.Adapter<SelectCoursesAdap
     private void updateIndexInfo(){
         semesters = new ArrayList<>();
         courseIndices = new ArrayList<>();
-        for (int i = 0; i <= RoadDocument.semesterNames.length; i++) {
-            if(courses.get(i).size()>0){
-                semesters.add(i);
+        for(Semester semester : User.currentUser().getCurrentDocument().getSemesters()){
+            if(courses.get(semester).size()>0){
+                semesters.add(semester);
                 courseIndices.add(-1);
-                for (int j = 0; j < courses.get(i).size(); j++) {
-                    semesters.add(i);
+                for (int j = 0; j < courses.get(semester).size(); j++) {
+                    semesters.add(semester);
                     courseIndices.add(j);
                 }
             }

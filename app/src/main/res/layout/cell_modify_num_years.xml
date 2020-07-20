@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <Button
+        android:id="@+id/buttonRemoveYear"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackground"
+        android:text="Remove Last Year"
+        android:textColor="@color/colorPrimary" />
+
+    <Button
+        android:id="@+id/buttonAddYear"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackground"
+        android:text="Add Another Year"
+        android:textColor="@color/colorPrimary" />
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="40dp" >
+    </Space>
+</LinearLayout>

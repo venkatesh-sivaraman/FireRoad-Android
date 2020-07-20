@@ -24,6 +24,7 @@ import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.course.CourseManager;
 import com.base12innovations.android.fireroad.models.course.CourseSearchEngine;
 import com.base12innovations.android.fireroad.models.doc.NetworkManager;
+import com.base12innovations.android.fireroad.models.doc.Semester;
 import com.base12innovations.android.fireroad.models.req.RequirementsList;
 import com.base12innovations.android.fireroad.models.req.RequirementsListManager;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
@@ -296,9 +297,9 @@ public class RequirementsListFragment extends Fragment implements AddCourseDialo
     }
 
     @Override
-    public void addCourseDialogAddedToSemester(Course course, int semester) {
+    public void addCourseDialogAddedToSemester(Course course, String semesterID) {
         if (delegate != null)
-            delegate.courseNavigatorAddedCourse(this, course, semester);
+            delegate.courseNavigatorAddedCourse(this, course, semesterID);
         addCourseDialog.dismiss();
         addCourseDialog = null;
     }

@@ -197,9 +197,9 @@ public class SearchCoursesFragment extends Fragment implements BottomSheetNavFra
     }
 
     @Override
-    public void addCourseDialogAddedToSemester(Course course, int semester) {
+    public void addCourseDialogAddedToSemester(Course course, String semesterID) {
         if (delegate.get() != null)
-            delegate.get().courseNavigatorAddedCourse(this, course, semester);
+            delegate.get().courseNavigatorAddedCourse(this, course, semesterID);
         addCourseDialog.dismiss();
         addCourseDialog = null;
     }

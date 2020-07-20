@@ -24,6 +24,7 @@ import com.base12innovations.android.fireroad.adapter.SearchResultsAdapter;
 import com.base12innovations.android.fireroad.adapter.SelectCoursesAdapter;
 import com.base12innovations.android.fireroad.models.course.Course;
 import com.base12innovations.android.fireroad.models.doc.RoadDocument;
+import com.base12innovations.android.fireroad.models.doc.Semester;
 import com.base12innovations.android.fireroad.models.doc.User;
 import com.base12innovations.android.fireroad.models.req.ProgressAssertion;
 import com.base12innovations.android.fireroad.models.req.RequirementsListStatement;
@@ -33,7 +34,9 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class RequirementsOverrideDialog extends DialogFragment implements SelectCoursesAdapter.Delegate{
@@ -80,28 +83,18 @@ public class RequirementsOverrideDialog extends DialogFragment implements Select
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(listAdapter);
 
-        /*switchOverride = view.findViewById(R.id.switchOverride);
-        switchOverride.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                overriding = isChecked;
-                recyclerView.setEnabled(overriding);
-                verifyValidOverride();
-            }
-        });*/
-
         // otherCourses should be the courses that aren't currently in the road, but have been
         // marked as substituted
         Set<Course> otherCourses = new HashSet<>(replacementCourses);
-        List<List<Course>> allCourses = new ArrayList<>();
-        for (int i = 0; i < RoadDocument.semesterNames.length;i++) {
-            List<Course> coursesForSemester = User.currentUser().getCurrentDocument().coursesForSemester(i);
+        Map<Semester,List<Course>> allCourses = new LinkedHashMap<>();
+        for(Semester semester : User.currentUser().getCurrentDocument().getSemesters()){
+            List<Course> coursesForSemester = User.currentUser().getCurrentDocument().coursesForSemester(semester);
             for (Course course : coursesForSemester) {
                 otherCourses.remove(course);
             }
-            allCourses.add(coursesForSemester);
+            allCourses.put(semester,coursesForSemester);
         }
-        allCourses.add(new ArrayList<>(otherCourses));
+        allCourses.put(new Semester(),new ArrayList<>(otherCourses));
         listAdapter.setCourses(allCourses);
         listAdapter.notifyDataSetChanged();
 
