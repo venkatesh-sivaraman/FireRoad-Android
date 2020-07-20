@@ -38,7 +38,7 @@ public class CourseSearchEngine {
         CI_NONE, CI_H, CI_HW, NOT_CI,
         OFFERED_NONE, OFFERED_FALL, OFFERED_SPRING, OFFERED_IAP,
         LEVEL_NONE, LEVEL_UG, LEVEL_G,
-        ATTENDANCE_NONE, ATTENDANCE_VIRTUAL, ATTENDANCE_HYBRID, ATTENDANCE_INPERSON,
+        ATTENDANCE_NONE, ATTENDANCE_VIRTUAL, ATTENDANCE_INPERSON,
         SEARCH_ID, SEARCH_TITLE, SEARCH_PREREQS, SEARCH_COREQS, SEARCH_INSTRUCTORS, SEARCH_REQUIREMENTS,
         CONFLICTS_ANY, CONFLICTS_NO_LECTURE, CONFLICTS_NOT_ALLOWED,
         CONTAINS, MATCHES;
@@ -48,7 +48,7 @@ public class CourseSearchEngine {
         public static EnumSet<Filter> allCIFilters = EnumSet.of(CI_NONE, CI_H, CI_HW, NOT_CI);
         public static EnumSet<Filter> allOfferedFilters = EnumSet.of(OFFERED_NONE, OFFERED_FALL, OFFERED_IAP, OFFERED_SPRING);
         public static EnumSet<Filter> allLevelFilters = EnumSet.of(LEVEL_NONE, LEVEL_UG, LEVEL_G);
-        public static EnumSet<Filter> allAttendanceFilters = EnumSet.of(ATTENDANCE_NONE, ATTENDANCE_VIRTUAL, ATTENDANCE_HYBRID, ATTENDANCE_INPERSON);
+        public static EnumSet<Filter> allAttendanceFilters = EnumSet.of(ATTENDANCE_NONE, ATTENDANCE_VIRTUAL, ATTENDANCE_INPERSON);
         public static EnumSet<Filter> allConflictsFilters = EnumSet.of(CONFLICTS_ANY, CONFLICTS_NO_LECTURE, CONFLICTS_NOT_ALLOWED);
         public static EnumSet<Filter> searchAllFields = EnumSet.of(SEARCH_ID, SEARCH_TITLE, SEARCH_PREREQS, SEARCH_COREQS, SEARCH_INSTRUCTORS, SEARCH_REQUIREMENTS);
 
@@ -277,11 +277,10 @@ public class CourseSearchEngine {
         boolean fulfillsAttendance = false;
         if (filters.contains(Filter.ATTENDANCE_NONE)) {
             fulfillsAttendance = true;
-        } else if (filters.contains(Filter.ATTENDANCE_HYBRID) && course.virtualStatus.equals("Virtual/In-Person")) {
+        } else if (filters.contains(Filter.ATTENDANCE_INPERSON) && (course.virtualStatus.equals("In-Person") || course.virtualStatus.isEmpty() ||
+                course.virtualStatus.equals("Virtual/In-Person"))) {
             fulfillsAttendance = true;
-        } else if (filters.contains(Filter.ATTENDANCE_INPERSON) && (course.virtualStatus.equals("In-Person") || course.virtualStatus.isEmpty())) {
-            fulfillsAttendance = true;
-        } else if (filters.contains(Filter.ATTENDANCE_VIRTUAL) && course.virtualStatus.equals("Virtual")) {
+        } else if (filters.contains(Filter.ATTENDANCE_VIRTUAL) && course.virtualStatus.equals("Virtual") || course.virtualStatus.equals("Virtual/In-Person")) {
             fulfillsAttendance = true;
         }
         if (!fulfillsAttendance) return false;
