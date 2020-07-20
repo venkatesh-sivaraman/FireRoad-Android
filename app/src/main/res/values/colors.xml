@@ -7,6 +7,7 @@
     <color name="hassColor">#68debb</color>
     <color name="girColor">#de8c68</color>
     <color name="ciColor">#de68d2</color>
+    <color name="attendColor">#ffbd33</color>
 
     <color name="scheduleBorderColor">#dddddd</color>
 
