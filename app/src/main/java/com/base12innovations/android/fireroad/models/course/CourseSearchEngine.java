@@ -277,10 +277,10 @@ public class CourseSearchEngine {
         boolean fulfillsAttendance = false;
         if (filters.contains(Filter.ATTENDANCE_NONE)) {
             fulfillsAttendance = true;
-        } else if (filters.contains(Filter.ATTENDANCE_INPERSON) && (course.virtualStatus.equals("In-Person") || course.virtualStatus.isEmpty() ||
-                course.virtualStatus.equals("Virtual/In-Person"))) {
+        } else if (filters.contains(Filter.ATTENDANCE_INPERSON) && (course.getVirtualStatus() == Course.VirtualStatus.INPERSON || course.getVirtualStatus() == null ||
+                course.getVirtualStatus() == Course.VirtualStatus.HYBRID)) {
             fulfillsAttendance = true;
-        } else if (filters.contains(Filter.ATTENDANCE_VIRTUAL) && course.virtualStatus.equals("Virtual") || course.virtualStatus.equals("Virtual/In-Person")) {
+        } else if (filters.contains(Filter.ATTENDANCE_VIRTUAL) && (course.getVirtualStatus() == Course.VirtualStatus.VIRTUAL || course.getVirtualStatus() == Course.VirtualStatus.HYBRID)) {
             fulfillsAttendance = true;
         }
         if (!fulfillsAttendance) return false;

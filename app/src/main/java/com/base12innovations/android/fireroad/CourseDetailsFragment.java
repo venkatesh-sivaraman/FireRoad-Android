@@ -218,7 +218,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
 
         addOfferedItem(layout);
 
-        if (course.virtualStatus.length() > 0) {
+        if (course.getVirtualStatus() != null) {
             addAttendanceItem(layout);
         }
 
@@ -393,7 +393,7 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
     }
 
     private void addAttendanceItem(LinearLayout layout) {
-        layoutBuilder.addMetadataItem(layout, "Attendance", course.virtualStatus);
+        layoutBuilder.addMetadataItem(layout, "Attendance", course.getVirtualStatus().rawValue);
     }
 
     private void addRequirementsItem(LinearLayout layout) {

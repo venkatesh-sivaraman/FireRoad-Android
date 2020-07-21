@@ -1337,7 +1337,7 @@ public class MainActivity extends AppCompatActivity implements RequirementsFragm
             @Override
             public void onClick(DialogInterface dialogInterface, int index) {
                 Intent i = new Intent(Intent.ACTION_VIEW);
-                i.setData(Uri.parse("https://fireroad-dev.mit.edu/requirements"));
+                i.setData(Uri.parse("https://fireroad.mit.edu/requirements"));
                 startActivity(i);
             }
         });
