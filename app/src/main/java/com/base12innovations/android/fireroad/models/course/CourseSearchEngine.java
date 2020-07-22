@@ -277,7 +277,7 @@ public class CourseSearchEngine {
         boolean fulfillsAttendance = false;
         if (filters.contains(Filter.ATTENDANCE_NONE)) {
             fulfillsAttendance = true;
-        } else if (filters.contains(Filter.ATTENDANCE_INPERSON) && (course.getVirtualStatus() == Course.VirtualStatus.INPERSON || course.getVirtualStatus() == null ||
+        } else if (filters.contains(Filter.ATTENDANCE_INPERSON) && (course.getVirtualStatus() == Course.VirtualStatus.INPERSON ||
                 course.getVirtualStatus() == Course.VirtualStatus.HYBRID)) {
             fulfillsAttendance = true;
         } else if (filters.contains(Filter.ATTENDANCE_VIRTUAL) && (course.getVirtualStatus() == Course.VirtualStatus.VIRTUAL || course.getVirtualStatus() == Course.VirtualStatus.HYBRID)) {
