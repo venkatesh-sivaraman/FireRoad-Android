@@ -40,6 +40,7 @@ public class Course implements Parcelable {
     public String subjectTitle = "";
     public String subjectDescription = "";
     public int totalUnits = 0;
+    public String rawVirtualStatus = "";
 
     public String getSubjectID() { return subjectID; }
     public void setSubjectID(String subjectID) { this.subjectID = subjectID; }
@@ -193,6 +194,36 @@ public class Course implements Parcelable {
     public double rating = 0.0;
     public double inClassHours = 0.0;
     public double outOfClassHours = 0.0;
+
+    public enum VirtualStatus {
+        VIRTUAL("Virtual"), HYBRID("Virtual/In-Person"), INPERSON("In-Person");
+
+        private static Map<String, VirtualStatus> names;
+        static {
+            names = new HashMap<>();
+            names.put("Virtual", VIRTUAL);
+            names.put("Virtual/In-Person", HYBRID);
+            names.put("In-Person", INPERSON);
+        }
+
+        public final String rawValue;
+
+        VirtualStatus(final String raw) {
+            this.rawValue = raw;
+        }
+
+        @Override
+        public String toString() { return rawValue; }
+
+        public static VirtualStatus fromRaw(String raw) {
+            if (names.containsKey(raw)) {
+                return names.get(raw);
+            }
+            return null;
+        }
+    }
+
+    public VirtualStatus getVirtualStatus() { return rawVirtualStatus != null ? VirtualStatus.fromRaw(rawVirtualStatus) : null; }
 
     public enum GIRAttribute {
         PHYSICS_1("PHY1"), PHYSICS_2("PHY2"),

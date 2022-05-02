@@ -85,6 +85,10 @@ public class FilterDialogFragment extends DialogFragment {
         updateButton(view, R.id.CI_HW, CourseSearchEngine.Filter.CI_HW);
         updateButton(view, R.id.notCI, CourseSearchEngine.Filter.NOT_CI);
 
+        updateButton(view, R.id.attendNone, CourseSearchEngine.Filter.ATTENDANCE_NONE);
+        updateButton(view, R.id.attendVirtual, CourseSearchEngine.Filter.ATTENDANCE_VIRTUAL);
+        updateButton(view, R.id.attendPerson, CourseSearchEngine.Filter.ATTENDANCE_INPERSON);
+
         Button clearAll = (Button)view.findViewById(R.id.noFilter);
         clearAll.setEnabled(!filters.equals(CourseSearchEngine.Filter.noFilter()));
         clearAll.setOnClickListener(new View.OnClickListener() {
@@ -176,6 +180,11 @@ public class FilterDialogFragment extends DialogFragment {
                     case CI_HW:
                     case NOT_CI:
                         CourseSearchEngine.Filter.filterCI(filters, option);
+                        break;
+                    case ATTENDANCE_NONE:
+                    case ATTENDANCE_VIRTUAL:
+                    case ATTENDANCE_INPERSON:
+                        CourseSearchEngine.Filter.filterAttendance(filters, option);
                         break;
                     default:
                         break;

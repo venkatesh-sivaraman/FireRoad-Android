@@ -289,4 +289,45 @@
             android:text="REST" />
 
     </LinearLayout>
+    <LinearLayout
+        android:id="@+id/attendFilter"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/attendNone"
+            style="@style/Base.Widget.AppCompat.Button.Colored"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/filter_view_button_margin"
+            android:layout_weight="1"
+            android:backgroundTint="@color/attendColor"
+            android:gravity="center_vertical|center_horizontal|center"
+            android:text="Off" />
+
+        <Button
+            android:id="@+id/attendVirtual"
+            style="@style/Base.Widget.AppCompat.Button.Colored"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/filter_view_button_margin"
+            android:layout_weight="1"
+            android:backgroundTint="@color/attendColor"
+            android:gravity="center_vertical|center_horizontal|center"
+            android:text="Virtual" />
+
+        <Button
+            android:id="@+id/attendPerson"
+            style="@style/Base.Widget.AppCompat.Button.Colored"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/filter_view_button_margin"
+            android:layout_weight="1"
+            android:backgroundTint="@color/attendColor"
+            android:gravity="center_vertical|center_horizontal|center"
+            android:text="In-Person" />
+
+    </LinearLayout>
 </LinearLayout>
