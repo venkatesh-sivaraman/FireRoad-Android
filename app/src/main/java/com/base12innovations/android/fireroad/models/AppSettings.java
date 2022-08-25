@@ -57,9 +57,8 @@ public class AppSettings {
 
     private static final String VERSION_MESSAGE = "version_message";
     // Increment this counter and change versionUpdateMessage to show a new "What's New" dialog
-    private static final int versionIndex = 3;
-    private static final String versionUpdateMessage = "We made a new feature that allows you to substitute (a.k.a. petition) " +
-            "requirements in your majors and minors. Check it out in the Requirements tab!";
+    private static final int versionIndex = 4;
+    private static final String versionUpdateMessage = "Your roads are now automatically converted to use the new Course 6 numbering scheme.";
 
     public static String getVersionUpdateMessage() {
         // If fresh install, don't show update message

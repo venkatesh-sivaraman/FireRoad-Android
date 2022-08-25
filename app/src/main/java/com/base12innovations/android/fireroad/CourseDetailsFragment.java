@@ -223,6 +223,10 @@ public class CourseDetailsFragment extends Fragment implements BottomSheetNavFra
             addAttendanceItem(layout);
         }
 
+        if (course.oldSubjectID != null) {
+            layoutBuilder.addMetadataItem(layout, "Previously Called", course.oldSubjectID);
+        }
+
         List<String> instructors = course.getInstructorsList();
         if (instructors.size() > 0) {
             layoutBuilder.addMetadataItem(layout, "Instructor" + (instructors.size() != 1 ? "s" : ""), TextUtils.join(", ", instructors));

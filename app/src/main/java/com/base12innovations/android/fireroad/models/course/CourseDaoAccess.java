@@ -17,14 +17,15 @@ public interface CourseDaoAccess {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertCourses(List<Course> courseList);
 
-    @Query("SELECT * FROM Course WHERE subjectID = :subjectID")
+    @Query("SELECT * FROM Course WHERE subjectID = :subjectID OR oldSubjectID = :subjectID")
     Course findCourseWithSubjectID(String subjectID);
 
     @Query("SELECT * FROM Course WHERE isPublic = 1")
     List<Course> publicCourses();
 
     @Query("SELECT * FROM Course WHERE subjectID LIKE '%' || :query || '%' OR " +
-            "subjectTitle LIKE '%' || :query || '%'")
+            "subjectTitle LIKE '%' || :query || '%' OR " +
+            "oldSubjectID LIKE '%' || :query || '%'")
     List<Course> searchCoursesByIDOrTitle(String query);
 
     @Query("SELECT COUNT(*) FROM Course")
