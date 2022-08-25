@@ -41,6 +41,7 @@ public class Course implements Parcelable {
     public String subjectDescription = "";
     public int totalUnits = 0;
     public String rawVirtualStatus = "";
+    public String oldSubjectID = null;
 
     public String getSubjectID() { return subjectID; }
     public void setSubjectID(String subjectID) { this.subjectID = subjectID; }
@@ -663,6 +664,7 @@ public class Course implements Parcelable {
         final String req = requirement.replaceAll("GIR:", "");
         // Normal requirement-course relationship
         if (getSubjectID().equals(req) ||
+                (oldSubjectID != null && oldSubjectID.equals(req)) ||
                 getJointSubjectsList().contains(req) ||
                 getEquivalentSubjectsList().contains(req) ||
                 (getGIRAttribute() != null && getGIRAttribute().satisfies(GIRAttribute.fromRaw(req))) ||

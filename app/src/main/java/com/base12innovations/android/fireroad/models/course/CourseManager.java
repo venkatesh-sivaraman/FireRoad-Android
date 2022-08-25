@@ -412,6 +412,13 @@ public class CourseManager {
                 case "Subject Description":
                     course.subjectDescription = component;
                     break;
+                case "Old Subject Id":
+                    if (component.length() > 0) {
+                        course.oldSubjectID = component;
+                    } else {
+                        course.oldSubjectID = null;
+                    }
+                    break;
                 case "Total Units":
                     course.totalUnits = Integer.parseInt(component);
                     break;
