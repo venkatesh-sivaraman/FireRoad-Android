@@ -1,7 +1,6 @@
 package com.base12innovations.android.fireroad.models.doc;
 
 import android.annotation.TargetApi;
-import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -660,11 +659,7 @@ public class DocumentManager {
         Date downloadDate = getDownloadDate(name);
         if (downloadDate != null)
             input.downloadDate = stringFromDate(downloadDate);
-        BluetoothAdapter myDevice = BluetoothAdapter.getDefaultAdapter();
-        if (myDevice != null)
-            input.agent = myDevice.getName();
-        else
-            input.agent = "FireRoad on " + Build.MODEL;
+        input.agent = "FireRoad on " + Build.MODEL;
         if (override)
             input.override = true;
 
